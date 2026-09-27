@@ -1,7 +1,6 @@
 # Y4 Study System — MEng Mechatronics
 
-> Pipeline: `raw PDF` → `extracted text` → `verbose notes` → `mental model` → `drills` → `gap log`
-> Rule: flow is **one direction only**. Never edit upstream from where you are.
+> **Core loop:** confused about concept → Gemini session → `produce_note.md` → paste into `concepts/` → done.
 
 ---
 
@@ -9,51 +8,91 @@
 
 | Folder | Code | Subject | Credits | Semester | Status |
 |---|---|---|---|---|---|
-| [EEEE3116_adv_eng_math](./EEEE3116_adv_eng_math/) | EEEE-3116 | Advanced Engineering Mathematics | 10 | Autumn | ⬜ not started |
-| [EEEE4064_adv_control_system](./EEEE4064_adv_control_system/) | EEEE-4064 | Advanced Control System Design | 10 | Autumn | ⬜ not started |
-| [EEEE4076_hdl_prog_logic](./EEEE4076_hdl_prog_logic/) | EEEE-4076 | HDL for Programmable Logic | 10 | Autumn | ⬜ not started |
-| [EEEE4077_mechatronics_proj](./EEEE4077_mechatronics_proj/) | EEEE-4077 | Mechatronics Industrial Project | 40 | Full Year | ⬜ not started |
-| [EEEE4133_ai_intelligent_sys](./EEEE4133_ai_intelligent_sys/) | EEEE-4133 | Artificial Intelligence & Intelligent Systems | 20 | Spring | ⬜ not started |
-| [EEEE4138_aerial_robotics](./EEEE4138_aerial_robotics/) | EEEE-4138 | Aerial Robotics | 10 | Autumn | ⬜ not started |
-| [EEEE4145_hdl_prog_logic_proj](./EEEE4145_hdl_prog_logic_proj/) | EEEE-4145 | HDL for Programmable Logic with Project | 10 | Spring | ⬜ not started |
-| [MMME4127_digital_manufacturing](./MMME4127_digital_manufacturing/) | MMME-4127 | Digital Manufacturing | 10 | Spring | ⬜ not started |
+| [EEEE3116_adv_eng_math](./modules/EEEE3116_adv_eng_math/) | EEEE-3116 | Advanced Engineering Mathematics | 10 | Autumn | ⬜ |
+| [EEEE4064_adv_control_system](./modules/EEEE4064_adv_control_system/) | EEEE-4064 | Advanced Control System Design | 10 | Autumn | ⬜ |
+| [EEEE4076_hdl_prog_logic](./modules/EEEE4076_hdl_prog_logic/) | EEEE-4076 | HDL for Programmable Logic | 10 | Autumn | ⬜ |
+| [EEEE4077_mechatronics_proj](./modules/EEEE4077_mechatronics_proj/) | EEEE-4077 | Mechatronics Industrial Project | 40 | Full Year | ⬜ |
+| [EEEE4133_ai_intelligent_sys](./modules/EEEE4133_ai_intelligent_sys/) | EEEE-4133 | Artificial Intelligence & Intelligent Systems | 20 | Spring | ⬜ |
+| [EEEE4138_aerial_robotics](./modules/EEEE4138_aerial_robotics/) | EEEE-4138 | Aerial Robotics | 10 | Autumn | ⬜ |
+| [EEEE4145_hdl_prog_logic_proj](./modules/EEEE4145_hdl_prog_logic_proj/) | EEEE-4145 | HDL for Programmable Logic with Project | 10 | Spring | ⬜ |
+| [MMME4127_digital_manufacturing](./modules/MMME4127_digital_manufacturing/) | MMME-4127 | Digital Manufacturing | 10 | Spring | ⬜ |
 
-Status key: ⬜ not started · 🟡 in progress · 🟢 model done · ✅ drills done
+Status: ⬜ not started · 🟡 concepts in progress · 🟢 map generated · ✅ drills done
 
 ---
 
-## Pipeline Stages (per chapter)
+## Folder Structure (per subject)
 
 ```
-Stage 1 — Ingest       raw/ → extracted/      dump PDF content (manual or script)
-Stage 2 — Structure    extracted/ → notes/    Gemini: verbose chapter note
-Stage 3 — Model        notes/ → models/       Gemini: subject mental model (run after all chapters)
-Stage 4 — Drill        models/ → drills/      Gemini: understanding-test questions
-Stage 5 — Gap log      self-test → gaps/      log what broke, which stage to re-run
+modules/{SUBJECT}/
+├── raw/          immutable source PDFs and sim files — never edit
+├── concepts/     one .md per concept (the primary output of every session)
+├── maps/         subject map — derived from concepts/, not planned upfront
+└── drills/       understanding-test questions (generated from map, touch pre-exam only)
 ```
 
-**Re-run rule:** gaps trigger a re-run of Stage 2 or 3 **for that chapter only**. Never cascade.
+---
+
+## The Learning Loop
+
+```
+1. Confused about a concept
+        ↓
+2. [if tangled] paste untangle.md prompt → Gemini decomposes into ordered sub-concepts
+        ↓
+3. Learn in Gemini — ask questions, upload pics, iterate freely
+        ↓
+4. Paste produce_note.md prompt → Gemini produces a concept note
+        ↓
+5. Copy output → save as modules/{SUBJECT}/concepts/{concept_name}.md
+        ↓
+6. Promote status: draft → solid → linked (once all depends-on links are verified)
+        ↓
+7. Periodically: paste map.md prompt → update modules/{SUBJECT}/maps/subject_map.md
+```
+
+**Re-run rule:** if a gap is logged (Open/Unresolved in a concept file), re-run Step 3–5 for that concept only. Never cascade.
 
 ---
 
-## How to Use Gemini Chat
+## Prompts (use these in Gemini Chat)
 
-1. Open [gemini.google.com](https://gemini.google.com)
-2. Upload the PDF (or paste extracted text if PDF is unreadable)
-3. Paste the relevant prompt from [`_pipeline/prompts/`](./_pipeline/prompts/)
-4. Copy the output into the appropriate `.md` file in `notes/` or `models/`
-
----
-
-## Tooling
-
-| Script | Purpose |
+| Prompt | When to use |
 |---|---|
-| [`_pipeline/scripts/pdf_extract.py`](./_pipeline/scripts/pdf_extract.py) | Extract text + tables from PDF → `extracted/` |
+| [`produce_note.md`](./pipeline/prompts/produce_note.md) | **Every session** — end of learning, produces the concept note |
+| [`untangle.md`](./pipeline/prompts/untangle.md) | **Start of session** — when you're tangled and don't know where to start |
+| [`map.md`](./pipeline/prompts/map.md) | **Periodically** — after accumulating several concepts, to build the subject map |
+| [`drill.md`](./pipeline/prompts/drill.md) | **Pre-exam** — generates understanding-test questions from your map |
+
+---
+
+## Concept File Naming
+
+Use `snake_case_concept_name.md`. Name by the concept, not the chapter or slide number.
+
+**Good:** `pid_derivative_noise.md`, `z_transform_roc.md`, `fpga_lut_routing.md`
+**Bad:** `ch03_section2.md`, `lecture5_part1.md`
+
+Cross-subject dependency links use relative paths from the concept file:
+```markdown
+**Depends on:** → [z_transform_roc](../../EEEE3116_adv_eng_math/concepts/z_transform_roc.md)
+```
 
 ---
 
 ## Notes on EEEE-4076 vs EEEE-4145
 
-`EEEE4076` (Autumn) is the core HDL theory module. `EEEE4145` (Spring) is the same content + project component.
-Shared notes live in `EEEE4076_hdl_prog_logic/`. The project-specific material (deliverables, design files) lives in `EEEE4145_hdl_prog_logic_proj/`.
+`EEEE4076` (Autumn) is the core HDL theory module. `EEEE4145` (Spring) is the continuation with project.
+Core HDL concepts live in `modules/EEEE4076_hdl_prog_logic/concepts/`. Project deliverables in `modules/EEEE4145_hdl_prog_logic_proj/`.
+
+---
+
+## Optional: PDF Extraction (pre-session)
+
+For heavily visual PDFs, run before the Gemini session to get searchable text:
+
+```powershell
+pip install pymupdf tabulate
+python pipeline/scripts/pdf_extract.py "path\to\lecture.pdf"
+# outputs: path\to\lecture.txt — paste into Gemini alongside your question
+```
