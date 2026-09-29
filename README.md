@@ -25,18 +25,31 @@ Status: ⬜ not started · 🟡 concepts in progress · 🟢 map generated · �
 
 ```
 modules/{SUBJECT}/
-├── raw/          immutable source PDFs and sim files — never edit
-├── concepts/     one .md per concept (the primary output of every session)
-├── maps/         subject map — derived from concepts/, not planned upfront
-└── drills/       understanding-test questions (generated from map, touch pre-exam only)
+├── raw/              immutable source PDFs and sim files — never edit
+├── chapters/         one .md per lecture (flat) — dense reference notes from PDF
+│   ├── L01_introduction.md         one file per PDF (typical)
+│   └── L05_controllability/        subfolder only if multiple PDFs for one chapter (edge case)
+├── concepts/         one .md per concept (the primary output of every session)
+├── maps/             subject map — derived from concepts/, not planned upfront
+└── drills/           understanding-test questions (generated from map, touch pre-exam only)
 ```
+
+**Flow:** `raw/*.pdf` → (attach to Gemini + `chapter.md` prompt) → `chapters/{chNN}/` → skim Concept Index → deep sessions → `concepts/`
 
 ---
 
 ## The Learning Loop
 
 ```
-1. Confused about a concept
+0. New lecture PDF available
+        ↓
+   Attach PDF to Gemini + paste chapter.md prompt → get chapter note
+        ↓
+   Save to modules/{SUBJECT}/chapters/{chNN}/{title}.md
+        ↓
+   Skim the Concept Index — flag anything you can't explain
+        ↓
+1. Confused about a specific concept (from chapter note or elsewhere)
         ↓
 2. [if tangled] paste untangle.md prompt → Gemini decomposes into ordered sub-concepts
         ↓
@@ -59,6 +72,7 @@ modules/{SUBJECT}/
 
 | Prompt | When to use |
 |---|---|
+| [`chapter.md`](./pipeline/prompts/chapter.md) | **Per PDF** — attach the lecture PDF to Gemini, get a dense chapter note |
 | [`produce_note.md`](./pipeline/prompts/produce_note.md) | **Every session** — end of learning, produces the concept note |
 | [`untangle.md`](./pipeline/prompts/untangle.md) | **Start of session** — when you're tangled and don't know where to start |
 | [`map.md`](./pipeline/prompts/map.md) | **Periodically** — after accumulating several concepts, to build the subject map |
