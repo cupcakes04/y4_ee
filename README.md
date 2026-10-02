@@ -8,8 +8,8 @@
 
 | Folder | Code | Subject | Credits | Semester | Status |
 |---|---|---|---|---|---|
-| [EEEE3116_adv_eng_math](./modules/EEEE3116_adv_eng_math/) | EEEE-3116 | Advanced Engineering Mathematics | 10 | Autumn | ⬜ |
-| [EEEE4064_adv_control_system](./modules/EEEE4064_adv_control_system/) | EEEE-4064 | Advanced Control System Design | 10 | Autumn | ⬜ |
+| [EEEE3116_adv_eng_math](./modules/EEEE3116_adv_eng_math/) | EEEE-3116 | Advanced Engineering Mathematics | 10 | Autumn | 🟡 |
+| [EEEE4064_adv_control_system](./modules/EEEE4064_adv_control_system/) | EEEE-4064 | Advanced Control System Design | 10 | Autumn | 🟡 |
 | [EEEE4076_hdl_prog_logic](./modules/EEEE4076_hdl_prog_logic/) | EEEE-4076 | HDL for Programmable Logic | 10 | Autumn | ⬜ |
 | [EEEE4077_mechatronics_proj](./modules/EEEE4077_mechatronics_proj/) | EEEE-4077 | Mechatronics Industrial Project | 40 | Full Year | ⬜ |
 | [EEEE4133_ai_intelligent_sys](./modules/EEEE4133_ai_intelligent_sys/) | EEEE-4133 | Artificial Intelligence & Intelligent Systems | 20 | Spring | ⬜ |

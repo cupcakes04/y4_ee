@@ -1,12 +1,47 @@
 # Gemini Prompt — Produce Note (End of Session)
 
-> Use this at the **end of every Gemini learning session**, once you feel you've reached an understanding (even partial).
-> Copy the output directly into `concepts/{concept_name}.md`.
-> Replace everything in `{curly braces}` before pasting.
+Two versions. Pick the right one:
+
+| | When to use |
+|---|---|
+| **Quick Note** ↓ | You already get it. Just want it written down cleanly. Revision, reinforcement, simple topic. |
+| **Deep Note** ↓ | You were confused, you worked through it, you want the full dissection captured. |
 
 ---
 
-## Prompt
+## Quick Note
+
+> Use for: revision notes, straightforward topics, things you understood without much struggle.
+> Save output to `concepts/{concept_name}.md`.
+
+```
+Summarise {concept name} from {subject name} as a clean revision note.
+
+Format:
+
+# {Concept Name}
+**Subject:** {SUBJECT_CODE} — {Subject Name}
+**Date:** {today's date}
+
+## What it is (can be tables or plots or graph, simple)
+[1–3 sentences. Plain English. What does this actually do or describe?]
+
+## Key Points
+- [bullet — one idea per line, no padding]
+
+## Key Equations (if any)
+[Equation, then one line per variable: symbol → meaning + units]
+
+## Watch Out For
+[1–3 common mistakes or gotchas. Skip if none.]
+```
+
+---
+
+## Deep Note
+
+> Use for: concepts you were confused about, worked through in a full session, and want fully dissected.
+> Save output to `concepts/{concept_name}.md`.
 
 ```
 We've just worked through {concept name} in {subject name}.
