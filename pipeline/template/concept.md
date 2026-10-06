@@ -10,36 +10,19 @@
 ---
 
 ## The Intuition
-> What is actually happening here — no equations, just the engineering story.
-> Explain WHY before HOW. If you can't do this section without math, the intuition isn't there yet.
-
----
+[The engineering story — WHY before HOW. No equations. If this section needs math to make sense, the intuition isn't there yet.]
+Less paragraph, less verbose, more attention/attractive
 
 ## The Detail
-> Full verbose explanation.
-> Every term defined with units and sign convention.
-> Every equation:
->   - What it physically describes
->   - What each variable means (units, direction, sign)
->   - Assumptions required for it to hold
->   - What breaks it (edge cases, saturation, ignored effects)
-
----
+[Full explanation. Every term defined. Every equation:
+ - what it physically describes
+ - what each variable means with units
+ - what assumptions it requires]
+use intuive examples or math to show (or anything that suits the topic best for revision/learning)
 
 ## The Link Declarations
-> For each upstream dependency — why this concept can't be understood without it.
-> Format: "Depends on [X] because without understanding [X], [specific part of this concept] doesn't make sense."
-> Upstream only. Never declare forward/downstream links here.
-
----
-
-## Anti-Patterns
-> What gets confused here. What the wrong mental model looks like.
-> Format: "Anti-pattern: [wrong thinking]. Why it's wrong: [reason]. Correct understanding: [right model]."
-
----
+[For each upstream dependency: "Depends on [X] because without [X], [specific part] doesn't make sense."
+ Upstream links only. Never list what this concept enables — only what it needs.]
 
 ## Open / Unresolved
-> Anything still unclear after this session. Each item should also be logged in `../gaps/gap_log.md`.
-
-- [ ] ...
+[Anything still unclear from our session. Be specific — vague gaps are useless.]
