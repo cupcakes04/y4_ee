@@ -1,0 +1,51 @@
+[0.010s] Invoking command in '/home/nicholas/Documents/ROS2_notes/ros2_ws/build/my_package': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake /home/nicholas/Documents/ROS2_notes/ros2_ws/src/my_package -DCMAKE_INSTALL_PREFIX=/home/nicholas/Documents/ROS2_notes/ros2_ws/install/my_package
+[0.072s] -- The C compiler identification is GNU 13.3.0
+[0.135s] -- The CXX compiler identification is GNU 13.3.0
+[0.153s] -- Detecting C compiler ABI info
+[0.295s] -- Detecting C compiler ABI info - done
+[0.309s] -- Check for working C compiler: /usr/bin/cc - skipped
+[0.309s] -- Detecting C compile features
+[0.310s] -- Detecting C compile features - done
+[0.323s] -- Detecting CXX compiler ABI info
+[0.446s] -- Detecting CXX compiler ABI info - done
+[0.457s] -- Check for working CXX compiler: /usr/bin/c++ - skipped
+[0.457s] -- Detecting CXX compile features
+[0.458s] -- Detecting CXX compile features - done
+[0.461s] -- Found ament_cmake: 2.5.6 (/opt/ros/jazzy/share/ament_cmake/cmake)
+[0.609s] -- Found Python3: /usr/bin/python3 (found version "3.12.3") found components: Interpreter 
+[0.726s] -- Found ament_lint_auto: 0.17.5 (/opt/ros/jazzy/share/ament_lint_auto/cmake)
+[0.851s] -- Added test 'cppcheck' to perform static code analysis on C / C++ code
+[0.852s] -- Configured cppcheck include dirs: $<BUILD_INTERFACE:/home/nicholas/Documents/ROS2_notes/ros2_ws/src/my_package/include>
+[0.852s] -- Configured cppcheck exclude dirs and/or files: 
+[0.852s] -- Added test 'lint_cmake' to check CMake code style
+[0.854s] -- Added test 'uncrustify' to check C / C++ code style
+[0.854s] -- Configured uncrustify additional arguments: 
+[0.855s] -- Added test 'xmllint' to check XML markup files
+[0.857s] -- Configuring done (0.8s)
+[0.866s] -- Generating done (0.0s)
+[0.869s] -- Build files have been written to: /home/nicholas/Documents/ROS2_notes/ros2_ws/build/my_package
+[0.881s] Invoked command in '/home/nicholas/Documents/ROS2_notes/ros2_ws/build/my_package' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake /home/nicholas/Documents/ROS2_notes/ros2_ws/src/my_package -DCMAKE_INSTALL_PREFIX=/home/nicholas/Documents/ROS2_notes/ros2_ws/install/my_package
+[0.883s] Invoking command in '/home/nicholas/Documents/ROS2_notes/ros2_ws/build/my_package': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake --build /home/nicholas/Documents/ROS2_notes/ros2_ws/build/my_package -- -j8 -l8
+[0.945s] [ 50%] [32mBuilding CXX object CMakeFiles/my_node.dir/src/my_node.cpp.o[0m
+[0.981s] [100%] [32m[1mLinking CXX executable my_node[0m
+[1.034s] [100%] Built target my_node
+[1.050s] Invoked command in '/home/nicholas/Documents/ROS2_notes/ros2_ws/build/my_package' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake --build /home/nicholas/Documents/ROS2_notes/ros2_ws/build/my_package -- -j8 -l8
+[1.062s] Invoking command in '/home/nicholas/Documents/ROS2_notes/ros2_ws/build/my_package': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake --install /home/nicholas/Documents/ROS2_notes/ros2_ws/build/my_package
+[1.071s] -- Install configuration: ""
+[1.071s] -- Installing: /home/nicholas/Documents/ROS2_notes/ros2_ws/install/my_package/lib/my_package/my_node
+[1.071s] -- Installing: /home/nicholas/Documents/ROS2_notes/ros2_ws/install/my_package/share/ament_index/resource_index/package_run_dependencies/my_package
+[1.072s] -- Installing: /home/nicholas/Documents/ROS2_notes/ros2_ws/install/my_package/share/ament_index/resource_index/parent_prefix_path/my_package
+[1.072s] -- Installing: /home/nicholas/Documents/ROS2_notes/ros2_ws/install/my_package/share/my_package/environment/ament_prefix_path.sh
+[1.072s] -- Installing: /home/nicholas/Documents/ROS2_notes/ros2_ws/install/my_package/share/my_package/environment/ament_prefix_path.dsv
+[1.073s] -- Installing: /home/nicholas/Documents/ROS2_notes/ros2_ws/install/my_package/share/my_package/environment/path.sh
+[1.073s] -- Installing: /home/nicholas/Documents/ROS2_notes/ros2_ws/install/my_package/share/my_package/environment/path.dsv
+[1.073s] -- Installing: /home/nicholas/Documents/ROS2_notes/ros2_ws/install/my_package/share/my_package/local_setup.bash
+[1.073s] -- Installing: /home/nicholas/Documents/ROS2_notes/ros2_ws/install/my_package/share/my_package/local_setup.sh
+[1.073s] -- Installing: /home/nicholas/Documents/ROS2_notes/ros2_ws/install/my_package/share/my_package/local_setup.zsh
+[1.074s] -- Installing: /home/nicholas/Documents/ROS2_notes/ros2_ws/install/my_package/share/my_package/local_setup.dsv
+[1.074s] -- Installing: /home/nicholas/Documents/ROS2_notes/ros2_ws/install/my_package/share/my_package/package.dsv
+[1.074s] -- Installing: /home/nicholas/Documents/ROS2_notes/ros2_ws/install/my_package/share/ament_index/resource_index/packages/my_package
+[1.074s] -- Installing: /home/nicholas/Documents/ROS2_notes/ros2_ws/install/my_package/share/my_package/cmake/my_packageConfig.cmake
+[1.075s] -- Installing: /home/nicholas/Documents/ROS2_notes/ros2_ws/install/my_package/share/my_package/cmake/my_packageConfig-version.cmake
+[1.075s] -- Installing: /home/nicholas/Documents/ROS2_notes/ros2_ws/install/my_package/share/my_package/package.xml
+[1.078s] Invoked command in '/home/nicholas/Documents/ROS2_notes/ros2_ws/build/my_package' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake --install /home/nicholas/Documents/ROS2_notes/ros2_ws/build/my_package

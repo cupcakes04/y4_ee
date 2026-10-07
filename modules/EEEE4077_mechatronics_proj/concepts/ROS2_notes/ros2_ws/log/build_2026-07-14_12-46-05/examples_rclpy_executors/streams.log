@@ -1,0 +1,57 @@
+[3.841s] Invoking command in '/home/nicholas/Documents/ROS2_notes/ros2_ws/src/examples/rclpy/executors': DEBUGINFOD_URLS=https://debuginfod.ubuntu.com PYTHONPATH=/home/nicholas/Documents/ROS2_notes/ros2_ws/build/examples_rclpy_executors/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/nicholas/Documents/ROS2_notes/ros2_ws/install/examples_rclpy_executors/lib/python3.12/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py egg_info --egg-base ../../../../build/examples_rclpy_executors build --build-base /home/nicholas/Documents/ROS2_notes/ros2_ws/build/examples_rclpy_executors/build install --record /home/nicholas/Documents/ROS2_notes/ros2_ws/build/examples_rclpy_executors/install.log --install-scripts $base/lib/examples_rclpy_executors --single-version-externally-managed install_data
+[5.367s] running egg_info
+[5.368s] creating ../../../../build/examples_rclpy_executors/examples_rclpy_executors.egg-info
+[5.368s] writing ../../../../build/examples_rclpy_executors/examples_rclpy_executors.egg-info/PKG-INFO
+[5.368s] writing dependency_links to ../../../../build/examples_rclpy_executors/examples_rclpy_executors.egg-info/dependency_links.txt
+[5.368s] writing entry points to ../../../../build/examples_rclpy_executors/examples_rclpy_executors.egg-info/entry_points.txt
+[5.368s] writing requirements to ../../../../build/examples_rclpy_executors/examples_rclpy_executors.egg-info/requires.txt
+[5.368s] writing top-level names to ../../../../build/examples_rclpy_executors/examples_rclpy_executors.egg-info/top_level.txt
+[5.368s] writing manifest file '../../../../build/examples_rclpy_executors/examples_rclpy_executors.egg-info/SOURCES.txt'
+[5.368s] reading manifest file '../../../../build/examples_rclpy_executors/examples_rclpy_executors.egg-info/SOURCES.txt'
+[5.368s] writing manifest file '../../../../build/examples_rclpy_executors/examples_rclpy_executors.egg-info/SOURCES.txt'
+[5.369s] running build
+[5.369s] running build_py
+[5.371s] creating /home/nicholas/Documents/ROS2_notes/ros2_ws/build/examples_rclpy_executors/build
+[5.371s] creating /home/nicholas/Documents/ROS2_notes/ros2_ws/build/examples_rclpy_executors/build/lib
+[5.372s] creating /home/nicholas/Documents/ROS2_notes/ros2_ws/build/examples_rclpy_executors/build/lib/examples_rclpy_executors
+[5.372s] copying examples_rclpy_executors/callback_group.py -> /home/nicholas/Documents/ROS2_notes/ros2_ws/build/examples_rclpy_executors/build/lib/examples_rclpy_executors
+[5.372s] copying examples_rclpy_executors/listener.py -> /home/nicholas/Documents/ROS2_notes/ros2_ws/build/examples_rclpy_executors/build/lib/examples_rclpy_executors
+[5.372s] copying examples_rclpy_executors/__init__.py -> /home/nicholas/Documents/ROS2_notes/ros2_ws/build/examples_rclpy_executors/build/lib/examples_rclpy_executors
+[5.372s] copying examples_rclpy_executors/custom_executor.py -> /home/nicholas/Documents/ROS2_notes/ros2_ws/build/examples_rclpy_executors/build/lib/examples_rclpy_executors
+[5.374s] copying examples_rclpy_executors/composed.py -> /home/nicholas/Documents/ROS2_notes/ros2_ws/build/examples_rclpy_executors/build/lib/examples_rclpy_executors
+[5.375s] copying examples_rclpy_executors/talker.py -> /home/nicholas/Documents/ROS2_notes/ros2_ws/build/examples_rclpy_executors/build/lib/examples_rclpy_executors
+[5.375s] copying examples_rclpy_executors/custom_callback_group.py -> /home/nicholas/Documents/ROS2_notes/ros2_ws/build/examples_rclpy_executors/build/lib/examples_rclpy_executors
+[5.375s] running install
+[5.375s] running install_lib
+[5.376s] creating /home/nicholas/Documents/ROS2_notes/ros2_ws/install/examples_rclpy_executors/lib/python3.12/site-packages/examples_rclpy_executors
+[5.376s] copying /home/nicholas/Documents/ROS2_notes/ros2_ws/build/examples_rclpy_executors/build/lib/examples_rclpy_executors/callback_group.py -> /home/nicholas/Documents/ROS2_notes/ros2_ws/install/examples_rclpy_executors/lib/python3.12/site-packages/examples_rclpy_executors
+[5.379s] copying /home/nicholas/Documents/ROS2_notes/ros2_ws/build/examples_rclpy_executors/build/lib/examples_rclpy_executors/listener.py -> /home/nicholas/Documents/ROS2_notes/ros2_ws/install/examples_rclpy_executors/lib/python3.12/site-packages/examples_rclpy_executors
+[5.380s] copying /home/nicholas/Documents/ROS2_notes/ros2_ws/build/examples_rclpy_executors/build/lib/examples_rclpy_executors/__init__.py -> /home/nicholas/Documents/ROS2_notes/ros2_ws/install/examples_rclpy_executors/lib/python3.12/site-packages/examples_rclpy_executors
+[5.380s] copying /home/nicholas/Documents/ROS2_notes/ros2_ws/build/examples_rclpy_executors/build/lib/examples_rclpy_executors/custom_executor.py -> /home/nicholas/Documents/ROS2_notes/ros2_ws/install/examples_rclpy_executors/lib/python3.12/site-packages/examples_rclpy_executors
+[5.380s] copying /home/nicholas/Documents/ROS2_notes/ros2_ws/build/examples_rclpy_executors/build/lib/examples_rclpy_executors/composed.py -> /home/nicholas/Documents/ROS2_notes/ros2_ws/install/examples_rclpy_executors/lib/python3.12/site-packages/examples_rclpy_executors
+[5.380s] copying /home/nicholas/Documents/ROS2_notes/ros2_ws/build/examples_rclpy_executors/build/lib/examples_rclpy_executors/talker.py -> /home/nicholas/Documents/ROS2_notes/ros2_ws/install/examples_rclpy_executors/lib/python3.12/site-packages/examples_rclpy_executors
+[5.380s] copying /home/nicholas/Documents/ROS2_notes/ros2_ws/build/examples_rclpy_executors/build/lib/examples_rclpy_executors/custom_callback_group.py -> /home/nicholas/Documents/ROS2_notes/ros2_ws/install/examples_rclpy_executors/lib/python3.12/site-packages/examples_rclpy_executors
+[5.380s] byte-compiling /home/nicholas/Documents/ROS2_notes/ros2_ws/install/examples_rclpy_executors/lib/python3.12/site-packages/examples_rclpy_executors/callback_group.py to callback_group.cpython-312.pyc
+[5.380s] byte-compiling /home/nicholas/Documents/ROS2_notes/ros2_ws/install/examples_rclpy_executors/lib/python3.12/site-packages/examples_rclpy_executors/listener.py to listener.cpython-312.pyc
+[5.381s] byte-compiling /home/nicholas/Documents/ROS2_notes/ros2_ws/install/examples_rclpy_executors/lib/python3.12/site-packages/examples_rclpy_executors/__init__.py to __init__.cpython-312.pyc
+[5.382s] byte-compiling /home/nicholas/Documents/ROS2_notes/ros2_ws/install/examples_rclpy_executors/lib/python3.12/site-packages/examples_rclpy_executors/custom_executor.py to custom_executor.cpython-312.pyc
+[5.382s] byte-compiling /home/nicholas/Documents/ROS2_notes/ros2_ws/install/examples_rclpy_executors/lib/python3.12/site-packages/examples_rclpy_executors/composed.py to composed.cpython-312.pyc
+[5.382s] byte-compiling /home/nicholas/Documents/ROS2_notes/ros2_ws/install/examples_rclpy_executors/lib/python3.12/site-packages/examples_rclpy_executors/talker.py to talker.cpython-312.pyc
+[5.382s] byte-compiling /home/nicholas/Documents/ROS2_notes/ros2_ws/install/examples_rclpy_executors/lib/python3.12/site-packages/examples_rclpy_executors/custom_callback_group.py to custom_callback_group.cpython-312.pyc
+[5.382s] running install_data
+[5.382s] creating /home/nicholas/Documents/ROS2_notes/ros2_ws/install/examples_rclpy_executors/share/ament_index
+[5.383s] creating /home/nicholas/Documents/ROS2_notes/ros2_ws/install/examples_rclpy_executors/share/ament_index/resource_index
+[5.383s] creating /home/nicholas/Documents/ROS2_notes/ros2_ws/install/examples_rclpy_executors/share/ament_index/resource_index/packages
+[5.387s] copying resource/examples_rclpy_executors -> /home/nicholas/Documents/ROS2_notes/ros2_ws/install/examples_rclpy_executors/share/ament_index/resource_index/packages
+[5.388s] copying package.xml -> /home/nicholas/Documents/ROS2_notes/ros2_ws/install/examples_rclpy_executors/share/examples_rclpy_executors
+[5.388s] running install_egg_info
+[5.388s] Copying ../../../../build/examples_rclpy_executors/examples_rclpy_executors.egg-info to /home/nicholas/Documents/ROS2_notes/ros2_ws/install/examples_rclpy_executors/lib/python3.12/site-packages/examples_rclpy_executors-0.19.7-py3.12.egg-info
+[5.388s] running install_scripts
+[5.742s] Installing callback_group script to /home/nicholas/Documents/ROS2_notes/ros2_ws/install/examples_rclpy_executors/lib/examples_rclpy_executors
+[5.745s] Installing composed script to /home/nicholas/Documents/ROS2_notes/ros2_ws/install/examples_rclpy_executors/lib/examples_rclpy_executors
+[5.747s] Installing custom_callback_group script to /home/nicholas/Documents/ROS2_notes/ros2_ws/install/examples_rclpy_executors/lib/examples_rclpy_executors
+[5.748s] Installing custom_executor script to /home/nicholas/Documents/ROS2_notes/ros2_ws/install/examples_rclpy_executors/lib/examples_rclpy_executors
+[5.751s] Installing listener script to /home/nicholas/Documents/ROS2_notes/ros2_ws/install/examples_rclpy_executors/lib/examples_rclpy_executors
+[5.752s] Installing talker script to /home/nicholas/Documents/ROS2_notes/ros2_ws/install/examples_rclpy_executors/lib/examples_rclpy_executors
+[5.753s] writing list of installed files to '/home/nicholas/Documents/ROS2_notes/ros2_ws/build/examples_rclpy_executors/install.log'
+[5.929s] Invoked command in '/home/nicholas/Documents/ROS2_notes/ros2_ws/src/examples/rclpy/executors' returned '0': DEBUGINFOD_URLS=https://debuginfod.ubuntu.com PYTHONPATH=/home/nicholas/Documents/ROS2_notes/ros2_ws/build/examples_rclpy_executors/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/nicholas/Documents/ROS2_notes/ros2_ws/install/examples_rclpy_executors/lib/python3.12/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py egg_info --egg-base ../../../../build/examples_rclpy_executors build --build-base /home/nicholas/Documents/ROS2_notes/ros2_ws/build/examples_rclpy_executors/build install --record /home/nicholas/Documents/ROS2_notes/ros2_ws/build/examples_rclpy_executors/install.log --install-scripts $base/lib/examples_rclpy_executors --single-version-externally-managed install_data
