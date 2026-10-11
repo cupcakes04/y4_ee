@@ -1,62 +1,67 @@
 # Engineering Project Proposal
 
-**Project Title:** Multi-Modal Vision & 2D LiDAR Fusion for Predictive Dynamic Navigation and Semantic Context Awareness in Low-Cost AMRs
+**Project Title:** A Rapid-Deployment Visual Context and Dynamic Tracking Pipeline for Cost-Constrained AMRs in Brownfield Logistics
 
-**Target Domain:** Brownfield Industrial Logistics, Warehouse Automation, Autonomous Mobile Robots (AMRs)
+**Target Domain:** Brownfield Industrial Logistics, Warehouse Automation, Low-Cost Autonomous Mobile Robots (AMRs)
 
-**Core Stack:** ROS 2 (Humble/Iron), Nav2 (`nav2_mppi_controller`, Costmap Filters), TensorRT, 2D Planar LiDAR, Monocular RGB Camera
+**Core Stack:** ROS 2 (Humble/Iron), Nav2 (`nav2_mppi_controller`, Costmap Filters), TensorRT, 2D Planar LiDAR, Monocular RGB Camera, Offline Foundation Models (Florence-2 / Grounded-SAM)
 
 ---
 
 ## 1. Executive Summary & Problem Statement
 
-### 1.1 The Industry Bottleneck
+### 1.1 The Brownfield Deployment Bottleneck
 
-Brownfield industrial environments (manufacturing floors, mid-tier warehousing) in regions like Southeast Asia rely heavily on cost-effective Autonomous Mobile Robots (AMRs). To remain economically viable, these platforms avoid multi-thousand-dollar 3D LiDAR pucks and rely on single-plane 2D safety LiDARs combined with classical 2D occupancy grids (Nav2 costmaps).
+In brownfield industrial environments (legacy manufacturing plants and mid-tier distribution centers), Autonomous Mobile Robots (AMRs) must operate alongside human foot traffic and manual material handling equipment without the benefit of facility redesigns. To remain economically viable, these platforms avoid multi-thousand-dollar 3D LiDAR arrays and instead rely on single-plane 2D safety LiDARs paired with classical 2D occupancy grids (Nav2 costmaps).
 
-This sensor setup exhibits two structural operational failures:
+While 2D LiDAR SLAM and static localization (e.g., AMCL, Cartographer) are mature, this architecture exhibits severe operational bottlenecks when deployed in active brownfield environments:
 
-1. **Dynamic Deadlock ("Freezing Robot Problem"):** 2D LiDAR observes cross-traffic agents (pedestrians, forklifts, tuggers) only as flat, disconnected 2D point clusters (e.g., two leg slices or wheel hubs). It has zero perception of target orientation, heading, or velocity. When an agent crosses its trajectory, the robot fails to anticipate the crossing path, halts abruptly, enters recovery spins, and degrades throughput.
-2. **Semantic Blindness ("Stuff" vs. Geometry):** Standard occupancy grids are purely geometric. They cannot differentiate between clear traversable epoxy flooring, slick chemical/water puddles, preferred forklift transit lanes, or temporary staging zones. Traditional methods require expensive manual CAD drawing of virtual zones that break whenever facility layouts shift.
+1. **Dynamic Deadlock ("Freezing Robot Problem"):** 2D LiDAR observes dynamic cross-traffic (pedestrians, forklifts, tuggers) only as sparse, disconnected planar point clusters (e.g., two leg cross-sections or isolated wheel hubs). Lacking visual features, the sensor cannot infer object class, heading angle ($\psi$), or velocity vectors. Standard local costmaps mark these points as static obstacles, triggering abrupt emergency halts, recovery rotations, and severe throughput bottlenecks.
+2. **Semantic Blindness ("Stuff" vs. Geometry):** Standard 2D occupancy grids evaluate traversability purely through physical reflection. They cannot differentiate between clear epoxy flooring, slick chemical/water puddles, preferred forklift transit corridors, or temporary staging bays. Mitigating this traditionally requires engineering teams to perform laborious site surveys and manually draw static CAD keepout vectors, a process that is fragile and requires complete re-engineering whenever floor layouts shift.
 
-### 1.2 Proposed Solution
+### 1.2 Proposed Solution: Rapidly Deployable Context Augmentation
 
-This project develops a hybrid, edge-viable navigation framework integrating:
+Rather than replacing existing, robust 2D LiDAR hardware or attempting to solve general unconstrained navigation, this project introduces a **modular, prompt-distilled visual context and tracking pipeline** designed to retrofit low-cost 2D LiDAR AMRs:
 
-* **Dynamic Obstacle State Estimation:** Fusing 2D LiDAR range clusters with RGB monocular tracking to extract metric dynamic states ($x, y, v_x, v_y, \psi$) fed directly into predictive local path tracking (`nav2_mppi_controller`).
-* **Semantic Context Layering:** Auto-distilling vision-language foundation models into an ultra-lean edge instance segmenter to project traversable lane boundaries and hazard keepouts into Nav2 Costmap Filters without manual CAD labeling.
+* **Zero-Shot Prompt-to-Edge Distillation:** An offline pipeline ingests raw facility walkthrough video and utilizes large Vision-Language Models (VLMs) and segmentation foundation models to auto-label site-specific hazards and operational rules from text prompts (e.g., `"forklift transit lane"`, `"fluid spill"`). This knowledge is distilled into an edge-optimized instance segmenter running on TensorRT.
+* **Metric Planar & Kinetic Augmentation:** The edge model feeds into two deterministic online modules:
+1. *Semantic Costmap Filters:* Planar floor masks are mapped via homography into Nav2 Costmap Filters as keepout and speed zones without manual CAD drafting.
+2. *Metric Sensor Fusion:* Monocular bounding boxes resolve 2D LiDAR identity fragmentation, while 2D LiDAR range gates resolve monocular scale ambiguity, supplying $(x, y, v_x, v_y, \psi)$ obstacle vectors directly into predictive trajectory control (`nav2_mppi_controller`).
+
+
 
 ---
 
 ## 2. System Architecture & Information Flow
 
-The proposed system enforces strict decoupling: heavy foundation models operate offline/asynchronously for zero-shot adaptation, while low-latency deterministic pipelines operate on the edge robot.
+The architecture enforces strict decoupling between high-capacity, zero-shot foundation models (offline/setup) and low-latency, deterministic execution on the edge robot (online runtime).
 
 ```
-                            OFFLINE / ZERO-SHOT SETUP
-  [Walkthrough Video] ──> [Cloud/Workstation VLM (SAM/Florence)] ──> [Auto-Distilled Edge Weights]
-                                                                                │
-════════════════════════════════════════════════════════════════════════════════╪═════════════════
-                                   ON-ROBOT RUNTIME                             │
-                                                                                ▼
- [Monocular RGB Camera] ───────────────────────────► [Edge Model: YOLO-Seg / ByteTrack]
-           │                                                │                    │
-           │ Extrinsic Camera-LiDAR Calibration             │ Static Polygons    │ Dynamic BBoxes
-           ▼                                                ▼                    ▼
-   [2D Planar LiDAR] ─────────────────────────────► [Sensor Fusion & EKF]        │
-           │                                                │                    │
-           │                                                ▼ Dynamic States     │
-           │                                           [x, y, vx, vy]            │
-           ▼                                                │                    │
-   [Nav2 Static Map]                                        ▼                    ▼
-           │                                   [Nav2 MPPI Controller]   [Nav2 Costmap Filters]
-           │                                    (Predictive Dynamic      (Keepout / Speed Zones)
-           │                                     Obstacle Avoidance)             │
-           ▼                                                │                    │
-     [Nav2 Costmap] ◄───────────────────────────────────────┴────────────────────┘
-           │
-           ▼
-     [cmd_vel (Base Actuation)]
+                             OFFLINE / ZERO-SHOT SETUP
+  [Walkthrough Video] + [Text Prompts] ──► [VLM / Teacher Model (Florence-2 / SAM)]
+                                                            │
+                                                            ▼ Auto-Generated Pseudo-Labels
+                                               [Distillation & Quantization]
+                                                            │
+════════════════════════════════════════════════════════════╪═════════════════════════════════
+                                   ON-ROBOT RUNTIME         ▼
+                                              [TensorRT Edge Model: YOLO-Seg]
+                                                            │
+                       ┌────────────────────────────────────┴───────────────────────────┐
+                       ▼ Dynamic Agent BBoxes                                           ▼ Floor Hazard / Lane Masks
+ [RGB Camera] ──► [Extrinsic Calib]                                                     │
+                       │                                                                ▼
+ [2D LiDAR]   ──► [Ray Gating & Depth Association]                             [Planar Homography (IPM)]
+                       │                                                                │
+                       ▼ Filtered Metric Clusters                                       ▼ Geometry Polygons
+              [Multi-Target CTRV / CV EKF]                                     [Nav2 Costmap Filters]
+                       │                                                       (Keepout / Speed Limit Zones)
+                       ▼ Dynamic States [x, y, vx, vy, ψ]                               │
+              [Nav2 MPPI Dynamic Obstacle Critic]                                       ▼
+                       │                                                      [Nav2 Local Costmap]
+                       └────────────────────────────────────┬───────────────────────────┘
+                                                            ▼
+                                                [cmd_vel (Base Actuation)]
 
 ```
 
@@ -64,63 +69,64 @@ The proposed system enforces strict decoupling: heavy foundation models operate 
 
 ## 3. Core Technical Modules
 
-### Module 1: Semantic Context & Hazard Segmentation (Direction A Grounded)
+### Module 1: Prompt-Driven Semantic Context Distillation & Costmap Filtering
 
-* **Objective:** Detect floor-level operational context ("stuff" approximated via boundary polygons: forklift lanes, puddles, exclusion zones) and feed them to Nav2.
+* **Objective:** Enable rapid, zero-manual-CAD adaptation to site-specific floor context and non-geometric hazards.
 * **Offline Distillation Pipeline:**
-* Ingest site walkthrough video into open-vocabulary foundation models (e.g., Grounded-SAM / Florence-2) with text prompts: `"forklift lane line"`, `"liquid spill on floor"`, `"staging pallet zone"`.
-* Auto-generate pseudo-ground-truth bounding polygons and distill down into a lightweight edge checkpoint (e.g., YOLOv8-Seg/YOLOv11-Seg) running on TensorRT FP16.
+* Facility operators record a continuous walkthrough video of the operational area.
+* An offline pipeline prompts open-vocabulary foundation models (Florence-2 / Grounded-SAM) with domain-specific labels (e.g., `"forklift lane line"`, `"oil slick"`, `"pallet drop zone"`).
+* Auto-generated mask annotations are filtered and distilled into a lightweight edge architecture (YOLOv8-Seg / YOLOv11-Seg) quantized to FP16 via TensorRT.
 
 
-* **Ground-Plane Projection:**
-* For detected planar polygons, apply planar Inverse Perspective Mapping (IPM) using known camera extrinsics $[R \mid t]$ and floor homography:
+* **Planar Ground-Plane Projection:**
+* Edge segmentation contours are projected onto the ground plane using planar Inverse Perspective Mapping (IPM) derived from the camera intrinsic matrix $K$ and extrinsic pose $[R \mid t]$:
 
 $$\begin{bmatrix} X_w \\ Y_w \\ 1 \end{bmatrix} \sim H^{-1} \begin{bmatrix} u \\ v \\ 1 \end{bmatrix}$$
 
 
-* Transform projected coordinates into the robot’s `map` frame using the TF2 tree.
+* Projected boundary polygons are converted into the global robot frame via the TF2 transform tree.
 
 
-* **Nav2 Costmap Integration:**
-* Stream polygon contours directly to a custom ROS 2 node publishing to `nav2_costmap_2d::CostmapFilterInfo` or dynamic Keepout Zones, modulating cost values without modifying underlying static occupancy maps.
+* **Nav2 Integration:**
+* Polygons are streamed to ROS 2 `nav2_costmap_2d::CostmapFilterInfo` layers, modulating local and global costmaps dynamically as Keepout or Speed Restriction Zones.
 
 
 
-### Module 2: 2D LiDAR + Monocular Vision Sensor Fusion (Direction C Grounded)
+### Module 2: Metric LiDAR-Vision Fusion & State Estimation
 
-* **Objective:** Track dynamic agents at range ($>8\text{ m}$) with real-world metric velocity vectors, eliminating monocular scale ambiguity and 2D LiDAR identity fragmentation.
-* **Sensor Association:**
-* The RGB detector outputs dynamic agent 2D bounding boxes and class IDs (Pedestrian, Forklift).
-* Project planar 2D LiDAR scan points into the camera image plane using camera intrinsic matrix $K$ and extrinsic calibration matrix $[R \mid t]$:
+* **Objective:** Deliver robust metric dynamic obstacle tracking at ranges up to $8\text{ m}$ using existing 2D LiDAR scanners and a low-cost monocular camera.
+* **Sensor Association & Depth Anchoring:**
+* The camera network outputs 2D bounding boxes and semantic class labels (`Pedestrian`, `Forklift`, `Cart`).
+* 2D LiDAR planar range points are mapped to pixel coordinates via camera-laser calibration:
 
 $$\lambda \begin{bmatrix} u \\ v \\ 1 \end{bmatrix} = K \left( R \begin{bmatrix} X_{\text{lidar}} \\ Y_{\text{lidar}} \\ 0 \end{bmatrix} + t \right)$$
 
 
-* Filter LiDAR points falling within the horizontal bounds $[u_{\min}, u_{\max}]$ of the detected bounding box.
-* Extract the metric depth via median cluster distance, establishing an exact $(X, Y)$ coordinate in the robot frame.
+* Scan points falling outside the horizontal image span $[u_{\min}, u_{\max}]$ of detected dynamic boxes are eliminated.
+* Within each bounding frustum, a median cluster distance filter extracts the primary obstacle reflection, eliminating background wall penetration and assigning an exact metric $(X, Y)$ coordinate to the detected agent.
 
 
-* **State Estimation:**
-* An Extended Kalman Filter (EKF) tracks the state vector for each agent:
+* **Tracking & State Estimation:**
+* An Extended Kalman Filter (EKF) tracks each target's state vector:
 
 $$\mathbf{x}_k = [x, y, v_x, v_y, \psi]^T$$
 
 
-* Constant Turn Rate and Velocity (CTRV) or Constant Velocity (CV) motion models propagate states across temporal dropouts, maintaining smooth velocity estimates.
+* Constant Turn Rate and Velocity (CTRV) or Constant Velocity (CV) motion models smooth velocity estimates across visual dropouts and occlusions.
 
 
 
-### Module 3: Predictive Local Trajectory Control
+### Module 3: Dynamic Critic for Predictive MPPI Control
 
-* **Objective:** Enable proactive evasive maneuvers instead of reactive e-stops.
-* **Nav2 MPPI Configuration:**
-* Integrate the tracked dynamic states into the Model Predictive Path Integral (`nav2_mppi_controller`) critic pipeline.
-* Rather than checking collisions against a static footprint, project the obstacle’s predicted trajectory covariance forward across the optimization horizon ($T = 2.0\text{ s}$):
+* **Objective:** Transform reactive emergency halts into proactive speed yielding and evasive path modifications.
+* **MPPI Integration:**
+* State estimates $(x, y, v_x, v_y, \psi)$ are fed directly to a custom trajectory evaluation critic inside `nav2_mppi_controller`.
+* For each sampled trajectory rollout, the critic projects target obstacle positions forward across the preview horizon ($T = 2.0\text{ s}$):
 
 $$\mathbf{x}_{\text{obs}}(t+\tau) = \mathbf{x}_{\text{obs}}(t) + \mathbf{v}_{\text{obs}} \cdot \tau, \quad \tau \in [0, T]$$
 
 
-* Penalize trajectory rollouts that intersect the expanding collision ellipse, allowing the AMR to smoothly alter heading or yield early.
+* The critic penalizes rollouts that intersect the forward-propagating collision covariance ellipse, driving the optimizer to proactively yield or swerve around crossing traffic while adhering to Nav2 Costmap Filter boundaries.
 
 
 
@@ -128,36 +134,35 @@ $$\mathbf{x}_{\text{obs}}(t+\tau) = \mathbf{x}_{\text{obs}}(t) + \mathbf{v}_{\te
 
 ## 4. Hardware & Software Deliverables
 
-### Hardware Requirements
+### Hardware Specifications
 
-* **Compute:** NVIDIA Jetson Orin Nano (8GB) or Orin NX (or x86 mini-PC with discrete mobile GPU).
+* **Edge Compute:** NVIDIA Jetson Orin Nano (8GB) or Orin NX (or an equivalent x86 mini-PC with an entry-level mobile GPU).
 * **Sensors:**
-* 1x Low-cost 2D Planar Laser Scanner (e.g., Slamtec RPLiDAR S2/A3 or industrial safety single-layer equivalent).
-* 1x Global Shutter Monocular USB/MIPI RGB Camera ($1080\text{p}$, $60\text{–}90^\circ$ FOV).
+* 1x Low-cost 2D Planar Laser Scanner (e.g., Slamtec RPLiDAR S2/A3 or industrial safety single-layer scanner).
+* 1x Global Shutter Monocular USB/MIPI Camera (1080p, $60^\circ\text{–}90^\circ$ horizontal FoV).
 
 
-* **Mobile Platform:** Any differential drive or omnidirectional ROS 2 AMR base (TurtleBot4, custom base, or Isaac Sim / Gazebo simulation model).
+* **Mobile Base:** Differential drive or omnidirectional ROS 2 AMR base (TurtleBot4, custom industrial mobile platform, or Gazebo/Isaac Sim simulation model).
 
 ### Software Deliverables
 
 1. **`semantic_context_layer` (ROS 2 Package):**
-* Real-time TensorRT polygon inference node.
+* Real-time TensorRT segmentation node.
 * Planar homography projection node converting pixel masks to `geometry_msgs/msg/PolygonStamped`.
-* Dynamic Keepout Zone costmap publisher.
+* ROS 2 Costmap Filter publisher for dynamic Keepout and Speed Limit zones.
 
 
 2. **`lidar_vision_tracker` (ROS 2 Package):**
-* Camera-LiDAR extrinsic calibration utility.
-* Frustum-based point-to-box association node.
-* Multi-target EKF tracker publishing `nav_msgs/msg/Path` or obstacle state arrays.
+* Target association node filtering LiDAR ranges through visual bounding frustums.
+* Multi-target EKF tracking node publishing dynamic agent state arrays.
 
 
 3. **`nav2_mppi_dynamic_critic`:**
-* Custom MPPI trajectory critic evaluating dynamic obstacle intercept penalties.
+* Custom dynamic obstacle prediction critic plugin for Nav2 MPPI controller.
 
 
 4. **Offline Distillation Toolkit:**
-* Python scripts to ingest site footage, run open-vocabulary prompts (VLM/SAM), auto-annotate, and export quantized ONNX/TensorRT engines.
+* Automated CLI scripts for video ingestion, zero-shot VLM prompting, dataset generation, and TensorRT model compilation.
 
 
 
@@ -165,20 +170,21 @@ $$\mathbf{x}_{\text{obs}}(t+\tau) = \mathbf{x}_{\text{obs}}(t) + \mathbf{v}_{\te
 
 ## 5. Evaluation Metrics & Experimental Benchmarks
 
-The project will be evaluated under controlled factory simulation scenarios (Gazebo / Isaac Sim) and validated on hardware:
+Validation will be conducted across structured simulation environments (Isaac Sim / Gazebo) and verified on physical hardware:
 
 | Benchmark Category | Metric | Baseline (Standard Nav2 + 2D LiDAR) | Target (Proposed System) |
 | --- | --- | --- | --- |
-| **Dynamic Cross-Traffic** | Robot Recovery Count (Freezes) | High ($>5$ per 10 runs during crossing) | **Zero freezes** (proactive yield/swerve) |
-| **Mission Efficiency** | Average Travel Time per Route | Extended due to sudden halts | **15–25% reduction** in travel duration |
-| **Hazard Compliance** | Keepout Zone Infraction Rate | 100% traversal (unaware of puddles/lines) | **0% traversal** through detected hazard polygons |
-| **Edge Compute** | Sensor Pipeline Frame Rate | N/A | **$\ge 25\text{ FPS}$** stable on Jetson hardware |
-| **Tracking Accuracy** | Velocity Estimation Error (RMSE) | N/A (static costmap) | **$< 0.15\text{ m/s}$** velocity error |
+| **Dynamic Cross-Traffic** | Robot Recovery Count (Freezes) | High ($>5$ halts per 10 crossing encounters) | **0 freezes** (smooth yield or trajectory deflection) |
+| **Mission Efficiency** | Average Route Completion Time | High variance due to sudden emergency halts | **15–25% reduction** in total route duration |
+| **Hazard Compliance** | Keepout Zone Infraction Rate | 100% traversal (unaware of un-mapped floor hazards) | **0% traversal** through detected hazard polygons |
+| **Setup & Adaptation** | New Zone Deployment Time | Hours/days (manual CAD drafting & site re-tuning) | **$<30$ minutes** (walkthrough video + text prompting) |
+| **Edge Compute** | Real-Time Execution Frame Rate | N/A | **$\ge 25\text{ FPS}$** sustained on edge hardware |
+| **State Estimation** | Velocity Vector RMSE | N/A (static costmap) | **$< 0.15\text{ m/s}$** linear velocity error |
 
 ---
 
-## 6. Strategic Scope & Clarifications (Read-Back Notes)
+## 6. Strategic Scope & Methodological Boundaries
 
-* **Why STAD is decoupled:** Spatio-Temporal Action Detection classifies human verbs at the micro-level. It is mathematically disconnected from local obstacle avoidance and belongs in fixed ceiling CCTV / fleet-level orchestration. It is excluded from the on-robot real-time safety loop.
-* **Why Pure Monocular Depth was rejected:** Without a metric anchor, monocular velocity tracking suffers from scale drift and optical-flow noise. 2D LiDAR supplies exact physical distance; vision supplies identification and orientation.
-* **Why Costmap Filters over 3D Voxel Back-Projection:** In industrial indoor logistics, floors are planar. Converting instance polygons directly to 2D costmap keepout zones bypasses high-dimensional voxel projection and spatial hashing, maintaining sub-15ms processing latency on low-power edge hardware.
+* **Decoupling Foundation Models from the Safety Loop:** Running heavy VLMs (e.g., full SAM or multimodal LLMs) directly on an AMR edge computer introduces unacceptable latency ($>500\text{ ms}$). Limiting foundation models to an offline pseudo-labeling role preserves deterministic sub-30ms control loops on the physical robot.
+* **Mutual Sensor Augmentation over Standalone Perception:** Pure monocular visual depth suffers from scale drift and optical noise, while 2D LiDAR suffers from identity loss and semantic blindness. Pairing them as mutual anchors (vision provides identity and angle; 2D LiDAR provides ground-truth metric scale) achieves high-fidelity dynamic tracking at minimal sensor cost.
+* **Planar Costmap Filters vs. 3D Voxel Reconstruction:** Industrial warehouse floors are predominantly planar surfaces. Projecting segmented visual boundaries directly into 2D Costmap Filters via homography eliminates the high compute and memory overhead of 3D voxel back-projection, maintaining high frame rates on constrained edge compute.

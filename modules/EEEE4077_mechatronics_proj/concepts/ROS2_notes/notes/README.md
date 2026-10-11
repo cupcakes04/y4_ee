@@ -2,6 +2,8 @@
 
 A decoupled, modular quick-reference lookup system for ROS 2 (Jazzy / modern ROS 2). Designed as an immediate mental model and fast copy-paste reference, with relative links into your local [`ros2_documentation`](../ros2_documentation/source/Tutorials.rst).
 
+[Online documentation here](https://docs.ros.org/en/jazzy/Tutorials/Beginner-Client-Libraries.html)
+
 ---
 
 ## 🗺️ Master Index & Lookup Map
