@@ -1,0 +1,64 @@
+[0.037s] Invoking command in '/home/nicholas/Documents/ROS2_notes/ros2_ws/build/examples_rclcpp_minimal_client': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake /home/nicholas/Documents/ROS2_notes/ros2_ws/src/examples/rclcpp/services/minimal_client -DCMAKE_INSTALL_PREFIX=/home/nicholas/Documents/ROS2_notes/ros2_ws/install/examples_rclcpp_minimal_client
+[0.182s] -- The C compiler identification is GNU 13.3.0
+[0.363s] -- The CXX compiler identification is GNU 13.3.0
+[0.415s] -- Detecting C compiler ABI info
+[0.707s] -- Detecting C compiler ABI info - done
+[0.740s] -- Check for working C compiler: /usr/bin/cc - skipped
+[0.740s] -- Detecting C compile features
+[0.741s] -- Detecting C compile features - done
+[0.761s] -- Detecting CXX compiler ABI info
+[1.043s] -- Detecting CXX compiler ABI info - done
+[1.058s] -- Check for working CXX compiler: /usr/bin/c++ - skipped
+[1.058s] -- Detecting CXX compile features
+[1.061s] -- Detecting CXX compile features - done
+[1.065s] -- Found ament_cmake: 2.5.6 (/opt/ros/jazzy/share/ament_cmake/cmake)
+[1.360s] -- Found Python3: /usr/bin/python3 (found version "3.12.3") found components: Interpreter 
+[1.642s] -- Found example_interfaces: 0.12.1 (/opt/ros/jazzy/share/example_interfaces/cmake)
+[1.713s] -- Found rosidl_generator_c: 4.6.9 (/opt/ros/jazzy/share/rosidl_generator_c/cmake)
+[1.748s] -- Found rosidl_generator_cpp: 4.6.9 (/opt/ros/jazzy/share/rosidl_generator_cpp/cmake)
+[1.773s] -- Using all available rosidl_typesupport_c: rosidl_typesupport_fastrtps_c;rosidl_typesupport_introspection_c
+[1.809s] -- Using all available rosidl_typesupport_cpp: rosidl_typesupport_fastrtps_cpp;rosidl_typesupport_introspection_cpp
+[2.008s] -- Found rclcpp: 28.1.21 (/opt/ros/jazzy/share/rclcpp/cmake)
+[2.078s] -- Found rmw_implementation_cmake: 7.3.3 (/opt/ros/jazzy/share/rmw_implementation_cmake/cmake)
+[2.081s] -- Found rmw_cyclonedds_cpp: 2.2.3 (/opt/ros/jazzy/share/rmw_cyclonedds_cpp/cmake)
+[2.123s] -- Using RMW implementation 'rmw_cyclonedds_cpp' as default
+[2.341s] -- Found ament_lint_auto: 0.17.5 (/opt/ros/jazzy/share/ament_lint_auto/cmake)
+[2.634s] -- Added test 'copyright' to check source files copyright and LICENSE
+[2.636s] -- Added test 'cppcheck' to perform static code analysis on C / C++ code
+[2.638s] -- Configured cppcheck include dirs: 
+[2.638s] -- Configured cppcheck exclude dirs and/or files: 
+[2.640s] -- Added test 'cpplint' to check C / C++ code against the Google style
+[2.640s] -- Configured cpplint exclude dirs and/or files: 
+[2.641s] -- Added test 'lint_cmake' to check CMake code style
+[2.643s] -- Added test 'uncrustify' to check C / C++ code style
+[2.646s] -- Configured uncrustify additional arguments: 
+[2.647s] -- Added test 'xmllint' to check XML markup files
+[2.652s] -- Configuring done (2.6s)
+[2.697s] -- Generating done (0.0s)
+[2.704s] -- Build files have been written to: /home/nicholas/Documents/ROS2_notes/ros2_ws/build/examples_rclcpp_minimal_client
+[2.740s] Invoked command in '/home/nicholas/Documents/ROS2_notes/ros2_ws/build/examples_rclcpp_minimal_client' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake /home/nicholas/Documents/ROS2_notes/ros2_ws/src/examples/rclcpp/services/minimal_client -DCMAKE_INSTALL_PREFIX=/home/nicholas/Documents/ROS2_notes/ros2_ws/install/examples_rclcpp_minimal_client
+[2.742s] Invoking command in '/home/nicholas/Documents/ROS2_notes/ros2_ws/build/examples_rclcpp_minimal_client': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake --build /home/nicholas/Documents/ROS2_notes/ros2_ws/build/examples_rclcpp_minimal_client -- -j8 -l8
+[2.952s] [ 50%] [32mBuilding CXX object CMakeFiles/client_main.dir/main.cpp.o[0m
+[30.157s] [100%] [32m[1mLinking CXX executable client_main[0m
+[31.289s] [100%] Built target client_main
+[31.457s] Invoked command in '/home/nicholas/Documents/ROS2_notes/ros2_ws/build/examples_rclcpp_minimal_client' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake --build /home/nicholas/Documents/ROS2_notes/ros2_ws/build/examples_rclcpp_minimal_client -- -j8 -l8
+[31.469s] Invoking command in '/home/nicholas/Documents/ROS2_notes/ros2_ws/build/examples_rclcpp_minimal_client': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake --install /home/nicholas/Documents/ROS2_notes/ros2_ws/build/examples_rclcpp_minimal_client
+[32.676s] -- Install configuration: ""
+[32.676s] -- Installing: /home/nicholas/Documents/ROS2_notes/ros2_ws/install/examples_rclcpp_minimal_client/lib/examples_rclcpp_minimal_client/client_main
+[32.676s] -- Set non-toolchain portion of runtime path of "/home/nicholas/Documents/ROS2_notes/ros2_ws/install/examples_rclcpp_minimal_client/lib/examples_rclcpp_minimal_client/client_main" to ""
+[32.698s] -- Installing: /home/nicholas/Documents/ROS2_notes/ros2_ws/install/examples_rclcpp_minimal_client/share/ament_index/resource_index/package_run_dependencies/examples_rclcpp_minimal_client
+[32.699s] -- Installing: /home/nicholas/Documents/ROS2_notes/ros2_ws/install/examples_rclcpp_minimal_client/share/ament_index/resource_index/parent_prefix_path/examples_rclcpp_minimal_client
+[32.699s] -- Installing: /home/nicholas/Documents/ROS2_notes/ros2_ws/install/examples_rclcpp_minimal_client/share/examples_rclcpp_minimal_client/environment/ament_prefix_path.sh
+[32.699s] -- Installing: /home/nicholas/Documents/ROS2_notes/ros2_ws/install/examples_rclcpp_minimal_client/share/examples_rclcpp_minimal_client/environment/ament_prefix_path.dsv
+[32.699s] -- Installing: /home/nicholas/Documents/ROS2_notes/ros2_ws/install/examples_rclcpp_minimal_client/share/examples_rclcpp_minimal_client/environment/path.sh
+[32.699s] -- Installing: /home/nicholas/Documents/ROS2_notes/ros2_ws/install/examples_rclcpp_minimal_client/share/examples_rclcpp_minimal_client/environment/path.dsv
+[32.699s] -- Installing: /home/nicholas/Documents/ROS2_notes/ros2_ws/install/examples_rclcpp_minimal_client/share/examples_rclcpp_minimal_client/local_setup.bash
+[32.699s] -- Installing: /home/nicholas/Documents/ROS2_notes/ros2_ws/install/examples_rclcpp_minimal_client/share/examples_rclcpp_minimal_client/local_setup.sh
+[32.700s] -- Installing: /home/nicholas/Documents/ROS2_notes/ros2_ws/install/examples_rclcpp_minimal_client/share/examples_rclcpp_minimal_client/local_setup.zsh
+[32.700s] -- Installing: /home/nicholas/Documents/ROS2_notes/ros2_ws/install/examples_rclcpp_minimal_client/share/examples_rclcpp_minimal_client/local_setup.dsv
+[32.700s] -- Installing: /home/nicholas/Documents/ROS2_notes/ros2_ws/install/examples_rclcpp_minimal_client/share/examples_rclcpp_minimal_client/package.dsv
+[32.700s] -- Installing: /home/nicholas/Documents/ROS2_notes/ros2_ws/install/examples_rclcpp_minimal_client/share/ament_index/resource_index/packages/examples_rclcpp_minimal_client
+[32.700s] -- Installing: /home/nicholas/Documents/ROS2_notes/ros2_ws/install/examples_rclcpp_minimal_client/share/examples_rclcpp_minimal_client/cmake/examples_rclcpp_minimal_clientConfig.cmake
+[32.700s] -- Installing: /home/nicholas/Documents/ROS2_notes/ros2_ws/install/examples_rclcpp_minimal_client/share/examples_rclcpp_minimal_client/cmake/examples_rclcpp_minimal_clientConfig-version.cmake
+[32.700s] -- Installing: /home/nicholas/Documents/ROS2_notes/ros2_ws/install/examples_rclcpp_minimal_client/share/examples_rclcpp_minimal_client/package.xml
+[32.807s] Invoked command in '/home/nicholas/Documents/ROS2_notes/ros2_ws/build/examples_rclcpp_minimal_client' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake --install /home/nicholas/Documents/ROS2_notes/ros2_ws/build/examples_rclcpp_minimal_client

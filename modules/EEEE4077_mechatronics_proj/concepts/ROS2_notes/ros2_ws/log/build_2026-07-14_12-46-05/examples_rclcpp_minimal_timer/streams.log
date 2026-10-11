@@ -1,0 +1,68 @@
+[0.260s] Invoking command in '/home/nicholas/Documents/ROS2_notes/ros2_ws/build/examples_rclcpp_minimal_timer': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake /home/nicholas/Documents/ROS2_notes/ros2_ws/src/examples/rclcpp/timers/minimal_timer -DCMAKE_INSTALL_PREFIX=/home/nicholas/Documents/ROS2_notes/ros2_ws/install/examples_rclcpp_minimal_timer
+[1.741s] -- The C compiler identification is GNU 13.3.0
+[1.741s] -- The CXX compiler identification is GNU 13.3.0
+[1.742s] -- Detecting C compiler ABI info
+[1.742s] -- Detecting C compiler ABI info - done
+[1.742s] -- Check for working C compiler: /usr/bin/cc - skipped
+[1.742s] -- Detecting C compile features
+[1.742s] -- Detecting C compile features - done
+[1.742s] -- Detecting CXX compiler ABI info
+[2.491s] -- Detecting CXX compiler ABI info - done
+[2.587s] -- Check for working CXX compiler: /usr/bin/c++ - skipped
+[2.587s] -- Detecting CXX compile features
+[2.597s] -- Detecting CXX compile features - done
+[2.611s] -- Found ament_cmake: 2.5.6 (/opt/ros/jazzy/share/ament_cmake/cmake)
+[3.418s] -- Found Python3: /usr/bin/python3 (found version "3.12.3") found components: Interpreter 
+[3.820s] -- Found rclcpp: 28.1.21 (/opt/ros/jazzy/share/rclcpp/cmake)
+[3.956s] -- Found rosidl_generator_c: 4.6.9 (/opt/ros/jazzy/share/rosidl_generator_c/cmake)
+[3.985s] -- Found rosidl_generator_cpp: 4.6.9 (/opt/ros/jazzy/share/rosidl_generator_cpp/cmake)
+[4.024s] -- Using all available rosidl_typesupport_c: rosidl_typesupport_fastrtps_c;rosidl_typesupport_introspection_c
+[4.079s] -- Using all available rosidl_typesupport_cpp: rosidl_typesupport_fastrtps_cpp;rosidl_typesupport_introspection_cpp
+[4.297s] -- Found rmw_implementation_cmake: 7.3.3 (/opt/ros/jazzy/share/rmw_implementation_cmake/cmake)
+[4.298s] -- Found rmw_cyclonedds_cpp: 2.2.3 (/opt/ros/jazzy/share/rmw_cyclonedds_cpp/cmake)
+[4.438s] -- Using RMW implementation 'rmw_cyclonedds_cpp' as default
+[4.732s] -- Found ament_lint_auto: 0.17.5 (/opt/ros/jazzy/share/ament_lint_auto/cmake)
+[5.457s] -- Added test 'copyright' to check source files copyright and LICENSE
+[5.461s] -- Added test 'cppcheck' to perform static code analysis on C / C++ code
+[5.461s] -- Configured cppcheck include dirs: 
+[5.461s] -- Configured cppcheck exclude dirs and/or files: 
+[5.467s] -- Added test 'cpplint' to check C / C++ code against the Google style
+[5.468s] -- Configured cpplint exclude dirs and/or files: 
+[5.474s] -- Added test 'lint_cmake' to check CMake code style
+[5.476s] -- Added test 'uncrustify' to check C / C++ code style
+[5.479s] -- Configured uncrustify additional arguments: 
+[5.483s] -- Added test 'xmllint' to check XML markup files
+[5.488s] -- Configuring done (5.1s)
+[5.555s] -- Generating done (0.0s)
+[5.581s] -- Build files have been written to: /home/nicholas/Documents/ROS2_notes/ros2_ws/build/examples_rclcpp_minimal_timer
+[6.380s] Invoked command in '/home/nicholas/Documents/ROS2_notes/ros2_ws/build/examples_rclcpp_minimal_timer' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake /home/nicholas/Documents/ROS2_notes/ros2_ws/src/examples/rclcpp/timers/minimal_timer -DCMAKE_INSTALL_PREFIX=/home/nicholas/Documents/ROS2_notes/ros2_ws/install/examples_rclcpp_minimal_timer
+[6.383s] Invoking command in '/home/nicholas/Documents/ROS2_notes/ros2_ws/build/examples_rclcpp_minimal_timer': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake --build /home/nicholas/Documents/ROS2_notes/ros2_ws/build/examples_rclcpp_minimal_timer -- -j8 -l8
+[6.639s] [ 25%] [32mBuilding CXX object CMakeFiles/timer_lambda.dir/lambda.cpp.o[0m
+[16.560s] [ 50%] [32m[1mLinking CXX executable timer_lambda[0m
+[16.980s] [ 50%] Built target timer_lambda
+[17.058s] [ 75%] [32mBuilding CXX object CMakeFiles/timer_member_function.dir/member_function.cpp.o[0m
+[25.622s] [100%] [32m[1mLinking CXX executable timer_member_function[0m
+[25.993s] [100%] Built target timer_member_function
+[26.037s] Invoked command in '/home/nicholas/Documents/ROS2_notes/ros2_ws/build/examples_rclcpp_minimal_timer' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake --build /home/nicholas/Documents/ROS2_notes/ros2_ws/build/examples_rclcpp_minimal_timer -- -j8 -l8
+[26.057s] Invoking command in '/home/nicholas/Documents/ROS2_notes/ros2_ws/build/examples_rclcpp_minimal_timer': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake --install /home/nicholas/Documents/ROS2_notes/ros2_ws/build/examples_rclcpp_minimal_timer
+[26.081s] -- Install configuration: ""
+[26.082s] -- Installing: /home/nicholas/Documents/ROS2_notes/ros2_ws/install/examples_rclcpp_minimal_timer/lib/examples_rclcpp_minimal_timer/timer_lambda
+[26.083s] -- Set non-toolchain portion of runtime path of "/home/nicholas/Documents/ROS2_notes/ros2_ws/install/examples_rclcpp_minimal_timer/lib/examples_rclcpp_minimal_timer/timer_lambda" to ""
+[26.083s] -- Installing: /home/nicholas/Documents/ROS2_notes/ros2_ws/install/examples_rclcpp_minimal_timer/lib/examples_rclcpp_minimal_timer/timer_member_function
+[26.083s] -- Set non-toolchain portion of runtime path of "/home/nicholas/Documents/ROS2_notes/ros2_ws/install/examples_rclcpp_minimal_timer/lib/examples_rclcpp_minimal_timer/timer_member_function" to ""
+[26.083s] -- Installing: /home/nicholas/Documents/ROS2_notes/ros2_ws/install/examples_rclcpp_minimal_timer/share/ament_index/resource_index/package_run_dependencies/examples_rclcpp_minimal_timer
+[26.083s] -- Installing: /home/nicholas/Documents/ROS2_notes/ros2_ws/install/examples_rclcpp_minimal_timer/share/ament_index/resource_index/parent_prefix_path/examples_rclcpp_minimal_timer
+[26.083s] -- Installing: /home/nicholas/Documents/ROS2_notes/ros2_ws/install/examples_rclcpp_minimal_timer/share/examples_rclcpp_minimal_timer/environment/ament_prefix_path.sh
+[26.083s] -- Installing: /home/nicholas/Documents/ROS2_notes/ros2_ws/install/examples_rclcpp_minimal_timer/share/examples_rclcpp_minimal_timer/environment/ament_prefix_path.dsv
+[26.085s] -- Installing: /home/nicholas/Documents/ROS2_notes/ros2_ws/install/examples_rclcpp_minimal_timer/share/examples_rclcpp_minimal_timer/environment/path.sh
+[26.085s] -- Installing: /home/nicholas/Documents/ROS2_notes/ros2_ws/install/examples_rclcpp_minimal_timer/share/examples_rclcpp_minimal_timer/environment/path.dsv
+[26.086s] -- Installing: /home/nicholas/Documents/ROS2_notes/ros2_ws/install/examples_rclcpp_minimal_timer/share/examples_rclcpp_minimal_timer/local_setup.bash
+[26.086s] -- Installing: /home/nicholas/Documents/ROS2_notes/ros2_ws/install/examples_rclcpp_minimal_timer/share/examples_rclcpp_minimal_timer/local_setup.sh
+[26.086s] -- Installing: /home/nicholas/Documents/ROS2_notes/ros2_ws/install/examples_rclcpp_minimal_timer/share/examples_rclcpp_minimal_timer/local_setup.zsh
+[26.086s] -- Installing: /home/nicholas/Documents/ROS2_notes/ros2_ws/install/examples_rclcpp_minimal_timer/share/examples_rclcpp_minimal_timer/local_setup.dsv
+[26.087s] -- Installing: /home/nicholas/Documents/ROS2_notes/ros2_ws/install/examples_rclcpp_minimal_timer/share/examples_rclcpp_minimal_timer/package.dsv
+[26.087s] -- Installing: /home/nicholas/Documents/ROS2_notes/ros2_ws/install/examples_rclcpp_minimal_timer/share/ament_index/resource_index/packages/examples_rclcpp_minimal_timer
+[26.087s] -- Installing: /home/nicholas/Documents/ROS2_notes/ros2_ws/install/examples_rclcpp_minimal_timer/share/examples_rclcpp_minimal_timer/cmake/examples_rclcpp_minimal_timerConfig.cmake
+[26.087s] -- Installing: /home/nicholas/Documents/ROS2_notes/ros2_ws/install/examples_rclcpp_minimal_timer/share/examples_rclcpp_minimal_timer/cmake/examples_rclcpp_minimal_timerConfig-version.cmake
+[26.088s] -- Installing: /home/nicholas/Documents/ROS2_notes/ros2_ws/install/examples_rclcpp_minimal_timer/share/examples_rclcpp_minimal_timer/package.xml
+[26.092s] Invoked command in '/home/nicholas/Documents/ROS2_notes/ros2_ws/build/examples_rclcpp_minimal_timer' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake --install /home/nicholas/Documents/ROS2_notes/ros2_ws/build/examples_rclcpp_minimal_timer

@@ -10,11 +10,11 @@
 |---|---|---|---|---|---|
 | [EEEE3116_adv_eng_math](./modules/EEEE3116_adv_eng_math/) | EEEE-3116 | Advanced Engineering Mathematics | 10 | Autumn | 🟡 |
 | [EEEE4064_adv_control_system](./modules/EEEE4064_adv_control_system/) | EEEE-4064 | Advanced Control System Design | 10 | Autumn | 🟡 |
-| [EEEE4076_hdl_prog_logic](./modules/EEEE4076_hdl_prog_logic/) | EEEE-4076 | HDL for Programmable Logic | 10 | Autumn | ⬜ |
+| [EEEE3054_renewable_tech](./modules/EEEE3054_renewable_tech//) | EEEE-3054 | Renewable Energy Generation Technologies | 10 | Autumn | ⬜ |
 | [EEEE4077_mechatronics_proj](./modules/EEEE4077_mechatronics_proj/) | EEEE-4077 | Mechatronics Industrial Project | 40 | Full Year | ⬜ |
-| [EEEE4133_ai_intelligent_sys](./modules/EEEE4133_ai_intelligent_sys/) | EEEE-4133 | Artificial Intelligence & Intelligent Systems | 20 | Spring | ⬜ |
+| [EEEE4023_digital_signal_processing](./modules/EEEE4023_digital_signal_processing//) | EEEE-4023 | Digital Signal Processing | 20 | Spring | ⬜ |
 | [EEEE4138_aerial_robotics](./modules/EEEE4138_aerial_robotics/) | EEEE-4138 | Aerial Robotics | 10 | Autumn | ⬜ |
-| [EEEE4145_hdl_prog_logic_proj](./modules/EEEE4145_hdl_prog_logic_proj/) | EEEE-4145 | HDL for Programmable Logic with Project | 10 | Spring | ⬜ |
+| [MMME4023_add_manufac_3d_print](./modules/MMME4023_add_manufac_3d_print//) | MMME-4023 | Additive Manufacturing & 3D Printing | 10 | Spring | ⬜ |
 | [MMME4127_digital_manufacturing](./modules/MMME4127_digital_manufacturing/) | MMME-4127 | Digital Manufacturing | 10 | Spring | ⬜ |
 
 Status: ⬜ not started · 🟡 concepts in progress · 🟢 map generated · ✅ drills done
@@ -91,13 +91,6 @@ Cross-subject dependency links use relative paths from the concept file:
 ```markdown
 **Depends on:** → [z_transform_roc](../../EEEE3116_adv_eng_math/concepts/z_transform_roc.md)
 ```
-
----
-
-## Notes on EEEE-4076 vs EEEE-4145
-
-`EEEE4076` (Autumn) is the core HDL theory module. `EEEE4145` (Spring) is the continuation with project.
-Core HDL concepts live in `modules/EEEE4076_hdl_prog_logic/concepts/`. Project deliverables in `modules/EEEE4145_hdl_prog_logic_proj/`.
 
 ---
 
