@@ -1,6 +1,6 @@
 # Problem Statement & Research Objectives
 
-> Supervisor-facing draft, **derived** from [core.md](core.md) and [literatures.md](literatures.md) (the sources of truth). The assessed submission is [project_proposal.md](project_proposal.md). Sync rules are in `.agents/skills/fyp-proposal-sync/SKILL.md`.
+> Supervisor-facing draft, **derived** from `../research/`, `../planning/`, and `../library/register.md` (the modular sources of truth). The assessed submission is [project_proposal.md](project_proposal.md). Sync rules are in `.agents/skills/fyp-proposal-sync/SKILL.md`.
 > ROS 2 terms appear in `code font` the first time. Each has a plain-language gloss, so you can read this without ROS knowledge and still map it to the actual implementation.
 
 ---

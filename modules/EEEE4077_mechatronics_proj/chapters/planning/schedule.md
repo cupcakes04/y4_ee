@@ -1,0 +1,53 @@
+# Planned Work Schedule & Milestone Roadmap
+
+## 1. Workload Budget & Phase Overview
+
+- **Total Allocation:** 450 hours across 30 weeks (~15 hours/week).
+- **Assumed Start:** Week 1 (Monday 2026-10-12).
+- **Supervisor Reviews:** 5 formal review checkpoints agreed across the academic year.
+
+| Phase | Weeks | Tasks & Allocation | Weekly Load | Review Checkpoint |
+|---|---|---|---|---|
+| **A: Foundations & Baseline** | W1–W6 | **T0:** Toolchain & ROS 2 / Nav2 setup (50 h)<br>**T1:** Sim world, baseline B0, metrics (40 h) | 15 h/wk (90 h) | **R1 W6 (≈16 Nov):** Baseline B0 measured on A–D; toolchain frozen. |
+| **B: Dynamic Tracker** | W7–W12 | **T2:** O1 LiDAR-vision tracker (75 h)<br>**T3a:** O3 setup & initial labelling (15 h) | 15 h/wk (90 h) | **R2 W12 (≈28 Dec):** O1 velocity RMSE measured; label audit started. |
+| **C: Controller & Distillation** | W13–W18 | **T4:** O2 MPPI dynamic critic (65 h)<br>**T3b:** O3 model training & export (25 h) | 15 h/wk (90 h) | **R3 W18 (≈08 Feb):** Critic running vs B0; first TensorRT engine compiled. |
+| **D: Integration & Evaluation** | W19–W24 | **T3c:** O3 final benchmarking (30 h)<br>**T5:** Integrated core evaluation P1 (60 h) | 15 h/wk (90 h) | **R4 W24 (≈22 Mar):** Headline results compiled; S1/S2 go/no-go decision. |
+| **E: Stretch & Dissertation** | W25–W29 | **T6:** S1 hazard keepout zones (30 h)<br>**T7:** Final report writing & demo (45 h) | 15 h/wk (75 h) | **R5 W29 (≈26 Apr):** Final draft complete; presentation slides ready. |
+| **Close** | W30 | **T7:** Final report polishing & submission (15 h) | 15 h (15 h) | **Final Submission** |
+
+**Total Hours:** T0 (50) + T1 (40) + T2 (75) + T3 (70) + T4 (65) + T5 (60) + T6 (30) + T7 (60) = **450 hours**.
+
+---
+
+## 2. Gantt Schedule
+
+```mermaid
+gantt
+    dateFormat  YYYY-MM-DD
+    title FYP Schedule (W1 = 2026-10-12; Milestone dates provisional)
+    section Foundations
+    T0 Env & ROS2/Nav2 setup           :t0, 2026-10-12, 28d
+    T1 Sim baseline B0 & metrics       :t1, 2026-10-26, 28d
+    R1 Progress Review 1 (W6)          :milestone, r1, 2026-11-16, 0d
+    section Perception
+    T2 LiDAR-vision tracker (O1)       :t2, 2026-11-23, 42d
+    R2 Progress Review 2 (W12)         :milestone, r2, 2026-12-28, 0d
+    section Distillation
+    T3 avp to TensorRT segmenter (O3)  :t3, 2026-12-07, 84d
+    section Control
+    T4 MPPI dynamic critic (O2)        :t4, 2027-01-04, 42d
+    R3 Progress Review 3 (W18)         :milestone, r3, 2027-02-08, 0d
+    section Integration
+    T5 Integrated evaluation (P1)      :t5, 2027-02-15, 42d
+    R4 Progress Review 4 (W24)         :milestone, r4, 2027-03-22, 0d
+    section Stretch & Report
+    T6 S1 Keepout hazard zones         :t6, 2027-03-29, 21d
+    T7 Dissertation & defence demo     :t7, 2027-03-29, 42d
+    R5 Progress Review 5 (W29)         :milestone, r5, 2027-04-26, 0d
+```
+
+---
+
+## 3. Engineering Work Cycle & Buffers
+- **Develop–Test–Document Cycle:** Every engineering task is budgeted as ~60% implementation, ~25% experimental verification, and ~15% technical documentation.
+- **Buffer Management:** Tasks T4 ($\pm 3\text{ wk}$) and T2 ($\pm 2\text{ wk}$) possess highest uncertainty. Slippages are absorbed first by dropping stretch S1/S2, with a dedicated buffer week in W30 before final submission.

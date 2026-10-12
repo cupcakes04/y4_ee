@@ -5,29 +5,30 @@ description: Keep the FYP proposal files in sync. core.md and literatures.md are
 
 # FYP proposal sync
 
-## Layout (`modules/EEEE4077_mechatronics_proj/`)
+## Layout (`modules/EEEE4077_mechatronics_proj/chapters/`)
 
-| File | Role | Edit by |
+| Directory / File | Role | Edit by |
 |---|---|---|
-| `chapters/proposals/core.md` | **Source of truth**: technical design (Part A) and planning layer (Part B: scope, spec, protocol, methodology, originality, risks, schedule, decisions) | Human, or agent on request |
-| `chapters/proposals/literatures.md` | **Source of truth**: literature notes, reference register (§5, with keys L1…) and claim audit (§6) | Human, or agent on request |
-| `chapters/proposals/abstract.md` | **Derived**: plain-language problem statement and objectives for the supervisor | Agent, from the sources |
-| `chapters/proposals/project_proposal.md` | **Derived**: the submitted Project Planning Report (7–8 body pages) | Agent, from the sources |
-| `raw/proposals/` | Requirements: `proj_proposal_guide.md`, `Project Planning Report MEng Rubric.pdf`, worksheet, workshop slides | Read-only |
+| `research/` | **Source of truth**: technical design, architecture, modules (01–07), hardware stack, and evaluation metrics | Human, or agent on request |
+| `planning/` | **Source of truth**: planning layer (specifications, methodology, originality, risks, schedule, decisions) | Human, or agent on request |
+| `library/` | **Source of truth**: reference register (`register.md`), literature synthesis (`synthesis.md`), and paper cards (`papers/L01...`) | Human, or agent on request |
+| `deliverables/abstract.md` | **Derived**: plain-language problem statement and objectives for the supervisor | Agent, from the sources |
+| `deliverables/project_proposal.md` | **Derived**: the submitted Project Planning Report (7–8 body pages) | Agent, from the sources |
+| `../../raw/proposals/` | Requirements: `proj_proposal_guide.md`, `Project Planning Report MEng Rubric.pdf`, worksheet, workshop slides | Read-only |
 
 Never write facts that exist only in a derived file. If a derived file needs a new fact, add it to a source file first and then regenerate.
 
 ## Workflow
 
-1. **Read** `core.md`, `literatures.md` and `raw/proposals/proj_proposal_guide.md`. Re-read the rubric PDF when checking.
+1. **Read** `research/`, `planning/`, `library/register.md`, and `raw/proposals/proj_proposal_guide.md`. Re-read the rubric PDF when checking.
 2. **Diff intent.** Say which source sections changed and which derived sections they affect. Use this map:
-   - core §1–§2 → abstract §1–§3, proposal §1
-   - core §7–§8 → abstract §5, proposal §2
-   - core §9–§10 → proposal §2 (protocol), §3
-   - core §11 → proposal §4
-   - core §12 → proposal §5
-   - core §13 → proposal §6
-   - literatures §5 → both reference lists
+   - `research/01_problem_statement.md`, `02_system_architecture.md` → abstract §1–§3, proposal §1
+   - `planning/specifications.md` → abstract §5, proposal §2
+   - `research/06_evaluation_metrics.md`, `planning/methodology.md` → proposal §2 (protocol), §3
+   - `planning/originality.md` → proposal §4
+   - `planning/risks.md` → proposal §5
+   - `planning/schedule.md` → proposal §6
+   - `library/register.md` → both reference lists
 3. **Regenerate** only the affected derived sections. Do not rewrite untouched sections.
 4. **Check** against the rubric checklist and the consistency checks below.
 5. **Report** what changed, any open `[placeholder]` or `[citation to be added]` markers, and anything unverifiable.
@@ -58,10 +59,10 @@ Never write facts that exist only in a derived file. If a derived file needs a n
 
 ## Consistency checks before finishing
 
-- Objective IDs (O1–O3, S1–S2), requirement IDs and risk IDs are identical across `core.md`, `abstract.md` and `project_proposal.md`.
-- Task hours in the phase table sum to the stated total. Gantt dates match the week numbers (W1 = Monday 2026-10-12 unless changed in `core.md` §13).
+- Objective IDs (O1–O3, S1–S2), requirement IDs and risk IDs are identical across `planning/specifications.md`, `deliverables/abstract.md` and `deliverables/project_proposal.md`.
+- Task hours in `planning/schedule.md` sum to the stated total (450 hours). Gantt dates match the week numbers (W1 = Monday 2026-10-12 unless changed in `planning/schedule.md`).
 - The project title, student name and ID, and supervisor name match the cover page. Sources: Nicholas Khor Han Le, 20617556, supervisor Dr. Shalini Darmaraju.
-- No derived file contains a claim that contradicts `literatures.md` §6 (claim audit).
+- No derived file contains a claim that contradicts `library/register.md` (claim audit).
 - Files are UTF-8 and mermaid blocks parse.
 
 ## Do not
