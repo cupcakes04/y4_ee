@@ -8,6 +8,8 @@
 - **D4 — FPS Measurement Hardware:** Core FPS benchmark committed on host NVIDIA RTX 4070 Ti Super. Jetson Orin validation is scoped as stretch goal S2.
 - **D5 — Dataset Grounding:** O3 distillation training and held-out validation are conducted on real walkthrough video footage, ensuring distillation claims are not sim-only artifacts.
 - **D6 — Detector Decoupling:** Tracker development (O1) initiates using standard pre-trained COCO object detectors (person/forklift) so perception development is not blocked by O3 distillation pipeline maturation. Swapping to the distilled model occurs in integration task T5.
+- **D7 — Sensor Modality Selection (2D LiDAR + Monocular RGB over Stereo/3D LiDAR):** Retains 2D LiDAR for wide horizontal FOV ($270^\circ–360^\circ$), mm-accuracy Time-of-Flight ranging at $8+\text{ m}$, and direct compatibility with brownfield commercial AMR fleets. Stereo cameras were evaluated and rejected due to narrow FOV ($<85^\circ$), depth noise degradation beyond $4\text{ m}$, and failure on textureless warehouse walls (detailed in `research/08_design_tradeoffs_and_alternatives.md`).
+- **D8 — Two-Stage Tracking Architecture (Decoupled 2D MOT over 3D Hungarian Matching):** Uses ByteTrack (`boxmot`) directly in 2D image space to handle visual data association, occlusion bridging, and persistent `track_id`s, followed by planar LiDAR frustum gating and a clean per-track linear Kalman filter (CV). This eliminates the need to build fragile combinatorial metric-space cluster association engines from scratch.
 
 ---
 

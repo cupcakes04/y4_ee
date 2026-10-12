@@ -24,6 +24,7 @@
 | **L10** | Nav2 Documentation (Rolling): Navigating with Keepout Zones & Speed Limits | Technical basis for Costmap Filters | [L10_nav2_costmap_filters.md](./papers/L10_nav2_costmap_filters.md) | S |
 | **L11** | Nav2 MPPI Controller Repository & Technical Documentation | MPPI batching, compute budget, and critic plugins | [L11_nav2_mppi_controller.md](./papers/L11_nav2_mppi_controller.md) | V |
 | **L12** | S. Thrun, W. Burgard, D. Fox, *Probabilistic Robotics*, MIT Press, 2005 | Motion models (CV, CTRV) and Kalman filtering | [L12_thrun2005_probabilistic_robotics.md](./papers/L12_thrun2005_probabilistic_robotics.md) | T |
+| **L13** | Y. Zhang et al., "ByteTrack: Multi-Object Tracking by Associating Every Detection Box," *ECCV*, 2022, arXiv:2110.06864 | 2D multi-object tracking & data association | [L13_zhang2022_bytetrack.md](./papers/L13_zhang2022_bytetrack.md) | V |
 
 ---
 

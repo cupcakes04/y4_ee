@@ -18,16 +18,18 @@ That setup has two practical weaknesses:
 
 | What exists | What is still missing for a low-cost 2D-LiDAR AMR |
 |---|---|
-| Camera + LiDAR calibration and fusion are well established (Zhang & Pless, 2004). | An integrated, packaged pipeline that supplies **tracked obstacle velocity** to Nav2's local controller, using only a 2D LiDAR and one camera. |
+| Planar Camera–LiDAR calibration is well established (Zhang & Pless, 2004) and 2D multi-object tracking is mature (Zhang et al., 2022). | An integrated, packaged pipeline that bridges 2D visual tracks and planar LiDAR into **Nav2 local controller velocity predictions**, avoiding robot freezing without expensive 3D sensor rigs. |
 | Foundation models (Florence-2, Grounded-SAM) can label images from text prompts without manual annotation (Xiao et al., 2024; Ren et al., 2024). Their output has been distilled into robot navigation (ViLAM, 2025). | These models are too heavy to run on the robot. Published work targets social navigation or richer sensors, not **site-specific floor hazards** feeding **standard Nav2 components**. |
-| Nav2 provides `MPPI controller` (a predictive controller that scores many candidate trajectories with plug-in "critics") and `Costmap Filters`. | Using a new critic or a new filter source takes custom engineering. Whether a built-in critic consumes *tracked obstacle velocity* **needs checking against the current Nav2 plugin list** before the originality claim is final. |
+| Nav2 provides `MPPI controller` (a predictive controller that scores many candidate trajectories with plug-in "critics") and `Costmap Filters`. | Nav2's 11 built-in critics evaluate obstacles against static 2D costmaps without forward velocity propagation. Consuming *tracked obstacle velocity* over the prediction horizon requires an idiomatic custom critic plugin (`pluginlib`). |
 
 > [!NOTE]
 > This project is mainly **engineering integration plus validation**. It is not a new fusion algorithm. That is deliberate and is consistent with the literature notes.
 
 ## 3. Problem statement
 
-> Low-cost 2D-LiDAR AMRs in brownfield sites **stall around moving people and vehicles** and **ignore floor hazards** that their sensors cannot see. Fixing this today needs expensive sensors or manual site surveys. There is no open, low-cost, rapidly deployable pipeline that (a) gives Nav2 a velocity estimate for each moving obstacle by combining a 2D LiDAR with a single camera, and (b) turns text-described, site-specific hazards into Nav2 keepout and speed zones without hand-drawn CAD.
+> Low-cost 2D-LiDAR AMRs in brownfield sites **stall around moving people and vehicles** and **ignore floor hazards** that their sensors cannot see. Fixing this today needs expensive sensors or manual site surveys. There is no open, low-cost, rapidly deployable pipeline that 
+> 1. gives Nav2 a velocity estimate for each moving obstacle by combining a 2D LiDAR with a single camera
+> 2. turns text-described, site-specific hazards into Nav2 keepout and speed zones without hand-drawn CAD.
 
 ## 4. Research question
 
@@ -70,6 +72,7 @@ All targets are **hypotheses to be tested**, not promises. Baselines will be mea
 - **ROS 2 / Nav2:** the standard open-source robot middleware and its navigation stack.
 - **Costmap:** the robot's local grid map of "how costly or dangerous is each cell".
 - **MPPI:** Model Predictive Path Integral control. It samples many trajectories and scores them with critics.
+- **ByteTrack:** multi-object tracking in 2D image space that maintains persistent identities across frames.
 - **EKF:** Extended Kalman Filter, a standard estimator for position and velocity.
 - **VLM:** vision-language model, which can label images from a text prompt.
 - **TensorRT:** NVIDIA's runtime for fast model inference on edge devices.
@@ -86,7 +89,8 @@ All entries were opened or looked up on 2026-10-11 and the bibliographic details
 6. B. Xiao et al., "Florence-2: Advancing a Unified Representation for a Variety of Vision Tasks," *CVPR*, 2024. arXiv:2311.06242
 7. T. Ren et al., "Grounded SAM: Assembling Open-World Models for Diverse Visual Tasks," 2024. arXiv:2401.14159
 8. "ViLAM: Distilling Vision-Language Reasoning into Attention Maps for Social Robot Navigation," 2025. arXiv:2503.09820
-9. Nav2 documentation (rolling):
+9. Y. Zhang et al., "ByteTrack: Multi-Object Tracking by Associating Every Detection Box," *ECCV*, 2022. arXiv:2110.06864
+10. Nav2 documentation (rolling):
    - [MPPI Controller](https://docs.nav2.org/rolling/configuration_and_development/configuration_guide/controller_plugins/mppi_controller/configuring_mppic/)
    - [Navigating with Keepout Zones](https://docs.nav2.org/rolling/tutorials/general_tutorials/navigation2_with_keepout_filter/navigation2_with_keepout_filter/)
    - [Navigating with Speed Limits](https://docs.nav2.org/rolling/tutorials/general_tutorials/navigation2_with_speed_filter/navigation2_with_speed_filter/)
@@ -95,8 +99,8 @@ All entries were opened or looked up on 2026-10-11 and the bibliographic details
 ---
 ### Notes for me (not for supervisor)
 - Metric targets (0 freezes, 15–25%, < 30 min, ≥ 25 FPS, < 0.15 m/s) are unsourced. Keep them as hypotheses until Phase 1 baselines exist.
-- Unverified claims to resolve:
-  - "No built-in Nav2 MPPI critic uses tracked obstacle velocity". Check the critic list in the MPPI docs and GitHub.
+- Verified claims & status:
+  - Confirmed: Nav2's 11 built-in MPPI critics evaluate static costmaps without forward velocity propagation. A custom critic plugin is confirmed necessary for predictive avoidance.
   - Author lists for refs 2, 3 and 7 should be double-checked against the PDFs before final submission.
 - The assessed proposal needs a risk register, Gantt chart and methodology (see `raw/proposals/proj_proposal_guide.md`). Sections 5–6 above are the seed for the "Specification" section.
 

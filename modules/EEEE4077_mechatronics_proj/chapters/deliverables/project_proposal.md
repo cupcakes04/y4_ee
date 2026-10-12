@@ -48,9 +48,9 @@ flowchart LR
     LID["2D LiDAR, about 10 Hz"]
   end
   subgraph PER["O1 Perception and tracking"]
-    SEG["Segmenter / detector"]
+    SEG["Segmenter & 2D Tracker (ByteTrack)"]
     GATE["Frustum gating and range association"]
-    EKF["Multi-target EKF: x, y, vx, vy"]
+    EKF["Per-track linear Kalman filter: x, y, vx, vy"]
   end
   subgraph CTL["O2 Nav2 control"]
     CRIT["Dynamic MPPI critic"]
@@ -92,13 +92,13 @@ flowchart LR
 
 | Component | Input → output | Rate / latency requirement | Key limitation |
 |---|---|---|---|
-| Segmenter (TensorRT FP16) | image → boxes, class, masks | ≥ 25 FPS (must exceed LiDAR rate) | Quality depends on label quality |
-| Calibration and gating | boxes + `LaserScan` → clusters | Per LiDAR scan (~10 Hz) | Extrinsic error mis-assigns clusters. Camera [9] and LiDAR share the same field of view only partly. |
-| Multi-target EKF [10] | clusters → (x, y, vx, vy) | Per scan. Must bridge short visual dropouts. | Constant-velocity assumption fails during manoeuvres |
-| MPPI critic [11], [12] | tracks → trajectory cost | Inside the controller loop (≥ 20 Hz) | Needs predicted motion over the horizon, which assumes constant velocity |
+| Segmenter & 2D Tracker [9] | image → tracked boxes (with IDs), class, masks | ≥ 25 FPS (must exceed LiDAR rate) | Quality depends on label quality; ByteTrack handles occlusions in 2D |
+| Calibration and gating | tracked boxes + `LaserScan` → metric clusters | Per LiDAR scan (~10 Hz) | Extrinsic error mis-assigns clusters. Camera [10] and LiDAR share the same field of view only partly. |
+| Per-track Kalman filter [11] | metric clusters → (x, y, vx, vy) per ID | Per scan. Bridges visual dropouts per track. | Constant-velocity assumption fails during aggressive manoeuvres |
+| MPPI critic [12], [13] | tracks → trajectory cost | Inside the controller loop (≥ 20 Hz) | Needs predicted motion over the horizon, which assumes constant velocity |
 | Homography → filters (S1) | masks → keepout/speed zones | Event-driven | Valid on planar floor only |
 
-The MPPI controller samples about a thousand candidate trajectories each cycle and scores them with plug-in *critic* functions [12]. This is where velocity information can influence control. Nav2 ships 11 critics (constraint, cost, goal, goal-angle, obstacles, path-align, path-angle, path-follow, prefer-forward, twirling and velocity-deadband) and none is designed for predicted dynamic-obstacle motion (checked by file name on 2026-10-11) [12].
+The MPPI controller samples about a thousand candidate trajectories each cycle and scores them with plug-in *critic* functions [13]. This is where velocity information can influence control. Nav2 ships 11 critics (constraint, cost, goal, goal-angle, obstacles, path-align, path-angle, path-follow, prefer-forward, twirling and velocity-deadband), all of which evaluate obstacles against a static 2D costmap without forward velocity propagation [13].
 
 ---
 
@@ -136,7 +136,7 @@ Requirements are grouped by priority. The **core** objectives (O1–O3) define s
 |---|---|---|
 | **M0 Environment** | Ubuntu 24.04 (dual-boot or WSL2), ROS 2 Jazzy, Gazebo Harmonic, Docker with pinned versions | Windows host and GPU drivers. ROS 2 foundations are still being learned. Allow the first four weeks. Jazzy is chosen because Iron is end-of-life and Humble's support ends in May 2027, as the project ends [distribution dates to be confirmed against the ROS 2 release documentation]. |
 | **M1 Simulation and baseline** | Gazebo world with a corridor and scripted actors, differential-drive robot, `nav2_bringup`, metric logging with `rosbag2` | Building worlds and actors is time-consuming. Keep geometry simple. The baseline B0 must be frozen before any change is judged. |
-| **M2 Tracker (O1)** | Camera–LiDAR extrinsics (known in simulation, checkerboard method [9] for real hardware), frustum gating, multi-target EKF with a constant-velocity model [10] | Estimator tuning. Calibrate in simulation first, then sweep calibration error to quantify sensitivity. A stock COCO-trained detector is used first, so O1 does not wait for O3. |
+| **M2 Tracker (O1)** | 2D MOT (ByteTrack [9] via `boxmot`), camera–LiDAR extrinsics (checkerboard method [10] for real hardware), frustum gating, per-track linear Kalman filter (CV) [11] | Estimator tuning. Calibrate in simulation first, then sweep calibration error to quantify sensitivity. Decoupling 2D MOT eliminates custom combinatorial data association risk. |
 | **M3 Critic (O2)** | Custom MPPI critic as a C++ plugin (`pluginlib`), predicted obstacle positions over the horizon | **Highest-risk step**: first Nav2 plugin. A small test plugin is written in week 8, ahead of the real work. Fallback: inject predicted positions into the local costmap through a custom layer so existing critics react. |
 | **M4 Distillation (O3)** | Frame sampling, Florence-2 / Grounded-SAM pseudo-labels, human correction in the `avp` interface, YOLO-Seg fine-tune, TensorRT FP16 export | `avp` is an incomplete personal prototype, not yet connected to ROS 2. Environment conflicts are likely, so each stage is a separate script. |
 | **M5 Evaluation** | `rosbag2`, Python analysis, paired statistics | Statistical hygiene. Low challenge, but it needs time reserved. |
@@ -150,14 +150,14 @@ Requirements are grouped by priority. The **core** objectives (O1–O3) define s
 
 ## 4. Originality
 
-**Position.** Existing work covers the pieces separately. Camera–LiDAR calibration and tracking are mature [9], [10]. Foundation-model labelling and distillation are active [6]–[8], but the cited navigation example targets social navigation through learned attention maps, not site-specific floor hazards through standard Nav2 components [8]. Nav2 offers keepout and speed filters with authored masks [5] and a plug-in MPPI controller [12] with no velocity-aware critic.
+**Position.** Existing work covers the pieces separately. Camera–LiDAR planar extrinsic calibration [10], 2D multi-object tracking [9], and Bayesian state filtering [11] are established techniques. Foundation-model labelling and distillation are active [6]–[8], but the cited navigation example targets social navigation through learned attention maps, not site-specific floor hazards through standard Nav2 components [8]. Nav2 offers keepout and speed filters with authored masks [5] and a plug-in MPPI controller [13] with no velocity-aware critic.
 
 **Table 4. Differentiation from current practice.**
 
 | | Stock Nav2 + 2D LiDAR | Foundation-model navigation research [8] | LiDAR–camera tracking | **This project** |
 |---|---|---|---|---|
 | Sensors | 2D LiDAR | Camera (richer sensing) | LiDAR + camera | 2D LiDAR + one camera |
-| Dynamic-obstacle velocity | No | Implicit in a learned policy | Yes | Yes, as an explicit state for MPPI |
+| Dynamic-obstacle velocity | No | Implicit in a learned policy | Yes | Yes (ByteTrack + 2D LiDAR linear Kalman filter for MPPI) |
 | Site-specific hazard learning | Manual masks | Social cues | No | From a walkthrough video and text prompts |
 | Integration with standard Nav2 | Native | Custom planner | Not integrated | Plugin and costmap filters |
 | Adaptation effort | Hours to days (hypothesis) | Training run | Re-labelling | Target < 30 min (measured) |
@@ -263,13 +263,15 @@ gantt
 
 [8] "ViLAM: Distilling Vision-Language Reasoning into Attention Maps for Social Robot Navigation," arXiv:2503.09820, 2025. [authors to be added]
 
-[9] Q. Zhang and R. Pless, "Extrinsic calibration of a camera and laser range finder (improves camera calibration)," in *Proc. IEEE/RSJ IROS*, 2004.
+[9] Y. Zhang *et al.*, "ByteTrack: Multi-Object Tracking by Associating Every Detection Box," in *Proc. European Conference on Computer Vision (ECCV)*, 2022. arXiv:2110.06864.
 
-[10] S. Thrun, W. Burgard and D. Fox, *Probabilistic Robotics*. Cambridge, MA, USA: MIT Press, 2005.
+[10] Q. Zhang and R. Pless, "Extrinsic calibration of a camera and laser range finder (improves camera calibration)," in *Proc. IEEE/RSJ IROS*, 2004.
 
-[11] G. Williams *et al.*, "Information theoretic MPC for model-based reinforcement learning," in *Proc. IEEE ICRA*, 2017, pp. 1714–1721, doi:10.1109/ICRA.2017.7989202.
+[11] S. Thrun, W. Burgard and D. Fox, *Probabilistic Robotics*. Cambridge, MA, USA: MIT Press, 2005.
 
-[12] Nav2, "Model Predictive Path Integral Controller" (`nav2_mppi_controller`), README and source. [Online]. Available: https://github.com/ros-navigation/navigation2/tree/main/nav2_mppi_controller. Accessed 11 Oct 2026.
+[12] G. Williams *et al.*, "Information theoretic MPC for model-based reinforcement learning," in *Proc. IEEE ICRA*, 2017, pp. 1714–1721, doi:10.1109/ICRA.2017.7989202.
+
+[13] Nav2, "Model Predictive Path Integral Controller" (`nav2_mppi_controller`), README and source. [Online]. Available: https://github.com/ros-navigation/navigation2/tree/main/nav2_mppi_controller. Accessed 11 Oct 2026.
 
 ---
 

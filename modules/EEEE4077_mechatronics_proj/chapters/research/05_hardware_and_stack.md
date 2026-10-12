@@ -7,6 +7,7 @@
 - **Sensors:**
   - 1x Low-cost 2D Planar Laser Scanner (e.g., Slamtec RPLiDAR S2/A3, ~$380–500, or industrial safety single-layer scanner).
   - 1x Global Shutter Monocular USB/MIPI Camera (1080p, $60^\circ\text{–}90^\circ$ horizontal FoV).
+  - *(Note: Detailed engineering justification comparing this pairing against stereo RGB-D cameras and 3D LiDAR is recorded in `08_design_tradeoffs_and_alternatives.md` §8.1).*
 - **Mobile Base:** Differential drive or omnidirectional ROS 2 AMR base (TurtleBot 4 simulation model in Gazebo Harmonic, or physical robot in stretch phase).
 
 ---
@@ -18,8 +19,9 @@
    - Planar homography projection node converting pixel masks to `geometry_msgs/msg/PolygonStamped`.
    - ROS 2 Costmap Filter publisher for dynamic Keepout and Speed Limit zones.
 2. **`lidar_vision_tracker` (ROS 2 Package):**
-   - Target association node filtering LiDAR ranges through visual bounding frustums.
-   - Multi-target EKF tracking node publishing dynamic agent state arrays.
+   - 2D Multi-Object Tracking node (ByteTrack via `boxmot`) maintaining persistent visual `track_id`s in image space.
+   - Target association node filtering planar LiDAR ranges through visual bounding frustums.
+   - Per-track linear Kalman filter (CV) publishing dynamic agent state arrays (`/tracked_obstacles`).
 3. **`nav2_mppi_dynamic_critic` (C++ Plugin):**
    - Custom dynamic obstacle prediction critic plugin for `nav2_mppi_controller`.
 4. **Offline Distillation Toolkit:**

@@ -6,8 +6,8 @@
    - Foundation-model auto-labelling and distillation (Florence-2, Grounded-SAM, ViLAM) has previously been restricted to social-navigation etiquette or rich 3D sensor rigs in research labs.
    - This project translates these techniques to **cost-constrained 2D LiDAR AMRs in brownfield industrial environments**, interfacing directly with standard ROS 2 Nav2 costmaps.
 2. **Algorithmic Technique & Integration:**
-   - Development of a **velocity-aware dynamic obstacle critic** for `nav2_mppi_controller`.
-   - The 11 standard critics currently shipped in ROS 2 Nav2 evaluate obstacles statically without forward velocity propagation.
+   - Development of a **velocity-aware dynamic obstacle critic** for `nav2_mppi_controller` via native `pluginlib`.
+   - The 11 standard critics currently shipped in ROS 2 Nav2 evaluate obstacles statically against 2D costmaps without forward velocity propagation.
 3. **Low-Cost Commercial Focus:**
    - Avoids expensive 3D LiDAR ($>\$3,000$) or heavy compute clusters. Operates on a standard planar LiDAR, single monocular camera, and consumer/embedded GPU, targeting mid-tier industrial logistics.
 4. **Process Originality (Prompt-to-Deploy):**
