@@ -15,7 +15,7 @@ Details the implementation and operation of **Nav2 Costmap Filters**. Costmap Fi
 ---
 
 ## Project Relevance & Usage
-- **Downstream Consumer (Module 1):** Provides the official ROS 2 architectural interface for receiving our projected planar hazard polygons directly into navigation planning without manual CAD interventions.
+- **Downstream Consumer (Module 1):** Provides the official ROS 2 architectural interface for receiving our projected planar hazard polygons directly into navigation planning, allowing dynamic augmentation of static keepout maps.
 
 ---
 

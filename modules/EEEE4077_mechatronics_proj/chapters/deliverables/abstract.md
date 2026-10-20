@@ -1,4 +1,6 @@
-# Problem Statement & Research Objectives
+# Vision-Augmented Mobile Robot Navigation in Dynamic Environments
+
+**Project Code:** SD-MEng-26-01 | **Supervisor:** Dr Shalini Darmaraju | **Moderator:** Ir Dr Daniel Pu
 
 > Supervisor-facing draft, **derived** from `../research/`, `../planning/`, and `../library/register.md` (the modular sources of truth). The assessed submission is [project_proposal.md](project_proposal.md). Sync rules are in `.agents/skills/fyp-proposal-sync/SKILL.md`.
 > ROS 2 terms appear in `code font` the first time. Each has a plain-language gloss, so you can read this without ROS knowledge and still map it to the actual implementation.
@@ -12,14 +14,14 @@ Factories and warehouses increasingly use **autonomous mobile robots (AMRs)** to
 That setup has two practical weaknesses:
 
 1. **The robot freezes around moving traffic.** A 2D LiDAR sees a walking person as two small dots (their legs). It can't tell *what* the object is, *which way* it is heading, or *how fast* it is moving. Nav2's local map (the `costmap`) therefore treats the dots as fixed obstacles, so the robot stops, backs off or spins in place while people walk through. This is a long-recognised failure mode, known in the literature as the **"freezing robot problem"** (Trautman & Krause, 2010).
-2. **The robot is blind to what the floor *means*.** The map records only where surfaces reflect laser light. It can't distinguish clean floor from a liquid spill, a forklift lane from a staging bay. Today an engineer has to survey the site and hand-draw "no-go" and "slow" zones (`Costmap Filters`: keepout and speed zones). This is slow, and it has to be redone whenever the layout changes.
+2. **The robot is blind to flat, non-geometric surface hazards ($Z = 0$).** The laser scanner measures distance in a horizontal plane above the ground and cannot detect hazards at floor height. It cannot distinguish clean epoxy floor from a slick oil or chemical spill, or read painted forklift lanes. Laser light either disperses off puddles or returns flat ground reflections, causing the robot to drive across slippery spills and hydroplane. While permanent walls and racks are managed with certified, hand-drawn CAD maps (`Costmap Filters`: keepout and speed zones), static CAD maps cannot anticipate transient fluid spills that occur during live shifts.
 
 ## 2. Gap in current practice
 
 | What exists | What is still missing for a low-cost 2D-LiDAR AMR |
 |---|---|
 | Planar Camera–LiDAR calibration is well established (Zhang & Pless, 2004) and 2D multi-object tracking is mature (Zhang et al., 2022). | An integrated, packaged pipeline that bridges 2D visual tracks and planar LiDAR into **Nav2 local controller velocity predictions**, avoiding robot freezing without expensive 3D sensor rigs. |
-| Foundation models (Florence-2, Grounded-SAM) can label images from text prompts without manual annotation (Xiao et al., 2024; Ren et al., 2024). Their output has been distilled into robot navigation (ViLAM, 2025). | These models are too heavy to run on the robot. Published work targets social navigation or richer sensors, not **site-specific floor hazards** feeding **standard Nav2 components**. |
+| Foundation models (Florence-2, Grounded-SAM) can label images from text prompts without manual annotation (Xiao et al., 2024; Ren et al., 2024). Their output has been distilled into robot navigation (ViLAM, 2025). | These models are too heavy to run on the robot. Published work targets social navigation or richer sensors, not **transient, non-geometric floor hazards ($Z=0$)** feeding **standard Nav2 components**. |
 | Nav2 provides `MPPI controller` (a predictive controller that scores many candidate trajectories with plug-in "critics") and `Costmap Filters`. | Nav2's 11 built-in critics evaluate obstacles against static 2D costmaps without forward velocity propagation. Consuming *tracked obstacle velocity* over the prediction horizon requires an idiomatic custom critic plugin (`pluginlib`). |
 
 > [!NOTE]
@@ -27,13 +29,14 @@ That setup has two practical weaknesses:
 
 ## 3. Problem statement
 
-> Low-cost 2D-LiDAR AMRs in brownfield sites **stall around moving people and vehicles** and **ignore floor hazards** that their sensors cannot see. Fixing this today needs expensive sensors or manual site surveys. There is no open, low-cost, rapidly deployable pipeline that 
+> Low-cost 2D-LiDAR AMRs in brownfield sites **stall around moving people and vehicles** and **ignore flat surface hazards (fluid spills, floor demarcations)** that laser scanners cannot see. Fixing this today requires either expensive sensor rigs or laborious manual dataset labelling. There is no open, low-cost, rapidly deployable pipeline that 
 > 1. gives Nav2 a velocity estimate for each moving obstacle by combining a 2D LiDAR with a single camera
-> 2. turns text-described, site-specific hazards into Nav2 keepout and speed zones without hand-drawn CAD.
+> 2. predicts short-term obstacle motion inside local trajectory planning to eliminate robot freezing
+> 3. provides an empirical ablation benchmark distinguishing the isolated effects of visual information versus motion prediction.
 
 ## 4. Research question
 
-**Can a camera-augmented 2D-LiDAR AMR, using only open-source ROS 2 components and edge-class hardware, reduce navigation stalls around dynamic obstacles and automate site-specific hazard mapping, compared with standard Nav2 using 2D LiDAR alone?**
+**Can a camera-augmented 2D-LiDAR AMR, using only open-source ROS 2 components and edge-class hardware, reduce navigation stalls around dynamic obstacles and validate the isolated benefits of motion prediction, compared with standard Nav2 using 2D LiDAR alone?**
 
 ## 5. Objectives
 
@@ -43,15 +46,15 @@ All targets are **hypotheses to be tested**, not promises. Baselines will be mea
 
 | # | Objective | Key ROS 2 / tech terms | Assessment method | Deliverable |
 |---|---|---|---|---|
-| **O1** | **Track moving obstacles.** Combine camera detections with 2D LiDAR ranges to estimate position and velocity of pedestrians and vehicles. | `lidar_vision_tracker` node; camera-LiDAR extrinsic calibration; frustum gating; Extended Kalman Filter (EKF) | Velocity error (RMSE) against simulator ground truth in Gazebo / Isaac Sim. **Hypothesis: < 0.15 m/s at ≤ 8 m.** | ROS 2 package + test scenarios + results table |
-| **O2** | **Stop freezing.** Feed tracked velocities into Nav2's controller so it slows or deflects instead of halting. | `nav2_mppi_controller`; custom `nav2_mppi_dynamic_critic` plugin | Per scenario, compare against baseline Nav2: number of stops/recoveries per 10 crossings, route time. **Hypothesis: fewer freezes and 15–25% shorter route time.** | Critic plugin + side-by-side simulation report |
-| **O3** | **Teach the robot site-specific hazards quickly.** From a walkthrough video and text prompts, auto-label data and train a lightweight segmenter that runs in real time on the edge computer. | Offline VLM pseudo-labelling (Florence-2 / Grounded-SAM); YOLO-Seg; TensorRT; builds on own prior prototype `avp` (see note below) | Time from video to deployed model; segmentation quality (e.g. mIoU) on a held-out set; inference FPS on target hardware. **Hypothesis: < 30 min setup, ≥ 25 FPS.** | Distillation toolkit (CLI) + trained model + benchmark |
+| **O1** | **Track moving obstacles.** Combine camera detections with 2D LiDAR ranges to estimate position and velocity of dynamic agents. | `lidar_vision_tracker` node; camera-LiDAR extrinsic calibration; frustum gating; Linear Kalman Filter (CV) | Velocity error (RMSE) against simulator ground truth in Gazebo. **Hypothesis: < 0.15 m/s at ≤ 8 m.** | ROS 2 package + test scenarios + results table |
+| **O2** | **Stop freezing via predictive control.** Feed tracked velocities into Nav2's MPPI controller so it slows or deflects instead of halting. | `nav2_mppi_controller`; custom `nav2_mppi_dynamic_critic` plugin | Per scenario, compare against baseline Nav2 C0: number of stops/recoveries per 10 crossings, route time. **Hypothesis: zero freezes and 15–25% shorter route time.** | Critic plugin + side-by-side simulation report |
+| **O3** | **Systematic 3-Way Comparative Ablation.** Isolate the contributions of visual detection vs. motion prediction across varying obstacle speeds ($0.5–2.0\text{ m/s}$), patterns, and densities. | C0 (LiDAR only) vs. C1 (Vision without prediction) vs. C2 (Full motion prediction); ANOVA / paired t-test | Waiting time reduction ($\ge 50\%$, target $\le 5\text{ s}$); route completion time; controller loop rate $\ge 20\text{ Hz}$. **Hypothesis: statistically significant gain ($p < 0.01$).** | Automated ablation test harness + statistical benchmark report |
 
 ### Stretch (if on schedule)
 
 | # | Objective | Key terms | Assessment | Deliverable |
 |---|---|---|---|---|
-| **S1** | Convert segmented hazards into **keepout and speed zones** in Nav2. | Inverse Perspective Mapping (floor-plane homography); `CostmapFilterInfo`, Keepout / Speed filters | Fraction of runs where the robot enters detected hazard polygons (**hypothesis: 0%**) | `semantic_context_layer` package |
+| **S1** | Exploratory non-geometric **surface hazard augmentation** (`avp` track). | `avp` prompt distillation, Inverse Perspective Mapping (floor-plane homography); `CostmapFilterInfo`, Keepout filters | Fraction of runs where the robot enters detected hazard polygons (**hypothesis: 0%**) | `semantic_context_layer` prototype package |
 | **S2** | Validate on a **physical robot** (personal-budget purchase; outside committed scope). | Jetson / mini-PC, real LiDAR + camera | Repeat a subset of O1–O2 tests on hardware | Short hardware validation report |
 
 ### Explicitly out of scope

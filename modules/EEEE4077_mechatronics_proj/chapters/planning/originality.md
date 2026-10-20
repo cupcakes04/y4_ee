@@ -11,7 +11,7 @@
 3. **Low-Cost Commercial Focus:**
    - Avoids expensive 3D LiDAR ($>\$3,000$) or heavy compute clusters. Operates on a standard planar LiDAR, single monocular camera, and consumer/embedded GPU, targeting mid-tier industrial logistics.
 4. **Process Originality (Prompt-to-Deploy):**
-   - The primary contribution includes the *process*: eliminating manual CAD engineering through zero-shot prompt distillation, with deployment wall-clock time rigorously benchmarked as an explicit metric ($<30\text{ min}$).
+   - The primary process contribution is **zero-annotation bootstrapping**: training lightweight edge detectors for novel, site-specific non-geometric surface hazards (fluid slicks, floor lane tape) via zero-shot prompt distillation, eliminating manual bounding-box annotation with setup time benchmarked as an explicit metric ($<30\text{ min}$).
 
 ---
 
@@ -20,9 +20,9 @@
 | Capability | Current Industrial Practice | Academic Research SOTA | This FYP Project |
 |---|---|---|---|
 | **Dynamic Obstacle Avoidance** | Emergency stop / recovery rotate (freezing) | Heavy 3D voxel / learned end-to-end RL | 2D LiDAR + camera frustum EKF → MPPI proactive deflection |
-| **Zone Management** | Manual CAD drafting of keepouts | 3D neural radiance fields / high-latency VLMs | Prompt-to-edge distillation → planar homography Nav2 filters |
+| **Hazard & Zone Management** | Manual CAD for static walls; blind to transient $Z=0$ fluid spills | 3D neural radiance fields / high-latency VLMs | Deterministic CAD for walls + prompt-distilled edge IPM for transient $Z=0$ spills |
 | **Sensor Cost** | \$400 (2D LiDAR only) | \$4,000–\$10,000 (3D LiDAR + Depth arrays) | \$450–\$600 (2D LiDAR + monocular camera) |
-| **Setup Time** | Days / Weeks per site layout shift | N/A (trained on fixed datasets) | $<30$ minutes from walkthrough video |
+| **Hazard Model Bootstrapping** | Manual bounding-box annotation (days/weeks per class) | N/A (trained on fixed static datasets) | $<30$ minutes from walkthrough video via prompt distillation |
 
 ---
 
@@ -31,3 +31,4 @@
 - **Simulation-First Baseline:** Scripted actors in Gazebo follow deterministic trajectories that lack the natural stochasticity of human crowds. Randomised timing and speed variations mitigate this, and real-video validation in O3 grounds visual testing in reality.
 - **Planar Geometry Assumption:** The monocular homography projection assumes flat warehouse floors; deviations in surface pitch or slope introduce projection errors that must be bounded.
 - **LiDAR Plane Dependency:** Target depth anchoring relies on objects intersecting the planar LiDAR height. Objects outside the scan plane cannot be metric-anchored without secondary geometric assumptions.
+- **Scope of Visual Costmaps vs. Deterministic Safety:** Deterministic CAD keepout zones remain the certified standard for permanent structural infrastructure (ISO 3691-4). Visual costmap filters via IPM are deliberately scoped to augment CAD by detecting transient, non-geometric surface hazards ($Z=0$) where physical LiDAR fails.

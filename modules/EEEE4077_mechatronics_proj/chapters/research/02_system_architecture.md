@@ -1,24 +1,24 @@
 # 2. System Architecture & Information Flow
 
-The architecture enforces strict decoupling between high-capacity, zero-shot foundation models (offline/setup) and low-latency, deterministic execution on the edge robot (online runtime).
+The architecture defines a high-rate, deterministic multi-modal perception and predictive control loop for dynamic obstacle avoidance, paired with an exploratory offline track for zero-shot semantic surface hazard segmentation.
 
 ---
 
 ## 2.1 End-to-End Information Flow Diagram
 
 ```
-                             OFFLINE / ZERO-SHOT SETUP
+                       [EXPLORATORY TRACK: S1 AVP DISTILLATION]
   [Walkthrough Video] + [Text Prompts] ──► [VLM / Teacher Model (Florence-2 / SAM)]
                                                             │
                                                             ▼ Auto-Generated Pseudo-Labels
                                                [Distillation & Quantization]
                                                             │
 ════════════════════════════════════════════════════════════╪═════════════════════════════════
-                                   ON-ROBOT RUNTIME         ▼
-                                              [TensorRT Edge Model: YOLO-Seg]
+                                   CORE RUNTIME PIPELINE   ▼
+                                              [Edge Detector / YOLO-Seg]
                                                             │
                        ┌────────────────────────────────────┴───────────────────────────┐
-                       ▼ Dynamic Agent BBoxes                                           ▼ Floor Hazard / Lane Masks
+                       ▼ Dynamic Agent Detections                                       ▼ [S1 Exploratory Surface Masks]
           [2D MOT: ByteTrack (BoxMOT)]                                                  │
                        │ Persistent Track IDs                                           ▼
  [RGB Camera] ──► [Extrinsic Calib]                                            [Planar Homography (IPM)]

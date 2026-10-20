@@ -113,3 +113,34 @@
 - Industrial mobile robotics demands verifiable safety boundaries. End-to-end RL cannot guarantee that the robot will respect site-specific keepout zones or velocity limits.
 - MPPI provides the exact mathematical framework needed: it already samples thousands of candidate paths over future time steps. Feeding it predicted obstacle positions through a clean C++ plugin gives proactive evasive behavior while retaining full Nav2 safety guarantees.
 
+---
+
+## 8.6 Trade-Off 6: Why Not Just Draw Static CAD Keepout Zones? (Deterministic Geometry vs. Non-Geometric Surface Semantics)
+
+### The Doubt / Question
+*"In commercial AMR deployments, site keepout zones are drawn directly into CAD or vector maps by deployment engineers in 15 minutes, offering 100% deterministic safety certification (ISO 3691-4). Why introduce a complex VLM auto-labelling and distillation pipeline? Isn't site-specific AI retraining a fleet maintenance anti-pattern compared to hand-drawn CAD or buying 3D sensors?"*
+
+### Comparison Matrix
+
+| Operational Reality | Hand-Drawn CAD / Vector Costmap Filters | 3D Range Sensing (Solid-State / Depth) | Prompt-Distilled Edge Vision (Selected) |
+|---|---|---|---|
+| **Static Structural Boundaries** (Walls, Racks, Safety Clearances) | **Gold Standard (100% Deterministic):** Zero latency, zero hallucination risk, certified safety compliance | Captures geometry natively; requires no training | Overkill / Anti-pattern: AI should never replace deterministic CAD for fixed structural walls |
+| **Transient Surface Hazards ($Z = 0$)** (Hydraulic oil spills, water puddles) | **Completely blind:** Cannot predict unplanned leaks or fluid spills | **Physics failure:** Laser pulses either specularly reflect away (seen as free space) or register flat $Z=0$ floor | **Only viable modality:** Radiometric visual texture segmentation detects fluid pooling |
+| **Floor Markings & Traffic Conventions** (Painted forklift lanes, zebra stripes) | Requires continuous manual surveying and re-vectorization on site | **Completely blind:** Painted tape has zero physical elevation ($Z = 0$) | Reads visual contrast directly; projects boundaries via Planar Homography (IPM) |
+| **Dynamic Agent Classification** (Human worker vs. Autonomous tugger) | N/A (CAD represents static space only) | Geometry only: sees unlabelled point clouds; cannot distinguish visual intent | Categorizes visual classes for differentiated navigation rules (yield vs. follow) |
+| **Fleet Firmware Maintainability** | Uniform firmware; site differences stored in static vector `.yaml` maps | Uniform firmware; geometry processed natively | **Unified student architecture:** Uses foundation models for zero-annotation training data, not fragmented per-site binaries |
+
+### Defense Rationale
+1. **The Legitimate Industrial Criticism (What AI Should NOT Do):**
+   - The critique is completely correct regarding static infrastructure: **using a VLM to auto-detect permanent warehouse walls, columns, or fixed machine cages to avoid drawing CAD lines is an engineering anti-pattern**. Hand-drawing static keepouts in RViz takes minutes, runs deterministically at zero compute cost, and is required for safety liability certification.
+   - Furthermore, compiling site-specific neural network weights per warehouse violates modern fleet DevOps, where all AMRs run identical binary firmware.
+2. **The True Physical Gap: Non-Geometric Surface Hazards ($Z = 0$):**
+   - 3D LiDAR and stereo cameras measure **geometric elevation ($Z \ne 0$)**.
+   - Liquid spills (hydraulic fluid, battery acid, standing wash water) and floor-painted traffic lanes possess **zero geometric height ($Z \approx 0$)**.
+   - When 3D LiDAR hits an oil puddle on polished concrete, specular reflection disperses the beam, or ToF returns $Z=0$, causing the costmap to treat the spill as traversable free space. An AMR driving into an oil slick hydroplanes, losing wheel traction and odometry.
+   - Static CAD maps cannot represent transient spills because spills occur unpredictably during operational shifts.
+3. **The Reframed Role of Module 1 (Zero-Annotation Bootstrap for Surface Hazards):**
+   - The distillation pipeline does **not** replace CAD vector mapping of permanent facility walls.
+   - Instead, it acts as an **automated pseudo-labelling bootstrap**: it allows robotics teams to train a lightweight edge detector for novel, domain-specific surface hazards (e.g., facility-specific fluid stains, temporary hazard cones, floor demarcations) from video **without paying human data annotators to manually draw thousands of bounding boxes**.
+   - The resulting detections project directly onto Nav2 dynamic costmap filter layers, safely stopping the robot before it enters a non-geometric traction hazard.
+

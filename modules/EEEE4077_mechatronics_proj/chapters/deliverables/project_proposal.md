@@ -1,12 +1,14 @@
 # Project Planning Report
 
-**Project title:** A Rapid-Deployment Visual Context and Dynamic Tracking Pipeline for Cost-Constrained Autonomous Mobile Robots in Brownfield Logistics
+**Project title:** Vision-Augmented Mobile Robot Navigation in Dynamic Environments  
+**Project code:** SD-MEng-26-01  
 
 | | |
 |---|---|
 | **Student** | Nicholas Khor Han Le |
 | **Student ID** | 20617556 |
 | **Supervisor** | Dr. Shalini Darmaraju |
+| **Moderator** | Ir Dr. Daniel Pu |
 | **Module** | EEEE4077 Mechatronics Project (MEng) |
 | **Date** | [submission date] |
 
@@ -23,21 +25,21 @@ Transport and logistics was the largest application class for professional servi
 This low-cost configuration has two weaknesses.
 
 1. **Freezing around moving traffic.** A 2D LiDAR sees a walking person as two small clusters of points. It cannot report what an object is, which way it is heading or how fast it is moving, so the costmap treats the points as fixed obstacles. The robot halts, backs off or spins in place. This behaviour is documented in the literature as the *freezing robot problem* [4].
-2. **Blindness to what the floor means.** Reflectivity alone cannot separate clean floor from a spill, or a forklift lane from a staging bay. Nav2 provides *Costmap Filters* (keepout and speed zones) [5], but the zones have to be authored, which means a site survey and a manual mask, and redone whenever the layout changes.
+2. **Blindness to non-geometric surface hazards.** Reflectivity and 2D ranging alone cannot separate clean floor from a fluid spill, or read painted forklift transit lanes where elevation is zero ($Z \approx 0$). While permanent structural walls and machinery are safely handled with deterministic, hand-drawn CAD maps (Costmap Filters: keepout and speed zones) [5], static CAD maps cannot anticipate transient, unplanned fluid spills (e.g. hydraulic leaks, wash water) that occur during active operations. Laser pulses either disperse via specular reflection or return flat ground reflections, causing the robot to drive across slippery spills and hydroplane.
 
 ### 1.2 Aim
 
-> To design, implement and evaluate, in simulation, an open-source ROS 2 pipeline that lets a low-cost 2D-LiDAR robot (a) track moving obstacles with velocity and avoid freezing around them, and (b) learn site-specific floor hazards from a walkthrough video and text prompts in minutes rather than days, compared with standard Nav2 using 2D LiDAR alone.
+> To design, implement and evaluate, in simulation, an open-source ROS 2 navigation framework that combines camera visual information with planar range measurements to track moving obstacles, predict their short-term motion, and avoid robot freezing through predictive local trajectory control, evaluated against range-sensor-based navigation across varying obstacle speeds, patterns, and densities.
 
 The expected outcome is a set of ROS 2 packages, a reproducible evaluation against a measured baseline, and an honest account of where the approach works and where it does not. The project integrates and validates published techniques. It does not claim a new fusion or learning algorithm.
 
 ### 1.3 System overview
 
-Heavy foundation models run **offline only**, to create training labels. Only a small distilled model, a tracker and a Nav2 plugin run in the control loop (Figure 1). Foundation models such as Florence-2 [6] and Grounded-SAM [7] label images from text prompts without manual annotation. Distilling them into compact navigation components has been shown for social navigation [8]. Here the same idea targets floor hazards and standard Nav2 components.
+The online runtime architecture couples a multi-modal tracker and a dynamic trajectory critic within Nav2 (Figure 1). 2D multi-object tracking (ByteTrack [9]) associates detections in image space, resolving identity persistence across visual occlusions. Extrinsic calibration [10] projects planar LiDAR beams into visual bounding frustums to extract crisp metric range without stereo disparity noise. A per-track linear Kalman filter [11] estimates obstacle velocities ($v_x, v_y$), which are propagated across the preview horizon inside a custom dynamic MPPI critic plugin [12], [13]. An exploratory offline pipeline (`avp` [14]) tests non-geometric floor hazard segmentation via prompt distillation.
 
 ```mermaid
 flowchart LR
-  subgraph OFF["O3 Offline setup (desktop GPU)"]
+  subgraph OFF["S1 Exploratory setup: avp (desktop GPU)"]
     V["Walkthrough video"] --> T["Teacher: Florence-2 / Grounded-SAM"]
     PR["Text prompts"] --> T
     T --> HC["Human correction (avp UI)"]
@@ -48,16 +50,16 @@ flowchart LR
     LID["2D LiDAR, about 10 Hz"]
   end
   subgraph PER["O1 Perception and tracking"]
-    SEG["Segmenter & 2D Tracker (ByteTrack)"]
+    SEG["Detector & 2D Tracker (ByteTrack)"]
     GATE["Frustum gating and range association"]
     EKF["Per-track linear Kalman filter: x, y, vx, vy"]
   end
   subgraph CTL["O2 Nav2 control"]
-    CRIT["Dynamic MPPI critic"]
+    CRIT["Dynamic MPPI critic plugin"]
     MPPI["MPPI controller, 20 Hz or more"]
     LCM["Local costmap"]
   end
-  subgraph STR["S1 Stretch: hazard zones"]
+  subgraph STR["S1 Exploratory: hazard zones"]
     IPM["Ground-plane homography"]
     FIL["Keepout and speed filters"]
   end
@@ -106,7 +108,7 @@ The MPPI controller samples about a thousand candidate trajectories each cycle a
 
 Requirements are grouped by priority. The **core** objectives (O1–O3) define success. **Stretch** goals (S1, S2) are attempted only if the schedule allows. Every numeric target is a *hypothesis*. Each has a *minimum* (still counts as success) and a *target*. Baselines are measured in the first phase, so none of the targets is assumed from literature.
 
-**Test protocol.** Gazebo scenarios with scripted actors provide exact ground truth: (A) a pedestrian crossing a corridor at 1.0–1.5 m/s, (B) an oncoming pedestrian, (C) a vehicle-like object crossing at 1.5–2.0 m/s, (D) two crossing pedestrians, (E) a control with no dynamic agents. Three configurations are compared: **B0** (Nav2 + 2D LiDAR + default MPPI), **P1** (B0 + O1 + O2) and **P2** (P1 + S1). Each scenario is run at least 30 times with randomised timing and speed. Seeds are shared across configurations for a paired comparison, and results are reported as mean ± 95% confidence interval. The O3 data (training and held-out frames) comes from a real walkthrough video, so segmentation quality is not a simulation-only result.
+**Test protocol.** Gazebo scenarios with scripted actors provide exact ground truth across varying obstacle speeds ($0.5–2.0\text{ m/s}$), crossing trajectories, and obstacle densities ($1–4$ dynamic agents): (A) a pedestrian crossing a corridor, (B) an oncoming pedestrian, (C) an automated/manual vehicle crossing, (D) multiple crossing pedestrians, (E) a static control. To distinguish the isolated effects of visual information and motion prediction as mandated by the project specification, three configurations are compared in a systematic ablation study: **C0** (Range-only baseline: Nav2 + 2D LiDAR + default static MPPI), **C1** (Vision-augmented detection: 2D LiDAR + Camera detection without velocity prediction), and **C2** (Full proposed framework: 2D LiDAR + Camera + Motion prediction via custom dynamic MPPI critic). Each scenario is run at least 30 times with randomised timing and speeds. Shared random seeds guarantee paired comparisons, with metrics reported as mean $\pm$ 95% confidence intervals.
 
 **Table 2. Specification, justification and test.** Challenge: L = low, M = medium, H = high.
 
@@ -114,17 +116,17 @@ Requirements are grouped by priority. The **core** objectives (O1–O3) define s
 |---|---|---|---|---|---|---|
 | **O1-a** | Obstacle velocity RMSE at ≤ 8 m | < 0.25 m/s | **< 0.15 m/s** | About 10% of a nominal 1.4 m/s walking speed [citation to be added] | RMSE against Gazebo ground truth, ≥ 30 runs per scenario | M |
 | **O1-b** | Correct LiDAR–detection association | ≥ 85% | ≥ 95% | Wrong gating gives wrong velocity | Assigned cluster within 0.3 m of ground-truth agent | M |
-| **O2-a** | Freezes per 10 crossings | ≥ 50% below B0 | **0** | Freezing is a known failure [4]. B0 baseline hypothesis > 5 per 10, to be measured. | Count controller failures, recovery behaviours and stops > 2 s | H |
-| **O2-b** | Route completion time | ≥ 10% shorter | **15–25% shorter** | Time lost to halts and recoveries | Mean ± CI vs B0 | M |
+| **O2-a** | Freezes per 10 crossings | ≥ 50% below C0 | **0** | Freezing is a known failure [4]. C0 baseline hypothesis > 5 per 10, to be measured. | Count controller failures, recovery behaviours and stops > 2 s | H |
+| **O2-b** | Route completion time | ≥ 10% shorter | **15–25% shorter** | Time lost to halts and recoveries | Mean ± CI vs C0 baseline | M |
 | **O2-c** | Collisions (hard constraint) | 0 | 0 | An improvement that adds collisions is unacceptable | Gazebo contact sensor, any contact fails the run | M |
-| **O3-a** | Video → deployed TensorRT engine, wall-clock | < 60 min | **< 30 min** | Replaces a manual survey and CAD zoning that takes hours to days | Scripted run with per-stage timer on the desktop GPU | M |
-| **O3-b** | Segmentation mIoU on held-out real frames | ≥ 0.60 | **≥ 0.70** | Hypothesis, recalibrated after the first label audit | ≥ 200 hand-checked unseen frames | H |
-| **O3-c** | Inference rate (TensorRT FP16, RTX 4070 Ti Super) | ≥ 15 FPS | **≥ 25 FPS** | Must exceed the ~10 Hz LiDAR so vision never limits the loop | 5-minute sustained mean | L |
-| **S1** | Entries into detected hazard polygons | ≤ 10% of runs | **0%** | This is the purpose of keepout | Runs with spawned hazards, logged polygon entry | H |
+| **O3-a** | 3-Way Ablation: Statistically significant separation between C0, C1, C2 | $p < 0.05$ | **$p < 0.01$** | Proves isolated contributions of (1) visual identification vs. (2) motion prediction over range-only baseline | Paired Welch's t-test / ANOVA across 30 runs per scenario across speeds ($0.5–2.0\text{ m/s}$) and densities | M |
+| **O3-b** | Waiting time: cumulative duration robot remains stationary ($v < 0.05\text{ m/s}$) | ≥ 50% reduction | **≤ 5 s per run** | Quantifies reduction in freezing delays at intersections | Log total seconds with near-zero base velocity during active navigation goals | M |
+| **O3-c** | Computational efficiency: end-to-end control loop rate | ≥ 15 Hz | **≥ 20 Hz** | Must exceed LiDAR scan rate (~10 Hz) to guarantee real-time MPPI trajectory generation | Sustained mean execution frequency of perception-to-critic loop over 5-minute runs | L |
+| **S1** | Exploratory hazard-polygon avoidance (`avp` / IPM track) | ≤ 10% of runs | **0%** | Explores dynamic keepout filtering for non-geometric surface hazards | Runs with spawned surface hazards, logged polygon entry | H |
 | **S2** | Replicate a subset of O1/O2 on a real robot (personal-budget hardware, outside committed scope) | Qualitative | Quantitative | Checks sim-to-real transfer | Repeated crossings on hardware | H |
 | **NF1** | Reproducibility from one launch file in a pinned container | Yes | Yes | Marker and future work can repeat results | Fresh-container run reproduces the headline table | L |
 
-**Attainability and realism.** All core work needs only the simulator and the RTX 4070 Ti Super already available. The plan is about 450 working hours (Section 6). The specification is ambitious relative to stock Nav2 because it targets zero freezes and sub-30-minute site adaptation using only a 2D LiDAR, a single camera and a consumer GPU. The tiering means a partial result is still reportable.
+**Attainability and realism.** All core work is simulation-based and runs on the available workstation with NVIDIA RTX 4070 Ti Super GPU, matching the supervisor's 0% HW / 60% SW / 40% Research specification. The plan encompasses 450 working hours (Section 6). The specification is ambitious relative to stock Nav2 because it targets zero freezes and statistically validated predictive avoidance using low-cost sensor modalities. The tiered structure guarantees reportable outcomes at each milestone.
 
 ---
 
@@ -134,17 +136,17 @@ Requirements are grouped by priority. The **core** objectives (O1–O3) define s
 
 | Step | Method and tools | Limitation / challenge, and extra work |
 |---|---|---|
-| **M0 Environment** | Ubuntu 24.04 (dual-boot or WSL2), ROS 2 Jazzy, Gazebo Harmonic, Docker with pinned versions | Windows host and GPU drivers. ROS 2 foundations are still being learned. Allow the first four weeks. Jazzy is chosen because Iron is end-of-life and Humble's support ends in May 2027, as the project ends [distribution dates to be confirmed against the ROS 2 release documentation]. |
-| **M1 Simulation and baseline** | Gazebo world with a corridor and scripted actors, differential-drive robot, `nav2_bringup`, metric logging with `rosbag2` | Building worlds and actors is time-consuming. Keep geometry simple. The baseline B0 must be frozen before any change is judged. |
-| **M2 Tracker (O1)** | 2D MOT (ByteTrack [9] via `boxmot`), camera–LiDAR extrinsics (checkerboard method [10] for real hardware), frustum gating, per-track linear Kalman filter (CV) [11] | Estimator tuning. Calibrate in simulation first, then sweep calibration error to quantify sensitivity. Decoupling 2D MOT eliminates custom combinatorial data association risk. |
-| **M3 Critic (O2)** | Custom MPPI critic as a C++ plugin (`pluginlib`), predicted obstacle positions over the horizon | **Highest-risk step**: first Nav2 plugin. A small test plugin is written in week 8, ahead of the real work. Fallback: inject predicted positions into the local costmap through a custom layer so existing critics react. |
-| **M4 Distillation (O3)** | Frame sampling, Florence-2 / Grounded-SAM pseudo-labels, human correction in the `avp` interface, YOLO-Seg fine-tune, TensorRT FP16 export | `avp` is an incomplete personal prototype, not yet connected to ROS 2. Environment conflicts are likely, so each stage is a separate script. |
-| **M5 Evaluation** | `rosbag2`, Python analysis, paired statistics | Statistical hygiene. Low challenge, but it needs time reserved. |
-| **M6 Hazard zones (S1)** | Inverse perspective mapping from camera pose, polygons into `CostmapFilterInfo`, Keepout and Speed filters [5] | Accuracy depends on calibration. Attempted only after M2 and M4. |
+| **M0 Environment** | Ubuntu 24.04 (dual-boot or WSL2), ROS 2 Jazzy, Gazebo Harmonic, Docker with pinned versions | Windows host and GPU drivers. ROS 2 foundations are still being learned. Allow the first four weeks. Jazzy is chosen because Iron is end-of-life and Humble's support ends in May 2027, as the project ends. |
+| **M1 Simulation and baseline** | Gazebo world with a corridor and scripted actors, differential-drive robot, `nav2_bringup`, metric logging with `rosbag2` | Building worlds and actors is time-consuming. Keep geometry clean and modular. The baseline C0 must be frozen before any change is judged. |
+| **M2 Tracker (O1)** | 2D MOT (ByteTrack [9] via `boxmot`), camera–LiDAR extrinsics (checkerboard method [10]), frustum gating, per-track linear Kalman filter (CV) [11] | Estimator tuning. Calibrate in simulation first, then sweep calibration error to quantify sensitivity. Decoupling 2D MOT eliminates custom combinatorial data association risk. |
+| **M3 Critic (O2)** | Custom MPPI critic as a C++ plugin (`pluginlib`), predicted obstacle positions over the preview horizon | **Highest-risk step**: first Nav2 plugin. A small test plugin is written in week 8, ahead of the real work. Fallback: inject predicted positions into the local costmap through a custom layer. |
+| **M4 Ablation Test Harness (O3)** | Automated Gazebo scenario generator varying obstacle speeds ($0.5–2.0\text{ m/s}$), crossing angles, and agent densities ($1–4$ dynamic agents) | Orchestrating multi-agent scripted runs with synchronized logging requires robust test harness scripts. |
+| **M5 Comparative Analysis (O3)** | `rosbag2`, Python analysis scripts, paired statistics (Welch's t-test / ANOVA), compute latency profiling | Statistical hygiene. Requires systematic data management across hundreds of simulation runs. |
+| **M6 Exploratory Hazard Track (S1)** | Ground-plane homography (IPM), `avp` prompt distillation, polygons into `CostmapFilterInfo` [5] | Accuracy depends on flat-ground assumption. Attempted as an uncommitted extension after M3/M4. |
 
-**Interdependencies.** M0 → M1 → M2 → M3 → M5 is the critical path, because the critic needs tracks and the evaluation needs the critic. M4 depends only on M0 and joins at M5 and M6. A delay in M3 therefore does not block M4, and the reverse also holds. O2 is evaluated first with the stock detector. Replacing it with the distilled model is one configuration change and is tested again in M5.
+**Interdependencies.** M0 → M1 → M2 → M3 → M4 → M5 forms the critical path, because the critic needs tracks and the ablation evaluation needs the critic and test harness. M6 (S1) is completely decoupled from the core critical path and explored independently.
 
-**Synthesis.** The method combines well-established parts (calibration, EKF, MPPI, foundation-model labelling) in a way that fits the constraints: simulation first, no foundation model in the loop, and the Nav2 safety layer left unchanged.
+**Synthesis.** The method combines well-established parts (calibration, EKF, MPPI, Nav2 plugins) in a way that fits the constraints: simulation only, zero hardware overhead, and standard Nav2 safety layers left intact.
 
 ---
 
@@ -158,15 +160,16 @@ Requirements are grouped by priority. The **core** objectives (O1–O3) define s
 |---|---|---|---|---|
 | Sensors | 2D LiDAR | Camera (richer sensing) | LiDAR + camera | 2D LiDAR + one camera |
 | Dynamic-obstacle velocity | No | Implicit in a learned policy | Yes | Yes (ByteTrack + 2D LiDAR linear Kalman filter for MPPI) |
-| Site-specific hazard learning | Manual masks | Social cues | No | From a walkthrough video and text prompts |
+| Hazard & Zone Management | Manual CAD for static walls; blind to transient $Z=0$ fluid spills | Social cues / semantic exploration | No | Deterministic CAD for walls + prompt-distilled edge IPM for transient $Z=0$ spills |
 | Integration with standard Nav2 | Native | Custom planner | Not integrated | Plugin and costmap filters |
-| Adaptation effort | Hours to days (hypothesis) | Training run | Re-labelling | Target < 30 min (measured) |
+| Adaptation effort | Manual dataset labelling (days to weeks) | Training run | Re-labelling | Zero-annotation prompt distillation (target < 30 min) |
 
 **Types of novelty** (more than one applies): translation of a technique between domains, a new integration technique (velocity-aware critic), a low-cost solution, and a new development approach (prompt-to-deploy, with its cost measured as O3-a). To the best of my knowledge these claims hold for the sources reviewed to date, and a systematic search in the first two weeks will test them.
 
 **Limitations and their effect.**
 - **Simulation-first.** Scripted actors move more regularly than real people. Randomised timing and speed reduce this effect, and S2 would test it. The size of the sim-to-real gap is unknown and is not claimed.
 - **One camera.** Metric scale comes from the LiDAR, so tracking works only for targets that cross the LiDAR plane.
+- **Scope of visual keepout filters.** Hand-drawn CAD masks remain the certified standard for permanent structural walls (ISO 3691-4). The visual pipeline is explicitly scoped to augment CAD by detecting transient, non-geometric surface hazards ($Z \approx 0$) where laser ranging physically fails.
 - **No safety certification.** The Nav2 safety behaviours stay active, and zero collisions is a hard constraint (O2-c).
 - **Incomplete prototype.** `avp` reduces effort on O3 but does not remove engineering work.
 
@@ -203,11 +206,11 @@ R2 and R3 are the most likely to change the *specification*, so each is tied to 
 
 | Phase | Weeks | Tasks (hours) | Hours | Expected status at the review |
 |---|---|---|---|---|
-| A Foundations and baseline | W1–W6 | T0 Environment and ROS 2/Nav2 foundations (50), T1 Simulation world, baseline B0, metric harness (40) | 90 | **R1 (W6, ≈16 Nov):** B0 measured on scenarios A–D, toolchain frozen |
-| B Tracker | W7–W12 | T2 O1 tracker (75), T3a O3 set-up and first labels (15) | 90 | **R2 (W12, ≈28 Dec):** velocity RMSE measured, label audit started |
-| C Critic and model | W13–W18 | T4 O2 critic (65), T3b O3 train and export (25) | 90 | **R3 (W18, ≈8 Feb):** critic running against B0, first TensorRT model |
-| D Integration and evaluation | W19–W24 | T3c O3 finish and benchmark (30), T5 integrated evaluation of all core objectives (60) | 90 | **R4 (W24, ≈22 Mar):** all core results, S1/S2 go or no-go |
-| E Stretch and report | W25–W29 | T6 S1 hazard zones (30), T7 report and demonstration (45) | 75 | **R5 (W29, ≈26 Apr):** final results, report draft |
+| A Foundations and baseline | W1–W6 | T0 Environment and ROS 2/Nav2 foundations (50), T1 Simulation world, baseline C0, metric harness (40) | 90 | **R1 (W6, ≈16 Nov):** C0 measured on scenarios A–E, toolchain frozen |
+| B Tracker | W7–W12 | T2 O1 tracker (75), T3a O3 benchmark scenario design & scripted actor generator (15) | 90 | **R2 (W12, ≈28 Dec):** velocity RMSE measured, scenario framework ready |
+| C Critic and controller | W13–W18 | T4 O2 MPPI dynamic critic C++ plugin (75), T3b O3 ablation logging & metrics (15) | 90 | **R3 (W18, ≈8 Feb):** critic running against C0, ablation harness ready |
+| D Multi-scenario ablation | W19–W24 | T3c O3 multi-scenario ablation runs (40), T5 integrated comparative analysis (50) | 90 | **R4 (W24, ≈22 Mar):** 3-way ablation results compiled, S1/S2 go or no-go |
+| E Stretch and report | W25–W29 | T6 S1 exploratory hazard track / buffer (30), T7 report and demonstration (45) | 75 | **R5 (W29, ≈26 Apr):** final results, report draft |
 | Close | W30 | T7 final report, demonstration (15) | 15 | Submission |
 
 ```mermaid
@@ -216,21 +219,20 @@ gantt
     title Planned schedule (W1 = 2026-10-12, review dates are placeholders)
     section Foundations
     T0 Env and ROS2/Nav2 foundations   :t0, 2026-10-12, 28d
-    T1 Sim, baseline B0, metrics       :t1, 2026-10-26, 28d
+    T1 Sim, baseline C0, metrics       :t1, 2026-10-26, 28d
     R1 (W6)                            :milestone, r1, 2026-11-16, 0d
     section O1 Tracker
     T2 LiDAR-vision tracker            :t2, 2026-11-23, 42d
     R2 (W12)                           :milestone, r2, 2026-12-28, 0d
-    section O3 Distillation
-    T3 avp to TensorRT segmenter       :t3, 2026-12-07, 84d
     section O2 Critic
-    T4 MPPI dynamic critic             :t4, 2027-01-04, 42d
+    T4 MPPI dynamic critic plugin      :t4, 2027-01-04, 42d
     R3 (W18)                           :milestone, r3, 2027-02-08, 0d
-    section Integration
-    T5 Integrated core evaluation      :t5, 2027-02-15, 42d
+    section O3 Ablation
+    T3 3-Way Ablation Benchmark        :t3, 2026-12-07, 105d
+    T5 Integrated evaluation & stats   :t5, 2027-02-15, 42d
     R4 (W24)                           :milestone, r4, 2027-03-22, 0d
     section Stretch and report
-    T6 S1 hazard zones                 :t6, 2027-03-29, 21d
+    T6 S1 Exploratory hazard track     :t6, 2027-03-29, 21d
     T7 Report and demo                 :t7, 2027-03-29, 42d
     R5 (W29)                           :milestone, r5, 2027-04-26, 0d
 ```
@@ -273,15 +275,44 @@ gantt
 
 [13] Nav2, "Model Predictive Path Integral Controller" (`nav2_mppi_controller`), README and source. [Online]. Available: https://github.com/ros-navigation/navigation2/tree/main/nav2_mppi_controller. Accessed 11 Oct 2026.
 
+[14] N. Khor, "avp: Automated Video Dataset Labelling and Annotation Pipeline," 2026. [Online]. Available: https://github.com/cupcakes04/avp.
+
 ---
 
 ## Appendix A: Supervisor-provided project specification
 
-**Supervisor:** Dr. Shalini Darmaraju
+**Project Title:** Vision-Augmented Mobile Robot Navigation in Dynamic Environments  
+**Project Code:** SD-MEng-26-01  
+**Supervisor:** Dr Shalini Darmaraju  
+**Moderator:** Ir Dr Daniel Pu  
+**Date:** 19 October 2026  
 
-**Main field:** Autonomous Systems
+### Project Description
+Autonomous mobile robots need to navigate safely and efficiently in environments containing moving obstacles. Planar range sensors provide distance measurements, while cameras provide visual information that can help identify relevant obstacles. Combining these inputs with obstacle motion estimation can support navigation decisions when obstacles cross or approach the robot’s planned route.
 
-**Sub-field / keywords:** Path Planning, Robot Navigation, Localization, Obstacle Avoidance
+This project aims to develop a simulation-based navigation framework that combines camera information with planar range measurements for obstacle tracking and motion-aware navigation. A mobile robot equipped with simulated sensors will operate in a known indoor environment containing selected types of moving obstacles. Existing visual detection and tracking methods will be adapted and combined with range measurements to estimate obstacle positions and velocities. A simple motion model will predict their short-term positions, which will be incorporated into local path planning and collision avoidance using an existing navigation framework.
 
-*[Paste the full project description supplied by the supervisor here. Only the field and keywords were available when this draft was prepared.]*
+The proposed system will be evaluated against range-sensor-based navigation, with additional comparisons to distinguish the effects of visual information and motion prediction. Experiments will vary obstacle speeds, movement patterns and density. Evaluation will assess tracking accuracy, navigation success, collisions, travel time, waiting time and computational efficiency. All development and evaluation will be conducted in simulation, with images and range measurements generated by simulated sensors.
+
+### Target SDG(s)
+- **SDG 9:** Industry, Innovation and Infrastructure
+- **SDG 8:** Decent Work and Economic Growth
+
+### Project Objectives
+1. To review existing methods for vision-augmented mobile robot navigation, camera and range-sensor integration, obstacle tracking and motion prediction.
+2. To develop an indoor robot simulation and adapt existing detection and tracking methods to combine simulated camera and planar range measurements for obstacle position and velocity estimation.
+3. To develop a navigation framework that incorporates short-term obstacle motion predictions into local path planning and collision avoidance.
+4. To evaluate the proposed framework against range-sensor-based navigation under varying obstacle movements and densities, assessing tracking accuracy, navigation performance and computational efficiency.
+
+### Project Deliverables
+1. A literature review of vision-augmented mobile robot navigation, camera and range-sensor integration, obstacle tracking and motion prediction methods.
+2. A configurable indoor robot simulation and an implemented obstacle detection and tracking system using simulated camera and range measurements, with documented source code.
+3. A navigation prototype integrating short-term obstacle motion prediction with local path planning and collision avoidance.
+4. Comparative experimental results and analysis of tracking accuracy, navigation success, collisions, travel time, waiting time and computation time, supported by reproducible simulation scenarios and video demonstrations.
+5. A final project report documenting the literature review, methodology, system development, evaluation results and conclusions.
+
+### Resource & Effort Breakdown
+- **Hardware / Software / Research Ratio:** HW 0% | SW 60% | Research/Investigation/Design 40%
+- **Lab Space Requirements:** No dedicated laboratory space; computer workstation only.
+- **Supported Software:** Ubuntu Linux with ROS 2, Nav2 and Gazebo; Python or C++ for development; and NumPy and Matplotlib for analysis and visualisation.
 
