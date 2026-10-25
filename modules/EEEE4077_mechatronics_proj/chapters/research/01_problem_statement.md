@@ -3,34 +3,44 @@
 **Project Title:** Vision-Augmented Mobile Robot Navigation in Dynamic Environments  
 **Project Code:** SD-MEng-26-01 | **Supervisor:** Dr Shalini Darmaraju | **Moderator:** Ir Dr Daniel Pu  
 **Target Domain:** Indoor Logistics, Warehouse Automation, Low-Cost Autonomous Mobile Robots (AMRs)  
-**Core Stack:** ROS 2 (Jazzy + Gazebo Harmonic), Nav2 (`nav2_mppi_controller`), 2D Planar LiDAR, Monocular RGB Camera, ByteTrack MOT, Linear Kalman Filter
+**Core Stack:** ROS 2 (Jazzy + Gazebo Harmonic), Nav2 (`nav2_mppi_controller`), 2D Planar LiDAR, Monocular RGB Camera, ByteTrack MOT, Linear Kalman Filter  
 
 ---
 
-## 1.1 The Brownfield Deployment Bottleneck
+## 1.1 The Operational Bottleneck in Shared Environments
 
-In brownfield industrial environments (legacy manufacturing plants and mid-tier distribution centers), Autonomous Mobile Robots (AMRs) must operate alongside human foot traffic and manual material handling equipment without the benefit of facility redesigns. To remain economically viable, these platforms avoid multi-thousand-dollar 3D LiDAR arrays and instead rely on single-plane 2D safety LiDARs paired with classical 2D occupancy grids (Nav2 costmaps).
+In modern industrial plants, mid-tier warehouses, and shared indoor facilities, Autonomous Mobile Robots (AMRs) must navigate alongside moving human workers and manual material handling equipment (forklifts, pallet jacks). To remain economically viable and maintain certified functional safety (ISO 3691-4 / SIL-2), commercial AMR platforms rely primarily on single-plane 2D safety laser scanners paired with classical 2D occupancy grids (Nav2 costmaps).
 
-While 2D LiDAR SLAM and static localization (e.g., AMCL, Cartographer) are mature, this architecture exhibits severe operational bottlenecks when deployed in active brownfield environments:
+While 2D LiDAR SLAM and static navigation (e.g., AMCL, Cartographer) are mature, this standard architecture suffers from a fundamental operational failure mode in dynamic environments:
 
-1. **Dynamic Deadlock ("Freezing Robot Problem"):**
-   - 2D LiDAR observes dynamic cross-traffic (pedestrians, forklifts, tuggers) only as sparse, disconnected planar point clusters (e.g., two leg cross-sections or isolated wheel hubs).
-   - Lacking visual features, the sensor cannot infer object class, heading angle ($\psi$), or velocity vectors.
-   - Standard local costmaps mark these points as static obstacles, triggering abrupt emergency halts, recovery rotations, and severe throughput bottlenecks.
-2. **Semantic Blindness to Non-Geometric Surface Hazards ($Z = 0$):**
-   - Standard 2D and 3D occupancy grids evaluate traversability purely through physical laser reflection and geometric height ($Z \ne 0$).
-   - They are physically incapable of detecting flat surface hazards where elevation is zero ($Z \approx 0$), such as slick chemical/oil spills, standing water puddles, or painted transit lanes. Laser pulses either disperse via specular reflection (treating the slick as traversable free space) or return flat ground reflections, risking dangerous hydroplaning, traction loss, and wheel odometry corruption.
-   - While static structural boundaries (walls, permanent machinery) are best handled via deterministic CAD keepout vectors, static CAD maps cannot anticipate transient, unplanned fluid leaks or temporary floor demarcations that arise during active operational shifts.
+1. **The "Freezing Robot Problem" (Trautman & Krause, 2010):**
+   - A planar 2D LiDAR scans in a single thin horizontal plane (10–20 cm above the floor). It observes a walking human or crossing vehicle only as sparse, disconnected point clusters (e.g., two leg cross-sections).
+   - The sensor has zero visual feature context: it cannot infer object semantic class, orientation, or motion vectors.
+   - Standard 2D costmaps (`nav2_costmap_2d`) represent the world as a static, time-invariant grid ($t = 0$), marking dynamic obstacles as stationary brick walls.
+   - As a result, when an obstacle enters or crosses the robot's corridor, local trajectory planners (DWB, TEB, or default MPPI) detect an instantaneous obstruction and execute emergency stops, conservative waiting, or erratic recovery spins. The robot frequently freezes, causing severe operational throughput bottlenecks even though the crossing agent will have cleared the corridor seconds before the robot arrives.
+
+2. **The Limitation of Costmap-Only Obstacle Integration:**
+   - Standard attempts to address dynamic obstacles by projecting camera or depth sensor data directly into the local costmap (e.g., via `VoxelLayer` or `spatio_temporal_voxel_layer`) actually worsen the freezing behavior.
+   - Because costmaps discard target identity and lack velocity storage fields, marking moving humans as occupied costmap cells creates persistent phantom obstacles that linger due to raycasting decay latencies, paralyzing the robot in dense cross-traffic.
 
 ---
 
-## 1.2 Proposed Solution: Rapidly Deployable Context Augmentation
+## 1.2 Proposed Solution: Multi-Modal Tracking & Predictive Trajectory Planning
 
-Rather than replacing existing, robust 2D LiDAR hardware or attempting to replace certified static CAD maps with unverified neural networks, this project introduces a **modular, prompt-distilled visual context and tracking pipeline** designed to retrofit low-cost 2D LiDAR AMRs:
+Rather than attempting to replace proven 2D LiDAR safety hardware or relying on computationally prohibitive multi-camera 3D voxel grids, this project develops a **modular, vision-augmented predictive navigation framework** integrated natively into ROS 2 Nav2:
 
-* **Zero-Annotation Prompt-to-Edge Distillation:**
-   - An offline pipeline ingests facility walkthrough video and utilizes large Vision-Language Models (VLMs) and segmentation foundation models to auto-label site-specific non-geometric hazards and visual rules from text prompts (e.g., `"fluid spill"`, `"forklift transit lane"`).
-   - This knowledge is distilled into an edge-optimized instance segmenter running on TensorRT, eliminating the need for expensive manual bounding-box annotation.
-* **Metric Planar & Kinetic Augmentation:** The edge model feeds into two deterministic online modules:
-   1. *Semantic Surface Costmap Filters:* Planar floor masks for transient surface hazards and visual lanes are mapped via Inverse Perspective Mapping (IPM) into Nav2 Costmap Filters as dynamic keepout and speed zones, complementing permanent CAD vector maps.
-   2. *Metric Sensor Fusion:* Monocular bounding boxes resolve 2D LiDAR identity fragmentation, while 2D LiDAR range gates resolve monocular scale ambiguity, supplying $(x, y, v_x, v_y, \psi)$ obstacle vectors directly into predictive trajectory control (`nav2_mppi_controller`).
+1. **Multi-Modal Late-Fusion State Estimation (Module 1):**
+   - A forward-facing monocular RGB camera detects dynamic agents (pedestrians, vehicles) using a lightweight edge detector (YOLO) and tracks them in image space using **ByteTrack**, maintaining persistent target identities across visual occlusions.
+   - Planar 2D LiDAR range points are projected into visual bounding frustums via camera-laser extrinsic calibration, extracting millimeter-accurate Time-of-Flight metric distances without stereo disparity noise.
+   - A per-track **Linear Kalman Filter** estimates smooth, decoupled metric obstacle states:
+     $$\mathbf{x} = [x, y, v_x, v_y]^T$$
+
+2. **Predictive Dynamic MPPI Control (Module 2):**
+   - Tracked dynamic obstacle state vectors are consumed by a bespoke C++ **Dynamic Obstacle Critic plugin** inside `nav2_mppi_controller`.
+   - The critic forward-projects obstacle positions across the MPPI preview horizon ($T = 2.0\text{ s}$):
+     $$\mathbf{p}_{\text{obs}}(t + \tau) = \mathbf{p}_{\text{obs}}(t) + \mathbf{v}_{\text{obs}} \cdot \tau$$
+   - This drives the MPPI optimizer to proactively yield, decelerate, or deflect around crossing agents without freezing, while preserving standard Nav2 safety costmap constraints.
+
+3. **Systematic 3-Way Comparative Ablation Benchmark (Module 3):**
+   - An automated simulation benchmark in Gazebo Harmonic evaluates the framework against range-sensor-based navigation across varying obstacle speeds ($0.5–2.0\text{ m/s}$), crossing trajectories, and crowd densities ($1–4$ dynamic agents).
+   - Statistically distinguishes the isolated contributions of (a) visual identification versus (b) motion prediction in reducing robot freezing and travel delays.

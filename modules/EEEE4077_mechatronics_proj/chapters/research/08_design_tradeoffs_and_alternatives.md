@@ -1,6 +1,7 @@
 # 8. Design Trade-Offs, Alternatives & Defense Rationales
 
-> **Purpose**: This living document records architectural questions, technical doubts, evaluated alternatives, and turning points. It serves as the definitive engineering defense reference for viva examinations and supervisor technical reviews, grounded in real physical and computational constraints rather than academic theater.
+> **Purpose**: This living document records architectural questions, technical doubts, evaluated alternatives, and turning points. It serves as the definitive engineering defense reference for viva examinations and supervisor technical reviews, grounded in real physical and computational constraints rather than academic theater.  
+> *(If you need a plain-English, high-level primer on the real-world AMR hardware baseline and why robots freeze, read [`00_context.md`](./00_context.md) first).*
 
 ---
 
@@ -139,8 +140,77 @@
    - Liquid spills (hydraulic fluid, battery acid, standing wash water) and floor-painted traffic lanes possess **zero geometric height ($Z \approx 0$)**.
    - When 3D LiDAR hits an oil puddle on polished concrete, specular reflection disperses the beam, or ToF returns $Z=0$, causing the costmap to treat the spill as traversable free space. An AMR driving into an oil slick hydroplanes, losing wheel traction and odometry.
    - Static CAD maps cannot represent transient spills because spills occur unpredictably during operational shifts.
-3. **The Reframed Role of Module 1 (Zero-Annotation Bootstrap for Surface Hazards):**
+3. **The Reframed Role of Surface Hazard Distillation (Parked in `explore/`):**
    - The distillation pipeline does **not** replace CAD vector mapping of permanent facility walls.
    - Instead, it acts as an **automated pseudo-labelling bootstrap**: it allows robotics teams to train a lightweight edge detector for novel, domain-specific surface hazards (e.g., facility-specific fluid stains, temporary hazard cones, floor demarcations) from video **without paying human data annotators to manually draw thousands of bounding boxes**.
-   - The resulting detections project directly onto Nav2 dynamic costmap filter layers, safely stopping the robot before it enters a non-geometric traction hazard.
+   - *(Archival Notice: While this analysis validates the theoretical role of VLM auto-labelling for surface hazards, this entire track is formally decoupled and archived in `chapters/explore/` (`01_vlm_hazard_distillation.md` and `02_planar_ipm_homography.md`) to keep the assessed FYP deliverables 100% focused on dynamic obstacle tracking and predictive MPPI control).*
+
+---
+
+## 8.7 Trade-Off 7: Static Costmap Obstacle Marking vs. Predictive Dynamic Trajectory Rollouts
+
+### The Doubt / Question
+*"Why not just use existing vision/depth plugins (e.g., `depthimage_to_laserscan`, `VoxelLayer`, or `spatio_temporal_voxel_layer`) to project camera obstacles directly onto the Nav2 costmap? Doesn't industry already solve vision-based obstacle avoidance this way? Why build a custom tracking pipeline and MPPI prediction critic?"*
+
+### Comparison Matrix
+
+| Evaluation Dimension | Standard Costmap Marking (`VoxelLayer` / STVL / `depthimage_to_laserscan`) | Spatio-Temporal Predictive Fusion (Selected: ByteTrack + KF + MPPI Critic) |
+|---|---|---|
+| **Core Problem Solved** | **Problem 1: Spatial Occupancy ($t = 0$)** — Identifies where physical matter is located in space right now | **Problem 2: Temporal Trajectory Prediction ($t + \tau$)** — Predicts where dynamic agents will be over preview horizon $\tau \in [0, 2\text{ s}]$ |
+| **Data Representation** | 2D/3D Grid of scalar costs ($C(x, y) \in [0, 254]$); zero memory, zero velocity | Discrete state vectors per active agent ID: $[x, y, v_x, v_y]^T$ with covariance ellipse |
+| **Impact on Freezing Robot Problem** | **Aggravates freezing:** Moving humans are marked as stationary obstacles blocking the corridor, triggering emergency halts and recovery rotations | **Eliminates freezing:** Evaluates forward collision cones; if pedestrian will clear corridor before robot arrives, robot maintains velocity and yields smoothly |
+| **Identity Persistence Across Frames** | None: Every sensor frame writes new cost cells and clears old ones via raycasting | Persistent: ByteTrack in 2D image space maintains unique `track_id`s through visual occlusions |
+| **Costmap Clearing Latency** | High persistence delay: Decaying old obstacle cells requires raycasting cycles ($200–800\text{ ms}$), causing ghost obstacles | Instantaneous: Kalman state propagates mathematically; tracks terminate cleanly upon visual death logic |
+| **Nav2 Controller Integration** | Evaluated via standard static critics (`ObstaclesCritic`, `CostCritic`); treats agents as static walls | Evaluated via custom dynamic MPPI critic; computes dynamic distance along simulated trajectory rollouts $\mathbf{p}_{\text{robot}}(\tau_k) - \mathbf{p}_{\text{obs}}(\tau_k)$ |
+
+### Defense Rationale
+1. **The Fundamental Pathology of Costmap-Based Obstacle Avoidance:**
+   - Standard Nav2 costmaps represent a single, time-invariant snapshot of the world ($t = 0$).
+   - When a camera or depth sensor detects a pedestrian crossing the robot's path, a standard voxel layer marks those coordinates as an impassable obstacle (cost = 254).
+   - Because the local planner (DWB, TEB, or default MPPI) cannot distinguish between a concrete pillar and a walking human moving at $1.2\text{ m/s}$, it plans against an instantaneous obstruction. The robot abruptly halts.
+   - Even worse, costmap persistence filters (used to prevent obstacle flicker) leave 'ghost' occupancy footprints behind the walking human. The robot remains frozen long after the person has cleared the corridor.
+   - **Conclusion:** Standard vision-to-costmap integration solves *spatial detection*, but directly *causes* the freezing robot problem.
+2. **Decoupling Motion Prediction from the Static Costmap:**
+   - Nav2 costmaps physically lack fields to store velocity vectors $[v_x, v_y]$.
+   - Instead of contorting the static 2D costmap to handle dynamic agents, our architecture decouples concerns:
+     - The **Nav2 Costmap** remains responsible for true static geometry (walls, racks, static machinery).
+     - The **Multi-Modal Tracker** publishes discrete dynamic obstacle vectors (`/tracked_obstacles`).
+     - The **Custom MPPI Dynamic Critic** injects obstacle velocity directly into trajectory rollouts, computing spatio-temporal clearance without modifying static costmap cells.
+3. **Pareto Efficiency on Edge Hardware:**
+   - Achieving dynamic avoidance via dense 3D point cloud clustering (Euclidean DBSCAN + Hungarian metric association) consumes $40–70\%$ of an edge GPU/CPU.
+   - By tracking in 2D image space (ByteTrack) and anchoring range via planar 2D LiDAR ToF frustum gating, this pipeline achieves $>25\text{ FPS}$ on embedded hardware with $<0.1\text{ ms}$ Kalman filter updates.
+
+---
+
+## 8.8 Trade-Off 8: Modern Advanced MPPI Architectures — CBF Post-Filtering (SE-MPPI), Continuous Footprint SDFs (EXACT-MPPI), and Multi-Modal Clustering (CSC-MPPI) vs. Spatio-Temporal Dynamic Critic Plugin
+
+### The Doubt / Question
+*"Recent robotics literature introduces powerful MPPI extensions: SE-MPPI introduces Control Barrier Functions and local minima escape heuristics; EXACT-MPPI computes continuous Signed Distance Functions for arbitrary footprints on edge GPUs; CSC-MPPI uses GPU DBSCAN clustering to prevent multi-modal averaging collapse. Should our project adopt or benchmark against these advanced formulations? Are they in spirit similar, or why choose a lightweight C++ dynamic critic instead?"*
+
+### Comparison Matrix
+
+| Dimension | SE-MPPI (Kang, 2024) | EXACT-MPPI (Peng et al., 2024) | CSC-MPPI (RCILab, IROS 2025) | Spatio-Temporal Dynamic Critic (Selected) |
+|---|---|---|---|---|
+| **Primary Failure Mode Addressed** | Dynamic entrapment, local minima, and hard safety invariance | Overly conservative disc footprint approximations on complex non-convex chassis | Multi-modal averaging failure (averaging left/right swerves into centerline collision) | **Freezing Robot Problem**: False corridor blockage caused by static costmap marking of dynamic agents |
+| **Safety / Avoidance Mechanism** | Analytical **Control Barrier Function (CBF)** solved via QP (`osqp-eigen`) post-filter on $\mathbf{u}_0^*$ | Exact **Signed Distance Functions (SDF)** evaluated continuously over parallel rollouts | **DBSCAN trajectory clustering** + primal-dual constrained sampling | **Spatio-temporal forward projection** ($\mathbf{p}_0 + \mathbf{v}\tau$) shaping the internal rollout cost landscape |
+| **Execution Environment & Stack** | C++ Nav2 Controller Plugin (CPU + SIMD) | Python + CUDA JAX JIT compilation (Edge GPU) | Python + JAX + RAPIDS `cuML` (Edge GPU) | **Idiomatic C++ Nav2 Plugin** (`pluginlib`, CPU SIMD, $<0.3\text{ ms}$) |
+| **Input Obstacle Representation** | Static/dynamic obstacle distance & boundary limits | Raw 3D/2D point clouds or polygonal obstacle fields | Rollout trajectory state distributions | Discrete semantic state vectors ($[x, y, v_x, v_y]^T$) from ByteTrack + LiDAR Kalman filter |
+| **Multi-Modal Averaging Handling** | Relies on active escape velocity heuristic when entrapped | High sample density across continuous SDF field | Explicit GPU DBSCAN rollout clustering separates topological modes | **Velocity vectors naturally break spatial symmetry**: trajectories passing behind obstacle incur much lower cost |
+| **Brownfield AMR Suitability** | High (CPU native, Nav2 plugin) | Low (Replaces Nav2 C++ stack with Python/JAX GPU runtime) | Low (Requires heavy RAPIDS/cuML dependencies and GPU VRAM) | **Optimal**: Zero external dependencies, runs on low-cost onboard CPU alongside standard Nav2 |
+
+### Defense Rationale
+1. **"In Spirit Similar" vs. "Orthogonal Problem Axes":**
+   - All four methods share the overarching spirit of overcoming naive MPPI limitations in complex operational environments without relying on black-box reinforcement learning.
+   - However, they address **different failure axes**:
+     - *EXACT-MPPI* is an answer to *geometric footprint complexity* (e.g., a forklift carrying an irregular pallet through dense static clutter). For a standard circular or differential warehouse AMR, non-convex SDF calculation introduces high GPU overhead without solving the semantic dynamic tracking problem.
+     - *CSC-MPPI* is an answer to *topological symmetry* in static obstacle avoidance where the planner cannot decide between left and right. In dynamic pedestrian encounters, the obstacle's velocity vector $\mathbf{v}_{\text{obs}}$ breaks bilateral symmetry automatically across the lookahead horizon $\tau \in [0, 2\text{ s}]$—rollouts passing behind the person are naturally favored over rollouts attempting to outrun them.
+     - *SE-MPPI* is an answer to *mathematical safety certification via QP projections*. While elegant, CBF post-filters act reactively at the control output level ($t = 0$) rather than proactively guiding trajectory generation over future seconds ($t \in [0.5, 2.0]\text{ s}$).
+2. **Why Not Use Them as Empirical Ablation Baselines (C0–C2)?**
+   - The project's assessed experimental evaluation (`SD-MEng-26-01`, Chapter 5) requires an **ablation study isolating perception from prediction within an identical Nav2 runtime**.
+   - Benchmarking against EXACT-MPPI or CSC-MPPI would confound the experiment: differences in performance would stem from Python JAX vs. C++ SIMD runtimes, GPU memory bandwidth, or point cloud density, rather than isolating the contribution of visual detection vs. Kalman velocity prediction.
+   - Therefore, SE-MPPI, EXACT-MPPI, and CSC-MPPI serve as **state-of-the-art literature benchmarks and conceptual comparisons**, while C0 (LiDAR static), C1 (Vision static), and C2 (Predictive dynamic) form the rigorous, scientifically controlled experimental ablation matrix.
+3. **Brownfield Commercial Feasibility:**
+   - Industrial AMRs deployed across logistics warehouses run on cost-constrained x86 or ARM CPUs (e.g., Intel Celeron/i3, Raspberry Pi 4/5, or low-tier Jetson). They cannot afford to dedicate 2–4 GB of GPU VRAM to JAX CUDA kernels or RAPIDS `cuML` clustering.
+   - Our spatio-temporal dynamic critic integrates directly into Nav2's native C++ pipeline, requiring $<150$ lines of code, $<0.3\text{ ms}$ compute per cycle, and zero specialized external libraries.
+
 

@@ -1,33 +1,35 @@
-# Project Specifications & Scope Tiers
+# Project Specifications & Performance Hypotheses
 
-## 1. Scope Tiers
-
-| Tier | ID | Item | Maps to Research Module | Depends on |
-|---|---|---|---|---|
-| **Core** | O1 | Multi-Modal Dynamic-Obstacle Tracker (`lidar_vision_tracker`) | Module 2 | Sim baseline (T1) |
-| **Core** | O2 | Predictive Dynamic MPPI Critic (`nav2_mppi_dynamic_critic`) | Module 3 | O1 |
-| **Core** | O3 | Systematic 3-Way Comparative Ablation & Performance Benchmark | Evaluation & Methodology | O1, O2 |
-| Stretch | S1 | Semantic Surface Hazard Augmentation (`avp` / `semantic_context_layer` exploratory track) | Module 1 | Baseline |
-| Stretch | S2 | Physical-robot / Jetson validation (personal-budget hardware, outside committed scope) | All | O1–O3 |
-
-**Out of scope:** Fleet management, SLAM/localisation research, running heavy foundation models directly on the robot, 3D reconstruction, formal safety certification.
+> **Purpose**: Formal engineering specifications agreed for supervisor review, Project Planning Report (§2), and thesis validation criteria. Directly derived from `chapters/research/05_ablation_and_evaluation.md`.
 
 ---
 
-## 2. SMART Specifications
+## 1. Core Objectives
 
-All numeric targets are **hypotheses**. "Minimum" is the lowest outcome that still counts as meeting the requirement. "Target" is the aim. Baselines are measured in Phase A (T1). Difficulty is the expected challenge: **L**ow, **M**edium, or **H**igh.
+The project strictly focuses on three committed core engineering objectives in software simulation, in full alignment with the supervisor specification (`SD-MEng-26-01`: HW 0% / SW 60% / Research 40%):
 
-| ID | Requirement | Minimum | Target | Why this number | Test and success criterion | Diff. |
+| ID | Title | Scope & Description | Source Module |
+|---|---|---|---|
+| **O1** | **Multi-Modal Dynamic Obstacle Tracker** | Adapt visual detection and planar LiDAR range gating via extrinsic calibration ($[R \mid t]$) and 2D MOT (ByteTrack) coupled to a linear Kalman filter (CV) to estimate dynamic obstacle positions and velocities. | `research/03_perception_and_tracking.md` |
+| **O2** | **Predictive Dynamic MPPI Controller** | Develop a native C++ `pluginlib` MPPI trajectory critic (`DynamicObstaclesCriticPlugin`) that projects obstacle velocities forward across the lookahead horizon ($\tau \in [0, 2.0]\text{ s}$) to eliminate the freezing robot problem. | `research/04_predictive_mppi_control.md` |
+| **O3** | **Systematic 3-Way Comparative Ablation** | Benchmark the system within Gazebo Harmonic across standardized dynamic scenarios (crossing speeds $0.5\text{--}2.0\text{ m/s}$, varying angles and densities), rigorously isolating visual detection (C1) from motion prediction (C2) against baseline Nav2 (C0). | `research/05_ablation_and_evaluation.md` |
+
+**Explicitly Out of Scope:** Physical hardware procurement/fabrication, robot fleet management, SLAM/mapping research, running foundation models directly on the robot, and formal safety laser certification (ISO 3691-4).
+
+---
+
+## 2. SMART Specifications & Quantitative Hypotheses
+
+All numeric targets are formulated as research **hypotheses** evaluated in simulation. Each requirement defines a **Minimum** threshold (baseline pass criterion) and an aspirational **Target** (research aim). Difficulty is rated: **L**ow, **M**edium, or **H**igh.
+
+| ID | Requirement | Minimum | Target | Engineering Justification | Test & Success Criterion | Diff. |
 |---|---|---|---|---|---|---|
-| **O1-a** | Tracked-obstacle velocity RMSE at $\le 8\text{ m}$ | $< 0.25\text{ m/s}$ | **$< 0.15\text{ m/s}$** | ~10% of nominal walking speed (~1.4 m/s). Gazebo ground truth is exact. | $\ge 30$ randomised crossings per scenario. RMSE of $\|v_{\text{est}} - v_{\text{true}}\|$ over tracked frames. | M |
-| **O1-b** | Association: fraction of detections assigned correct LiDAR range | $\ge 85\%$ | **$\ge 95\%$** | Wrong gating yields incorrect velocity. | Compare assigned cluster with ground-truth position ($< 0.3\text{ m}$). | M |
-| **O2-a** | Freezes (Nav2 recovery or halt events) per 10 crossings | $\ge 50\%$ below baseline | **0** | Baseline hypothesis $> 5$ per 10. Freezing is a known failure mode (L1). | Count `controller_server` failures, recovery BT activations, stops $> 2\text{ s}$. Paired runs, same seeds. | H |
-| **O2-b** | Mean route completion time | $\ge 10\%$ shorter | **15–25% shorter** | Freezing costs time; 15–25% gain is the working hypothesis. | Mean $\pm$ 95% CI over $\ge 30$ runs vs baseline B0. | M |
-| **O2-c** | Safety: collisions (hard constraint) | 0 | **0** | Any intervention adding collisions is unacceptable. | Gazebo contact sensor. Any collision fails the run. | M |
-| **O3-a** | 3-Way Ablation: Statistically significant separation between configurations C0, C1, and C2 | $p < 0.05$ | **$p < 0.01$** | Proves isolated contributions of (1) visual identification vs. (2) motion prediction over range-only baseline. | Paired Welch's t-test / ANOVA across 30 runs per scenario across speeds ($0.5–2.0\text{ m/s}$) and densities. | M |
-| **O3-b** | Waiting time: cumulative duration robot remains stationary ($v < 0.05\text{ m/s}$) | $\ge 50\%$ reduction | **$\le 5\text{ s}$ per run** | Quantifies reduction in freezing delays at intersections. | Log total seconds with near-zero base velocity during active navigation goals. | M |
-| **O3-c** | Computational efficiency: end-to-end control loop rate | $\ge 15\text{ Hz}$ | **$\ge 20\text{ Hz}$** | Must exceed LiDAR scan rate (~10 Hz) to guarantee real-time MPPI trajectory generation. | Sustained mean execution frequency of perception-to-critic loop over 5-minute runs. | L |
-| **S1** | Exploratory hazard-polygon avoidance (`avp` / IPM track) | $\le 10\%$ infractions | **0%** | Explores dynamic keepout filtering for non-geometric surface hazards. | Runs in worlds with spawned surface hazards; log entry into polygon. | H |
-| **S2** | Hardware replication of a subset of O1/O2 | Qualitative | **Quantitative** | Best-effort hardware validation on personal budget. | Repeated crossing tests on physical robot. | H |
-| **NF1** | Reproducibility: one launch file + pinned container reproduces results | Yes | **Yes** | Required for marker evaluation and future research. | Clean-container execution reproduces headline tables. | L |
+| **O1-a** | Tracked-obstacle velocity RMSE at $\le 8\text{ m}$ | $< 0.25\text{ m/s}$ | **$< 0.15\text{ m/s}$** | ~10% of nominal pedestrian walking speed (~1.4 m/s). Essential for stable MPPI forward projection. | $\ge 30$ randomized crossings per scenario in Gazebo. Compute RMSE against simulator ground-truth velocity. | M |
+| **O1-b** | Data Association Accuracy | $\ge 85\%$ | **$\ge 95\%$** | Erroneous ray gating produces massive range spikes and destabilizes Kalman state covariance. | Percentage of visual detections assigned the correct laser cluster ($< 0.3\text{ m}$ Euclidean error). | M |
+| **O2-a** | Controller Freezing (Halts / Recovery Activations) | $\ge 50\%$ below baseline | **0** | Baseline Nav2 MPPI treats moving agents as static walls, frequently freezing (Trautman & Krause [L1]). | Count `controller_server` timeouts, recovery behavior tree triggers, and stationary halts $> 2.0\text{ s}$ per 10 crossings. | H |
+| **O2-b** | Mean Route Completion Time | $\ge 10\%$ shorter | **15–25% shorter** | Proactive speed modulation and continuous yielding prevent stopping delays at intersections. | Mean transit duration $\pm$ 95% CI over $\ge 30$ paired runs per scenario against baseline C0. | M |
+| **O2-c** | Collision-Free Traversal (Hard Constraint) | 0 | **0** | Proactive yielding must not compromise basic collision avoidance safety under any condition. | Monitored via Gazebo physics contact sensor. Any collision invalidates the trial. | M |
+| **O3-a** | 3-Way Ablation Separation (C0 vs C1 vs C2) | $p < 0.05$ | **$p < 0.01$** | Proves isolated contributions of (1) visual identification vs. (2) temporal motion prediction over baseline. | Paired Welch's t-test and one-way ANOVA across 30 runs per scenario across crossing speeds ($0.5–2.0\text{ m/s}$). | M |
+| **O3-b** | Cumulative Waiting Time Reduction | $\ge 50\%$ reduction | **$\le 5\text{ s}$ per run** | Quantifies reduction in idle freezing delays when crossing dynamic corridors. | Summed seconds where robot linear velocity $|v| < 0.05\text{ m/s}$ while navigation goal is active. | M |
+| **O3-c** | End-to-End Control Loop Rate | $\ge 15\text{ Hz}$ | **$\ge 20\text{ Hz}$** | Must exceed typical planar LiDAR scan rates (~10–20 Hz) to maintain real-time MPPI trajectory generation. | Sustained average execution frequency of the perception-tracking-critic pipeline over 5-minute runs. | L |
+| **NF1** | Reproducibility & Docker Containerization | Yes | **Yes** | Academic rigor requires that all simulation scenarios, benchmark scripts, and metric loggers be fully reproducible. | Single ROS 2 launch command inside a pinned container reproduces headline evaluation tables. | L |

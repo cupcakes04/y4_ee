@@ -35,78 +35,72 @@ The expected outcome is a set of ROS 2 packages, a reproducible evaluation again
 
 ### 1.3 System overview
 
-The online runtime architecture couples a multi-modal tracker and a dynamic trajectory critic within Nav2 (Figure 1). 2D multi-object tracking (ByteTrack [9]) associates detections in image space, resolving identity persistence across visual occlusions. Extrinsic calibration [10] projects planar LiDAR beams into visual bounding frustums to extract crisp metric range without stereo disparity noise. A per-track linear Kalman filter [11] estimates obstacle velocities ($v_x, v_y$), which are propagated across the preview horizon inside a custom dynamic MPPI critic plugin [12], [13]. An exploratory offline pipeline (`avp` [14]) tests non-geometric floor hazard segmentation via prompt distillation.
+The online runtime architecture couples a multi-modal tracker and a predictive trajectory critic within Nav2 (Figure 1). 2D multi-object tracking (ByteTrack [9]) associates detections directly in image space, resolving identity persistence across visual occlusions. Extrinsic calibration [10] projects planar LiDAR beams into visual bounding frustums to extract crisp metric range without stereo disparity noise. A per-track linear Kalman filter [11] estimates dynamic obstacle positions and velocities ($x, y, v_x, v_y$), which are propagated across candidate rollout horizons inside a custom dynamic MPPI critic plugin [12], [13].
 
 ```mermaid
 flowchart LR
-  subgraph OFF["S1 Exploratory setup: avp (desktop GPU)"]
-    V["Walkthrough video"] --> T["Teacher: Florence-2 / Grounded-SAM"]
-    PR["Text prompts"] --> T
-    T --> HC["Human correction (avp UI)"]
-    HC --> FT["Fine-tune YOLO-Seg, export TensorRT FP16"]
+  subgraph SEN["Sensors (Gazebo Simulation)"]
+    CAM["Monocular RGB Camera (30 FPS)"]
+    LID["Planar 2D LiDAR (20 Hz)"]
   end
-  subgraph SEN["Sensors (Gazebo)"]
-    CAM["RGB camera, about 30 FPS"]
-    LID["2D LiDAR, about 10 Hz"]
+  subgraph PER["O1 Perception & Tracking Subsystem"]
+    DET["2D Object Detector (YOLO)"]
+    MOT["2D MOT Tracker (ByteTrack)"]
+    GATE["Frustum Gating & Laser Projection"]
+    EKF["Per-Track Linear Kalman Filter"]
   end
-  subgraph PER["O1 Perception and tracking"]
-    SEG["Detector & 2D Tracker (ByteTrack)"]
-    GATE["Frustum gating and range association"]
-    EKF["Per-track linear Kalman filter: x, y, vx, vy"]
+  subgraph CTL["O2 Nav2 MPPI Predictive Control"]
+    CRIT["Dynamic Obstacles Critic Plugin"]
+    MPPI["nav2_mppi_controller (20 Hz)"]
+    LCM["nav2_costmap_2d (Static Costmap)"]
+    BASE["Simulated Mobile Base (cmd_vel)"]
   end
-  subgraph CTL["O2 Nav2 control"]
-    CRIT["Dynamic MPPI critic plugin"]
-    MPPI["MPPI controller, 20 Hz or more"]
-    LCM["Local costmap"]
+  subgraph EVAL["O3 Ablation Harness"]
+    HARNESS["Scenario Runner (Scenarios A–E)"]
+    GT["Ground-Truth Metric Logger"]
   end
-  subgraph STR["S1 Exploratory: hazard zones"]
-    IPM["Ground-plane homography"]
-    FIL["Keepout and speed filters"]
-  end
-  FT -->|"engine file"| SEG
-  CAM -->|"image"| SEG
-  SEG -->|"boxes and class"| GATE
+
+  CAM --> DET
+  DET --> MOT
+  MOT -->|"2D Bounding Boxes"| GATE
   LID -->|"LaserScan"| GATE
-  GATE -->|"metric clusters"| EKF
-  EKF -->|"tracks"| CRIT
-  CRIT --> MPPI
   LID -->|"LaserScan"| LCM
+  GATE -->|"Gated Range Depth"| EKF
+  EKF -->|"/tracked_obstacles"| CRIT
+  CRIT --> MPPI
   LCM --> MPPI
-  MPPI -->|"cmd_vel"| BASE["Robot base (sim)"]
-  SEG -.->|"floor masks"| IPM
-  IPM -.-> FIL
-  FIL -.-> LCM
-  classDef off fill:#e8eaf6,stroke:#3949ab,color:#000;
+  MPPI -->|"cmd_vel"| BASE
+  BASE -.-> HARNESS
+  HARNESS --> GT
+
   classDef sen fill:#e0f2f1,stroke:#00796b,color:#000;
   classDef per fill:#fff8e1,stroke:#f9a825,color:#000;
   classDef ctl fill:#fce4ec,stroke:#c2185b,color:#000;
-  classDef str fill:#f5f5f5,stroke:#9e9e9e,stroke-dasharray:4 3,color:#000;
-  class V,PR,T,HC,FT off;
+  classDef evl fill:#e8eaf6,stroke:#3949ab,color:#000;
   class CAM,LID sen;
-  class SEG,GATE,EKF per;
+  class DET,MOT,GATE,EKF per;
   class CRIT,MPPI,LCM,BASE ctl;
-  class IPM,FIL str;
+  class HARNESS,GT evl;
 ```
 
-*Figure 1. System block diagram. Solid arrows are core, dashed are stretch. Colours group sub-systems (blue offline, teal sensing, amber perception, magenta control).*
+*Figure 1. System block diagram. Teal indicates sensing, amber indicates perception and tracking, magenta indicates local MPPI control, and blue indicates the evaluation harness.*
 
-**Table 1. Component-level requirements and interfaces.** Dependencies run left to right in Figure 1. Rates are design targets, and sensor rates are assumed and will be confirmed against datasheets.
+**Table 1. Component-level requirements and interfaces.** Dependencies run left to right in Figure 1. Rates are design targets, and sensor rates are verified against simulator parameters.
 
 | Component | Input → output | Rate / latency requirement | Key limitation |
 |---|---|---|---|
-| Segmenter & 2D Tracker [9] | image → tracked boxes (with IDs), class, masks | ≥ 25 FPS (must exceed LiDAR rate) | Quality depends on label quality; ByteTrack handles occlusions in 2D |
-| Calibration and gating | tracked boxes + `LaserScan` → metric clusters | Per LiDAR scan (~10 Hz) | Extrinsic error mis-assigns clusters. Camera [10] and LiDAR share the same field of view only partly. |
+| Segmenter & 2D Tracker [9] | image → tracked boxes (with IDs), class | ≥ 25 FPS (must exceed LiDAR rate) | Quality depends on detection confidence; ByteTrack handles occlusions in 2D |
+| Calibration and gating [10] | tracked boxes + `LaserScan` → metric clusters | Per LiDAR scan (~20 Hz) | Extrinsic error mis-assigns clusters. Camera and LiDAR share the same field of view partly ($80^\circ$ vs $360^\circ$). |
 | Per-track Kalman filter [11] | metric clusters → (x, y, vx, vy) per ID | Per scan. Bridges visual dropouts per track. | Constant-velocity assumption fails during aggressive manoeuvres |
-| MPPI critic [12], [13] | tracks → trajectory cost | Inside the controller loop (≥ 20 Hz) | Needs predicted motion over the horizon, which assumes constant velocity |
-| Homography → filters (S1) | masks → keepout/speed zones | Event-driven | Valid on planar floor only |
+| MPPI critic [12], [13] | tracks → dynamic trajectory cost | Inside the controller loop (≥ 20 Hz) | Evaluates forward motion over lookahead horizon ($T \le 2.0\text{ s}$) |
 
-The MPPI controller samples about a thousand candidate trajectories each cycle and scores them with plug-in *critic* functions [13]. This is where velocity information can influence control. Nav2 ships 11 critics (constraint, cost, goal, goal-angle, obstacles, path-align, path-angle, path-follow, prefer-forward, twirling and velocity-deadband), all of which evaluate obstacles against a static 2D costmap without forward velocity propagation [13].
+The MPPI controller samples about a thousand candidate trajectories each cycle and scores them with plug-in *critic* functions [13]. Nav2 ships 11 default critics, all of which evaluate obstacles against a static 2D costmap without forward velocity propagation [13], creating the freezing robot pathology.
 
 ---
 
 ## 2. Specification
 
-Requirements are grouped by priority. The **core** objectives (O1–O3) define success. **Stretch** goals (S1, S2) are attempted only if the schedule allows. Every numeric target is a *hypothesis*. Each has a *minimum* (still counts as success) and a *target*. Baselines are measured in the first phase, so none of the targets is assumed from literature.
+The project strictly focuses on three core objectives (**O1–O3**) in software simulation, in direct compliance with the supervisor specification (`SD-MEng-26-01`: HW 0% / SW 60% / Research 40%). Every numeric target is a *hypothesis* with a *minimum* (baseline pass) and an aspirational *target*.
 
 **Test protocol.** Gazebo scenarios with scripted actors provide exact ground truth across varying obstacle speeds ($0.5–2.0\text{ m/s}$), crossing trajectories, and obstacle densities ($1–4$ dynamic agents): (A) a pedestrian crossing a corridor, (B) an oncoming pedestrian, (C) an automated/manual vehicle crossing, (D) multiple crossing pedestrians, (E) a static control. To distinguish the isolated effects of visual information and motion prediction as mandated by the project specification, three configurations are compared in a systematic ablation study: **C0** (Range-only baseline: Nav2 + 2D LiDAR + default static MPPI), **C1** (Vision-augmented detection: 2D LiDAR + Camera detection without velocity prediction), and **C2** (Full proposed framework: 2D LiDAR + Camera + Motion prediction via custom dynamic MPPI critic). Each scenario is run at least 30 times with randomised timing and speeds. Shared random seeds guarantee paired comparisons, with metrics reported as mean $\pm$ 95% confidence intervals.
 
@@ -114,7 +108,7 @@ Requirements are grouped by priority. The **core** objectives (O1–O3) define s
 
 | ID | Requirement | Minimum | Target | Justification | Test and success criterion | Challenge |
 |---|---|---|---|---|---|---|
-| **O1-a** | Obstacle velocity RMSE at ≤ 8 m | < 0.25 m/s | **< 0.15 m/s** | About 10% of a nominal 1.4 m/s walking speed [citation to be added] | RMSE against Gazebo ground truth, ≥ 30 runs per scenario | M |
+| **O1-a** | Obstacle velocity RMSE at ≤ 8 m | < 0.25 m/s | **< 0.15 m/s** | About 10% of a nominal 1.4 m/s walking speed [14] | RMSE against Gazebo ground truth, ≥ 30 runs per scenario | M |
 | **O1-b** | Correct LiDAR–detection association | ≥ 85% | ≥ 95% | Wrong gating gives wrong velocity | Assigned cluster within 0.3 m of ground-truth agent | M |
 | **O2-a** | Freezes per 10 crossings | ≥ 50% below C0 | **0** | Freezing is a known failure [4]. C0 baseline hypothesis > 5 per 10, to be measured. | Count controller failures, recovery behaviours and stops > 2 s | H |
 | **O2-b** | Route completion time | ≥ 10% shorter | **15–25% shorter** | Time lost to halts and recoveries | Mean ± CI vs C0 baseline | M |
@@ -122,11 +116,9 @@ Requirements are grouped by priority. The **core** objectives (O1–O3) define s
 | **O3-a** | 3-Way Ablation: Statistically significant separation between C0, C1, C2 | $p < 0.05$ | **$p < 0.01$** | Proves isolated contributions of (1) visual identification vs. (2) motion prediction over range-only baseline | Paired Welch's t-test / ANOVA across 30 runs per scenario across speeds ($0.5–2.0\text{ m/s}$) and densities | M |
 | **O3-b** | Waiting time: cumulative duration robot remains stationary ($v < 0.05\text{ m/s}$) | ≥ 50% reduction | **≤ 5 s per run** | Quantifies reduction in freezing delays at intersections | Log total seconds with near-zero base velocity during active navigation goals | M |
 | **O3-c** | Computational efficiency: end-to-end control loop rate | ≥ 15 Hz | **≥ 20 Hz** | Must exceed LiDAR scan rate (~10 Hz) to guarantee real-time MPPI trajectory generation | Sustained mean execution frequency of perception-to-critic loop over 5-minute runs | L |
-| **S1** | Exploratory hazard-polygon avoidance (`avp` / IPM track) | ≤ 10% of runs | **0%** | Explores dynamic keepout filtering for non-geometric surface hazards | Runs with spawned surface hazards, logged polygon entry | H |
-| **S2** | Replicate a subset of O1/O2 on a real robot (personal-budget hardware, outside committed scope) | Qualitative | Quantitative | Checks sim-to-real transfer | Repeated crossings on hardware | H |
 | **NF1** | Reproducibility from one launch file in a pinned container | Yes | Yes | Marker and future work can repeat results | Fresh-container run reproduces the headline table | L |
 
-**Attainability and realism.** All core work is simulation-based and runs on the available workstation with NVIDIA RTX 4070 Ti Super GPU, matching the supervisor's 0% HW / 60% SW / 40% Research specification. The plan encompasses 450 working hours (Section 6). The specification is ambitious relative to stock Nav2 because it targets zero freezes and statistically validated predictive avoidance using low-cost sensor modalities. The tiered structure guarantees reportable outcomes at each milestone.
+**Attainability and realism.** All work is simulation-based and runs on the available workstation with NVIDIA RTX 4070 Ti Super GPU, matching the supervisor's 0% HW / 60% SW / 40% Research specification. The plan encompasses 450 working hours (Section 6). The specification is ambitious relative to stock Nav2 because it targets zero freezes and statistically validated predictive avoidance using low-cost sensor modalities.
 
 ---
 
@@ -136,15 +128,14 @@ Requirements are grouped by priority. The **core** objectives (O1–O3) define s
 
 | Step | Method and tools | Limitation / challenge, and extra work |
 |---|---|---|
-| **M0 Environment** | Ubuntu 24.04 (dual-boot or WSL2), ROS 2 Jazzy, Gazebo Harmonic, Docker with pinned versions | Windows host and GPU drivers. ROS 2 foundations are still being learned. Allow the first four weeks. Jazzy is chosen because Iron is end-of-life and Humble's support ends in May 2027, as the project ends. |
+| **M0 Environment** | Ubuntu 24.04 (dual-boot or WSL2), ROS 2 Jazzy, Gazebo Harmonic, Docker with pinned versions | Host environment setup and GPU drivers. ROS 2 foundations are established. Allow the first four weeks. Jazzy is chosen because Iron is EOL and Humble support ends in May 2027. |
 | **M1 Simulation and baseline** | Gazebo world with a corridor and scripted actors, differential-drive robot, `nav2_bringup`, metric logging with `rosbag2` | Building worlds and actors is time-consuming. Keep geometry clean and modular. The baseline C0 must be frozen before any change is judged. |
 | **M2 Tracker (O1)** | 2D MOT (ByteTrack [9] via `boxmot`), camera–LiDAR extrinsics (checkerboard method [10]), frustum gating, per-track linear Kalman filter (CV) [11] | Estimator tuning. Calibrate in simulation first, then sweep calibration error to quantify sensitivity. Decoupling 2D MOT eliminates custom combinatorial data association risk. |
 | **M3 Critic (O2)** | Custom MPPI critic as a C++ plugin (`pluginlib`), predicted obstacle positions over the preview horizon | **Highest-risk step**: first Nav2 plugin. A small test plugin is written in week 8, ahead of the real work. Fallback: inject predicted positions into the local costmap through a custom layer. |
 | **M4 Ablation Test Harness (O3)** | Automated Gazebo scenario generator varying obstacle speeds ($0.5–2.0\text{ m/s}$), crossing angles, and agent densities ($1–4$ dynamic agents) | Orchestrating multi-agent scripted runs with synchronized logging requires robust test harness scripts. |
 | **M5 Comparative Analysis (O3)** | `rosbag2`, Python analysis scripts, paired statistics (Welch's t-test / ANOVA), compute latency profiling | Statistical hygiene. Requires systematic data management across hundreds of simulation runs. |
-| **M6 Exploratory Hazard Track (S1)** | Ground-plane homography (IPM), `avp` prompt distillation, polygons into `CostmapFilterInfo` [5] | Accuracy depends on flat-ground assumption. Attempted as an uncommitted extension after M3/M4. |
 
-**Interdependencies.** M0 → M1 → M2 → M3 → M4 → M5 forms the critical path, because the critic needs tracks and the ablation evaluation needs the critic and test harness. M6 (S1) is completely decoupled from the core critical path and explored independently.
+**Interdependencies.** M0 → M1 → M2 → M3 → M5 forms the critical path, because the critic needs tracks and the ablation evaluation needs the critic and test harness. M4 runs in parallel once M1 is complete to prepare the testing infrastructure before controller integration.
 
 **Synthesis.** The method combines well-established parts (calibration, EKF, MPPI, Nav2 plugins) in a way that fits the constraints: simulation only, zero hardware overhead, and standard Nav2 safety layers left intact.
 
@@ -152,27 +143,25 @@ Requirements are grouped by priority. The **core** objectives (O1–O3) define s
 
 ## 4. Originality
 
-**Position.** Existing work covers the pieces separately. Camera–LiDAR planar extrinsic calibration [10], 2D multi-object tracking [9], and Bayesian state filtering [11] are established techniques. Foundation-model labelling and distillation are active [6]–[8], but the cited navigation example targets social navigation through learned attention maps, not site-specific floor hazards through standard Nav2 components [8]. Nav2 offers keepout and speed filters with authored masks [5] and a plug-in MPPI controller [13] with no velocity-aware critic.
+**Position.** Existing work covers isolated components separately. Camera–LiDAR planar extrinsic calibration [10], 2D multi-object tracking [9], and Bayesian state filtering [11] are established techniques. Recent robotics literature explores advanced MPPI controllers, but primarily focuses on heavy GPU-accelerated continuous Signed Distance Functions for non-convex footprints (EXACT-MPPI), multi-modal rollout clustering via RAPIDS cuML (CSC-MPPI), or analytical Control Barrier Function safety post-filters solved via Quadratic Programming (SE-MPPI). Stock ROS 2 Nav2 offers an extensible MPPI controller [13], yet all shipped critics evaluate time-invariant 2D costmaps at $t=0$, causing controller freezing or blind cross-traffic collisions around dynamic obstacles.
 
-**Table 4. Differentiation from current practice.**
+**Table 4. Differentiation from current practice and academic frontiers.**
 
-| | Stock Nav2 + 2D LiDAR | Foundation-model navigation research [8] | LiDAR–camera tracking | **This project** |
+| Dimension | Stock Nav2 + 2D LiDAR | Academic Research SOTA (GPU / SOTA MPPI) | LiDAR–Camera Tracking | **This Project** |
 |---|---|---|---|---|
-| Sensors | 2D LiDAR | Camera (richer sensing) | LiDAR + camera | 2D LiDAR + one camera |
-| Dynamic-obstacle velocity | No | Implicit in a learned policy | Yes | Yes (ByteTrack + 2D LiDAR linear Kalman filter for MPPI) |
-| Hazard & Zone Management | Manual CAD for static walls; blind to transient $Z=0$ fluid spills | Social cues / semantic exploration | No | Deterministic CAD for walls + prompt-distilled edge IPM for transient $Z=0$ spills |
-| Integration with standard Nav2 | Native | Custom planner | Not integrated | Plugin and costmap filters |
-| Adaptation effort | Manual dataset labelling (days to weeks) | Training run | Re-labelling | Zero-annotation prompt distillation (target < 30 min) |
+| Sensors | 2D LiDAR | Multi-channel 3D LiDAR or Stereo rigs ($>\$3,000$) | 2D LiDAR + monocular camera | 2D LiDAR + monocular camera ($\approx \$450$) |
+| Dynamic-obstacle tracking | None (Costmap marking at $t=0$) | Raw point clouds or continuous SDFs | 2D/3D tracking without predictive critic | ByteTrack + 2D LiDAR linear Kalman filter |
+| Avoidance / Control | Static costmap critics (freezing) | JAX/cuML GPU rollouts or QP-CBF post-filters | Static clearance inflation | Native Nav2 C++ MPPI dynamic critic plugin ($\mathbf{p}_0 + \mathbf{v}\tau$) |
+| Compute envelope | Low-power x86 / ARM CPU | Dedicated GPU VRAM / CUDA kernels | CPU or edge GPU | **Standard onboard CPU** ($<0.3\text{ ms}$ SIMD batch evaluation) |
+| Empirical validation | Ad-hoc obstacle tests | Monolithic benchmark scores | Isolated tracking accuracy | **Systematic 3-way comparative ablation (C0 vs C1 vs C2)** |
 
-**Types of novelty** (more than one applies): translation of a technique between domains, a new integration technique (velocity-aware critic), a low-cost solution, and a new development approach (prompt-to-deploy, with its cost measured as O3-a). To the best of my knowledge these claims hold for the sources reviewed to date, and a systematic search in the first two weeks will test them.
+**Types of novelty** (more than one applies): translational systems engineering across domains, open-source architectural extension of Nav2 MPPI without altering core internals, low-cost brownfield sensor complementarity, and rigorous empirical decoupling via 3-way comparative ablation isolating detection from motion prediction.
 
 **Limitations and their effect.**
-- **Simulation-first.** Scripted actors move more regularly than real people. Randomised timing and speed reduce this effect, and S2 would test it. The size of the sim-to-real gap is unknown and is not claimed.
-- **One camera.** Metric scale comes from the LiDAR, so tracking works only for targets that cross the LiDAR plane.
-- **Scope of visual keepout filters.** Hand-drawn CAD masks remain the certified standard for permanent structural walls (ISO 3691-4). The visual pipeline is explicitly scoped to augment CAD by detecting transient, non-geometric surface hazards ($Z \approx 0$) where laser ranging physically fails.
-- **No safety certification.** The Nav2 safety behaviours stay active, and zero collisions is a hard constraint (O2-c).
-- **Incomplete prototype.** `avp` reduces effort on O3 but does not remove engineering work.
-
+- **Simulation-first.** Scripted actors move more regularly than real people. Randomised timing, speed ($0.5\text{--}2.0\text{ m/s}$), and crossing offsets reduce this effect, and S2 would test it. The size of the sim-to-real gap is unknown and is not claimed.
+- **One camera.** Metric scale comes from planar LiDAR, so tracking operates reliably for targets intersecting the laser scan plane ($10\text{--}20\text{ cm}$ height).
+- **Short-term kinematic assumption.** Obstacle prediction relies on a Constant Velocity model valid over preview horizons $\tau \le 2.0\text{ s}$. Complex social intent inference is explicitly out of scope.
+- **No safety certification.** Certified functional safety interlocks and safety laser scanner E-stops (ISO 3691-4) remain untouched. Zero collisions is maintained as a hard constraint (O2-c).
 ---
 
 ## 5. Risk Management
@@ -185,14 +174,13 @@ Likelihood (L) and impact (I) are scored 1–5, and the score is L×I. A risk is
 |---|---|---|---|---|---|---|---|---|
 | R2 | First custom MPPI critic (C++) takes much longer than planned | 4 | 5 | **20** | W8 test, W13–W18 | 3–4 wk | Small test plugin in W8. **Fallback:** inject predicted positions via a costmap layer, keeping O2-a/b/c with a different mechanism. | 9 |
 | R1 | Toolchain, OS or GPU set-up fails or drifts | 4 | 4 | **16** | W1–W3 | 2–3 wk | Environment spike in W1, dual-boot vs WSL2 decided by end of W1, pinned Docker image | 6 |
-| R3 | Scope exceeds time (three core objectives plus stretch) | 4 | 4 | **16** | All | 3–6 wk | Core/stretch tiers, review gates, S1 and S2 dropped first, hours logged weekly | 9 |
+| R3 | Scope exceeds time (three core objectives in software simulation) | 4 | 4 | **16** | All | 3–6 wk | Strict focus on software simulation (O1–O3), review gates R1–R5, drop dense crowd scenarios first | 9 |
 | R4 | Calibration or association error degrades tracking | 3 | 4 | 12 | W7–W12 | 2 wk | Calibrate in simulation with known extrinsics, sensitivity sweep | 6 |
-| R8 | Other modules and exams reduce available hours | 4 | 3 | 12 | Jan, Apr–May (to confirm) | 2–3 wk | Lighter plan in exam weeks, W30 buffer | 6 |
-| R5 | Foundation-model label noise lowers segmenter quality | 3 | 3 | 9 | W9–W20 | 1–2 wk | Human correction pass, confidence filtering, hand-labelled held-out set | 4 |
-| R6 | Jetson hardware unavailable, so FPS is a desktop figure | 4 | 2 | 8 | W20 | Wording of O3-c | State the platform in every FPS claim. Jetson becomes S2. | 4 |
-| R7 | Simulation fidelity limits generalisation | 4 | 2 | 8 | W19–W24 | Weaker claims | Randomised scenarios, real-video evaluation for O3, state the limit | 6 |
-| R9 | Hardware ordering delay (S2 only) | 4 | 2 | 8 | W16–W24 | S2 slips | Order by W16. S2 is off the critical path. | 3 |
-| R10 | Code or data loss, results not reproducible | 2 | 4 | 8 | All | 1–2 wk | Git with remote, weekly tags, container image | 4 |
+| R7 | Other modules and exams reduce available hours | 4 | 3 | 12 | Jan, Apr | 2–3 wk | Lighter plan in exam weeks, W30 buffer | 6 |
+| R5 | Multi-agent occlusions cause track swapping or ghost tracks | 3 | 3 | 9 | W9–W14 | 1–2 wk | Use ByteTrack two-stage association; enforce strict 0.5s track termination threshold | 4 |
+| R6 | Simulation fidelity limits generalisation | 4 | 2 | 8 | W19–W24 | Weaker claims | Randomised scenarios ($0.5\text{--}2.0\text{ m/s}$), arrival offsets, crossing angles | 6 |
+| R8 | Code or data loss, results not reproducible | 2 | 4 | 8 | All | 1–2 wk | Git with remote, weekly tags, container image | 4 |
+| R9 | Numeric target hypotheses overly ambitious | 3 | 2 | 6 | W19–W24 | Spec failure | Two-tier specification (Minimum vs Target). Transparent reporting of negative results. | 4 |
 
 R2 and R3 are the most likely to change the *specification*, so each is tied to a review gate (Section 6) where the response is decided.
 
@@ -209,9 +197,9 @@ R2 and R3 are the most likely to change the *specification*, so each is tied to 
 | A Foundations and baseline | W1–W6 | T0 Environment and ROS 2/Nav2 foundations (50), T1 Simulation world, baseline C0, metric harness (40) | 90 | **R1 (W6, ≈16 Nov):** C0 measured on scenarios A–E, toolchain frozen |
 | B Tracker | W7–W12 | T2 O1 tracker (75), T3a O3 benchmark scenario design & scripted actor generator (15) | 90 | **R2 (W12, ≈28 Dec):** velocity RMSE measured, scenario framework ready |
 | C Critic and controller | W13–W18 | T4 O2 MPPI dynamic critic C++ plugin (75), T3b O3 ablation logging & metrics (15) | 90 | **R3 (W18, ≈8 Feb):** critic running against C0, ablation harness ready |
-| D Multi-scenario ablation | W19–W24 | T3c O3 multi-scenario ablation runs (40), T5 integrated comparative analysis (50) | 90 | **R4 (W24, ≈22 Mar):** 3-way ablation results compiled, S1/S2 go or no-go |
-| E Stretch and report | W25–W29 | T6 S1 exploratory hazard track / buffer (30), T7 report and demonstration (45) | 75 | **R5 (W29, ≈26 Apr):** final results, report draft |
-| Close | W30 | T7 final report, demonstration (15) | 15 | Submission |
+| D Multi-scenario ablation | W19–W24 | T3c O3 multi-scenario ablation runs (55), T5 integrated comparative analysis (35) | 90 | **R4 (W24, ≈22 Mar):** 3-way ablation results compiled, statistical tests complete |
+| E Synthesis and thesis | W25–W29 | T5b Extended statistical analysis & charts (30), T7 thesis writing and demonstration (45) | 75 | **R5 (W29, ≈26 Apr):** final results, thesis draft complete |
+| Close | W30 | T7 final thesis polishing and submission buffer (15) | 15 | Submission |
 
 ```mermaid
 gantt
@@ -229,27 +217,26 @@ gantt
     R3 (W18)                           :milestone, r3, 2027-02-08, 0d
     section O3 Ablation
     T3 3-Way Ablation Benchmark        :t3, 2026-12-07, 105d
-    T5 Integrated evaluation & stats   :t5, 2027-02-15, 42d
+    T5 Integrated evaluation & stats   :t5, 2027-02-15, 63d
     R4 (W24)                           :milestone, r4, 2027-03-22, 0d
-    section Stretch and report
-    T6 S1 Exploratory hazard track     :t6, 2027-03-29, 21d
-    T7 Report and demo                 :t7, 2027-03-29, 42d
+    section Thesis and close
+    T7 Thesis writing and demo         :t7, 2027-03-29, 42d
     R5 (W29)                           :milestone, r5, 2027-04-26, 0d
 ```
 
 *Figure 2. Gantt chart.*
 
-- **Dependencies.** T0 → T1 → T2 → T4 → T5 is the critical path. T3 runs in parallel from W9 and joins at T5 and T6. Parallel work on T2 and T3 follows from the interdependency analysis in Section 3, and it limits the damage from risks R2 and R5.
-- **Links to the specification.** T2 delivers O1-a/b, T4 delivers O2-a/b/c, T3 delivers O3-a/b/c, T5 checks all of them together, and T6 delivers S1.
+- **Dependencies.** T0 → T1 → T2 → T4 → T5 is the critical path. T3 runs in parallel from W9 and joins at T5. Parallel work on T2 and T3 follows from the interdependency analysis in Section 3, and it limits the damage from risks R2 and R5.
+- **Links to the specification.** T2 delivers O1-a/b, T4 delivers O2-a/b/c, T3 delivers O3-a/b/c, and T5 checks all of them together.
 - **Develop–test–document.** Every task is split about 60% build, 25% test and 15% write-up, and each phase ends with a test and documentation week before its review.
-- **Uncertainty.** T4 carries ±3 weeks, T2 and T3 ±2 weeks each. Slips are absorbed first by T6 (S1), then by S2, then by the W30 buffer. Core scope is never dropped silently. Any change is raised at the next review.
-- **Workload.** Each phase is planned at or near 15 hours per week. Phase E is lighter at 15 hours per week or less for the final report.
+- **Uncertainty.** T4 carries ±3 weeks, T2 and T3 ±2 weeks each. Slips are absorbed first by reallocating effort within T5b, then by the W30 buffer. Core scope is never dropped silently. Any change is raised at the next review.
+- **Workload.** Each phase is planned at or near 15 hours per week. Phase E is lighter at 15 hours per week or less for the final thesis.
 
 ---
 
 ## References
 
-[1] International Federation of Robotics, "World Robotics 2025 – Service Robots," press release. [Online]. Available: https://ifr.org/ifr-press-releases/news/service-robots-see-global-growth-boom
+[1] International Federation of Robotics, "World Robotics 2025 – Service Robots," press release, 2025. [Online]. Available: https://ifr.org/ifr-press-releases/news/service-robots-see-global-growth-boom
 
 [2] S. Macenski, F. Martín, R. White and J. Ginés Clavero, "The Marathon 2: A Navigation System," in *Proc. IEEE/RSJ Int. Conf. Intelligent Robots and Systems (IROS)*, 2020. arXiv:2003.00368.
 
@@ -257,25 +244,23 @@ gantt
 
 [4] P. Trautman and A. Krause, "Unfreezing the robot: Navigation in dense, interacting crowds," in *Proc. IEEE/RSJ IROS*, 2010, pp. 797–803, doi:10.1109/IROS.2010.5654369.
 
-[5] Nav2 Documentation, "Navigating with Keepout Zones" and "Navigating with Speed Limits." [Online]. Available: https://docs.nav2.org/rolling/tutorials/general_tutorials/navigation2_with_keepout_filter/navigation2_with_keepout_filter/
+[5] G. Williams *et al.*, "Information theoretic MPC for model-based reinforcement learning," in *Proc. IEEE ICRA*, 2017, pp. 1714–1721, doi:10.1109/ICRA.2017.7989202.
 
-[6] B. Xiao *et al.*, "Florence-2: Advancing a Unified Representation for a Variety of Vision Tasks," in *Proc. IEEE/CVF CVPR*, 2024. arXiv:2311.06242.
+[6] Q. Zhang and R. Pless, "Extrinsic calibration of a camera and laser range finder (improves camera calibration)," in *Proc. IEEE/RSJ IROS*, 2004.
 
-[7] T. Ren *et al.*, "Grounded SAM: Assembling Open-World Models for Diverse Visual Tasks," arXiv:2401.14159, 2024.
+[7] S. Thrun, W. Burgard and D. Fox, *Probabilistic Robotics*. Cambridge, MA, USA: MIT Press, 2005.
 
-[8] "ViLAM: Distilling Vision-Language Reasoning into Attention Maps for Social Robot Navigation," arXiv:2503.09820, 2025. [authors to be added]
+[8] Y. Zhang *et al.*, "ByteTrack: Multi-Object Tracking by Associating Every Detection Box," in *Proc. European Conference on Computer Vision (ECCV)*, 2022. arXiv:2110.06864.
 
-[9] Y. Zhang *et al.*, "ByteTrack: Multi-Object Tracking by Associating Every Detection Box," in *Proc. European Conference on Computer Vision (ECCV)*, 2022. arXiv:2110.06864.
+[9] D. Helbing and P. Molnar, "Social force model for pedestrian dynamics," *Physical Review E*, vol. 51, no. 5, pp. 4282–4286, 1995.
 
-[10] Q. Zhang and R. Pless, "Extrinsic calibration of a camera and laser range finder (improves camera calibration)," in *Proc. IEEE/RSJ IROS*, 2004.
+[10] Nav2 Development Team, "Nav2 MPPI Controller: Model Predictive Path Integral Trajectory Optimization," ROS 2 Navigation Stack, 2024. [Online]. Available: https://github.com/ros-navigation/navigation2/tree/main/nav2_mppi_controller
 
-[11] S. Thrun, W. Burgard and D. Fox, *Probabilistic Robotics*. Cambridge, MA, USA: MIT Press, 2005.
+[11] J. M. Kang, "SE-MPPI: Nav2-Native Safe-Escape MPPI Controller with Control Barrier Functions," 2024. [Online]. Available: https://github.com/kjungmo/se-mppi-nav2
 
-[12] G. Williams *et al.*, "Information theoretic MPC for model-based reinforcement learning," in *Proc. IEEE ICRA*, 2017, pp. 1714–1721, doi:10.1109/ICRA.2017.7989202.
+[12] C. Peng, "EXACT-MPPI: Exact Signed-Distance Navigation for Arbitrary-Footprint Robots from Point Clouds via Path Integral Control," 2024. [Online]. Available: https://github.com/caseypen/EXACT-mppi
 
-[13] Nav2, "Model Predictive Path Integral Controller" (`nav2_mppi_controller`), README and source. [Online]. Available: https://github.com/ros-navigation/navigation2/tree/main/nav2_mppi_controller. Accessed 11 Oct 2026.
-
-[14] N. Khor, "avp: Automated Video Dataset Labelling and Annotation Pipeline," 2026. [Online]. Available: https://github.com/cupcakes04/avp.
+[13] Robot Control and Intelligence Lab (RCILab), "Constrained Sampling MPPI Framework with DBSCAN for Reliable Obstacle Avoidance," in *Proc. IEEE/RSJ IROS*, 2025.
 
 ---
 
