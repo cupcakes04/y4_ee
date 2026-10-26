@@ -9,7 +9,7 @@ This workspace organizes the final year project into decoupled areas for enginee
 ```
 modules/EEEE4077_mechatronics_proj/chapters/
 ├── research/        # Engineering design, algorithms, architecture, MPPI critic & ablation benchmark
-├── planning/        # Coursework requirements, SMART specs, risks & schedule
+├── proposals/       # Proposal workspace: modular sections, SMART specs, risks & schedule
 ├── library/         # Literature reviews, reference register & paper summaries
 ├── deliverables/    # Assessed submission reports (abstract & project proposal)
 ├── explore/         # Decoupled exploratory prototypes (offline VLM distillation & floor hazards)
@@ -32,7 +32,7 @@ modules/EEEE4077_mechatronics_proj/chapters/
   - `07_scope_and_bounds.md`: Methodological principles and out-of-scope boundaries.
   - `08_design_tradeoffs_and_alternatives.md`: Sensor trade-offs, state estimation models, CAD vs semantics, and costmap vs predictive rollouts.
 
-- **[`planning/`](./planning/)**  
+- **[`proposals/`](./proposals/)**  
   Coursework management and rubric compliance: SMART specifications, development methodology, originality analysis, project risk register, and the W1–W30 Gantt schedule.
 
 - **[`library/`](./library/)**  

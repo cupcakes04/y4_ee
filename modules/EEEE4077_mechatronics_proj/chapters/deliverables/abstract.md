@@ -2,7 +2,7 @@
 
 **Project Code:** SD-MEng-26-01 | **Supervisor:** Dr Shalini Darmaraju | **Moderator:** Ir Dr Daniel Pu
 
-> Supervisor-facing draft, **derived** from `../research/`, `../planning/`, and `../library/register.md` (the modular sources of truth). The assessed submission is [project_proposal.md](project_proposal.md). Sync rules are in `.agents/skills/fyp-proposal-sync/SKILL.md`.
+> Supervisor-facing draft, **derived** from `../research/`, `../proposals/`, and `../library/register.md` (the modular sources of truth). The assessed submission is [project_proposal.md](project_proposal.md). Sync rules are in `.agents/skills/fyp-proposal-sync/SKILL.md`.
 > ROS 2 terms appear in `code font` the first time. Each has a plain-language gloss, so you can read this without ROS knowledge and still map it to the actual implementation.
 
 ---

@@ -1,5 +1,9 @@
 # Project Planning Report
 
+> [!WARNING]
+> **OUTDATED DRAFT — UNDER ACTIVE REWORK**  
+> This compiled proposal document is currently outdated and is being actively reworked. The authoritative drafting workspace is located in chapters/proposals/. Do not export or submit this file until the rework is finalized and compiled.
+
 **Project title:** Vision-Augmented Mobile Robot Navigation in Dynamic Environments  
 **Project code:** SD-MEng-26-01  
 

@@ -1,6 +1,6 @@
 # Project Specifications & Performance Hypotheses
 
-> **Purpose**: Formal engineering specifications agreed for supervisor review, Project Planning Report (§2), and thesis validation criteria. Directly derived from `chapters/research/05_ablation_and_evaluation.md`.
+> **Purpose**: Formal engineering specifications agreed for supervisor review, Project Planning Report (§2), and thesis validation criteria. Directly derived from `chapters/research/05_ablation_and_evaluation.md` and supervisor brief `raw/proposals/` (`SD-MEng-26-01`).
 
 ---
 
@@ -33,3 +33,28 @@ All numeric targets are formulated as research **hypotheses** evaluated in simul
 | **O3-b** | Cumulative Waiting Time Reduction | $\ge 50\%$ reduction | **$\le 5\text{ s}$ per run** | Quantifies reduction in idle freezing delays when crossing dynamic corridors. | Summed seconds where robot linear velocity $|v| < 0.05\text{ m/s}$ while navigation goal is active. | M |
 | **O3-c** | End-to-End Control Loop Rate | $\ge 15\text{ Hz}$ | **$\ge 20\text{ Hz}$** | Must exceed typical planar LiDAR scan rates (~10–20 Hz) to maintain real-time MPPI trajectory generation. | Sustained average execution frequency of the perception-tracking-critic pipeline over 5-minute runs. | L |
 | **NF1** | Reproducibility & Docker Containerization | Yes | **Yes** | Academic rigor requires that all simulation scenarios, benchmark scripts, and metric loggers be fully reproducible. | Single ROS 2 launch command inside a pinned container reproduces headline evaluation tables. | L |
+
+---
+
+## 3. Stretch Goals
+
+In accordance with proposal guidance and workshop standards, stretch goals provide flexibility and innovation opportunities if development proceeds ahead of schedule:
+
+| ID | Stretch Goal | Description & Scope | Trigger Condition |
+|---|---|---|---|
+| **S1** | **Multi-Agent Crowd Density Stress Benchmark** | Scale the dynamic scenario from 1–2 crossing agents up to 4–6 interacting agents in constrained corridor intersections to evaluate ByteTrack track persistence and MPPI cost surface non-convexity. | Triggered if O1 and O2 meet Target criteria by Review 3 (Week 18). |
+| **S2** | **High-Speed & Non-Orthogonal Crossing Angles** | Evaluate obstacle crossing speeds up to $2.5\text{ m/s}$ and oblique intersection angles ($30^\circ, 45^\circ, 135^\circ$) to probe the kinematic limits of the Constant Velocity (CV) Kalman filter model. | Triggered if core ablation runs on Scenarios A–D complete before Week 22. |
+| **S3** | **CPU-Only Real-Time Deployment Profiling** | Benchmark the end-to-end perception and control pipeline on a resource-constrained 4-core embedded CPU profile (simulated or containerized cgroups CPU limit) to prove feasibility on low-cost brownfield AMRs without discrete edge GPUs. | Triggered if primary workstation benchmarking completes with excess compute margins. |
+
+---
+
+## 4. Mapping Objectives to Deliverables & Assessment Methods
+
+Direct alignment between committed project objectives, tangible deliverables, and objective assessment metrics (as required by module rubrics and Saleha's Slide 5):
+
+| Objective ID | Key Tangible Deliverable | Concrete Artifact / Source Code | Assessment Method & Validation Metric |
+|---|---|---|---|
+| **O1** | Multi-modal dynamic obstacle tracking module | ROS 2 tracker node (`lidar_vision_tracker`), extrinsic calibration package, and ByteTrack wrapper | Velocity RMSE $< 0.15\text{ m/s}$ and association accuracy $\ge 95\%$ evaluated against Gazebo ground-truth `/tf` across $\ge 30$ randomized runs. |
+| **O2** | Predictive MPPI dynamic critic plugin | Native C++ `pluginlib` package (`DynamicObstaclesCriticPlugin`) integrated into `nav2_mppi_controller` | Freezing events reduced to 0 per 10 crossings; transit duration reduced by 15–25% vs C0; 0 physics collisions recorded. |
+| **O3** | 3-Way comparative ablation benchmark suite | Automated Gazebo Harmonic testbed scripts, scenario generators (A–E), metric loggers, statistical plotting scripts | Paired Welch's t-test and one-way ANOVA showing statistically significant separation ($p < 0.01$) across configurations C0, C1, and C2. |
+| **Core** | Complete Project Planning Report & Final Thesis | Compiled proposal document (7–8 pages) and final dissertation | Evaluated against MEng marking rubrics (Scope, Methodology, Originality, Risk Management, and Delivery). |
