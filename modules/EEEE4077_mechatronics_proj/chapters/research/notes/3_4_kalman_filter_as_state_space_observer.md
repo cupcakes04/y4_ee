@@ -1,4 +1,4 @@
-# Note 02: The Kalman Filter as a Modern State-Space Observer
+# 3_4: The Kalman Filter as a Modern State-Space Observer
 
 > **Context**: Theoretical bridge connecting `chapters/research/03_perception_and_tracking.md` (§3.4 Stage 3) to Modern / Advanced State-Space Control Systems. Explains the structural duality between state observers, Kalman filtering, and optimal control.
 

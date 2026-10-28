@@ -12,6 +12,7 @@ description: Keep the FYP proposal, planning, and deliverable files in sync with
 | Directory / File | Role | Mutability & Rule |
 |---|---|---|
 | `chapters/research/` | **Source of truth (Internal)**: Technical design, architecture, modules (00–08), hardware stack, trade-offs, and metrics. | Edit by Human or Agent through mutual negotiation. |
+| chapters/research/notes/ | **Personal Understanding Notes**: Explanatory companion notes mapped to specific research sections (indexed to match section numbers, e.g., section 4.1.1 becomes 4_1_1_<topic>.md). Dedicated to the student's personal understanding and theoretical intuition of underlying research concepts. | Personal learning aids; not assessed deliverables. |
 | `chapters/library/` | **Source of truth (Internal)**: Reference register (`register.md`), synthesis (`synthesis.md`), and paper cards (`papers/L01`–`L17`). | Edit by Human or Agent on request. |
 | `raw/proposals/`<br>`raw/thesis/` | **University Directives & Expectations**: Coursework briefs, rubrics, workshop slides, worksheets, and format rules. | **Read-only Ground Truth**. All non-md files have `.md` equivalents. Always refer here for examiner expectations and structural standards. |
 | `chapters/proposals/` | **Proposal Working Workspace**: Agent's workspace for drafting, breaking down, and structuring proposal sections (specifications, methodology, originality, risks, schedule, decisions). | **Derived from research & library, shaped by raw requirements**. Edit and modularize as needed. |

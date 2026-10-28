@@ -37,7 +37,7 @@ This guarantees persistent integer identifiers (`track_id`) throughout the robot
 ## 3.3 Stage 2: Camera-LiDAR Extrinsic Calibration & Frustum Gating
 
 > [!TIP]
-> **Foundational Guide:** See [Note 01: Sensor Coordinate Frames, Transformations & Frustum Gating](./notes/01_camera_lidar_frames_and_gating.md) for an intuitive visual walkthrough of LiDAR vs Camera spaces, pinhole projection, and the median filter.
+> **Foundational Guide:** See [Note 3_3: Sensor Coordinate Frames, Transformations & Frustum Gating](./notes/3_3_camera_lidar_frames_and_gating.md) for an intuitive visual walkthrough of LiDAR vs Camera spaces, pinhole projection, and the median filter.
 
 ### 3.3.1 Geometric Calibration Formulation
 The spatial transformation between the 2D planar LiDAR frame $\mathcal{F}_{\text{lidar}}$ and the monocular camera optical frame $\mathcal{F}_{\text{cam}}$ is established using the classical planar checkerboard method of Zhang & Pless (2004). 
@@ -66,7 +66,7 @@ For each laser scan ray $\mathbf{P}_j = (r_j, \theta_j)$ received from `/scan`:
 ## 3.4 Stage 3: Per-Track Metric State Estimation (Kalman Filter)
 
 > [!TIP]
-> **Control Theory Connection:** See [Note 02: The Kalman Filter as a Modern State-Space Observer](./notes/02_kalman_filter_as_state_space_observer.md) for the derivation connecting this filter to state-space control, Luenberger observers, and LQG theory.
+> **Control Theory Connection:** See [Note 3_4: The Kalman Filter as a Modern State-Space Observer](./notes/3_4_kalman_filter_as_state_space_observer.md) for the derivation connecting this filter to state-space control, Luenberger observers, and LQG theory.
 
 Because data association and identity persistence are already guaranteed by ByteTrack in image space, state estimation simplifies to an independent linear discrete Kalman Filter instantiated for each active `track_id`.
 

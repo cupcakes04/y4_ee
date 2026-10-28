@@ -9,6 +9,10 @@ This chapter details the theoretical foundations, plugin architecture, and imple
 Model Predictive Path Integral (MPPI) control (Williams et al., 2017) is an algorithm based on stochastic optimal control that handles complex, non-linear robot kinematics and arbitrary non-convex cost landscapes without requiring analytical gradients.
 
 ### 4.1.1 Sampling and Control Optimization
+
+> [!TIP]
+> **Foundational Guide:** See [Note 4_1: MPPI Sampling and Control Optimization Explained](./notes/4_1_mppi_sampling_and_control_optimization.md) for an intuitive step-by-step breakdown of candidate sampling, kinematic rollouts, critic scoring, and softmax importance weighting.
+
 At each control cycle ($\Delta t_{\text{ctrl}} \in [20, 50]\text{ ms}$, corresponding to $20\text{--}50\text{ Hz}$):
 1. **Control Sequence Perturbation:** Given a nominal control sequence $\mathbf{U} = [\mathbf{u}_0, \mathbf{u}_1, \dots, \mathbf{u}_{N-1}]$, the controller samples $M$ perturbed control candidate trajectories:
    $$\mathbf{v}_{k, m} = \mathbf{u}_k + \boldsymbol{\epsilon}_{k, m}, \quad \boldsymbol{\epsilon}_{k, m} \sim \mathcal{N}(\mathbf{0}, \boldsymbol{\Sigma}), \quad m \in \{1, \dots, M\}$$
@@ -40,6 +44,9 @@ This spatial invariance creates two severe operational failure modes:
 ---
 
 ## 4.3 Custom Dynamic Obstacle Critic Plugin Architecture
+
+> [!TIP]
+> **Foundational Guide:** See [Note 4_3: Custom Dynamic Obstacle Critic Plugin Architecture](./notes/4_3_custom_dynamic_obstacle_critic.md) for an intuitive walkthrough of forward obstacle projection, time-expanding Gaussian safety buffers, and the C++ plugin architecture.
 
 To resolve this limitation without replacing the robust Nav2 infrastructure, we implement a custom C++ critic plugin: `DynamicObstaclesCriticPlugin`, dynamically loaded into `nav2_mppi_controller` via `pluginlib`.
 

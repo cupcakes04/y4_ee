@@ -21,6 +21,7 @@ Every agent interacting with this project (`EEEE4077_mechatronics_proj`) MUST ad
 3. **Workspace Zoning & Responsibilities:**
    - **`raw/proposals/` and `raw/thesis/`**: Ground truth requirements and examiner expectations. Every non-markdown file has an equivalent `.md` file for fast, reliable cross-referencing. Agents across all sessions MUST consult these files when preparing or checking proposals and thesis work.
    - **`chapters/research/`**: Engineering truth. Technical details, models, architecture, trade-offs, and algorithms. This is where user and agent actively negotiate and build.
+   - **chapters/research/notes/**: Personal concept understanding notes (titled and indexed after research sections, e.g., section 4.1.1 becomes 4_1_1_<topic>.md). Dedicated to building intuitive personal understanding and unpacking complex mathematical/theoretical foundations for the student; these are personal study aids, not assessed deliverables.
    - **`chapters/proposals/` (or `chapters/proposals/`)**: The agent's working area for proposal sections. Can be modularized into discrete section files or subfolders for clean organization, drafting, and iterative refinement.
    - **`chapters/deliverables/`**: Strictly the outward-facing output repository. Holds polished, final-ready submission documents meant for examiners / 3rd parties (e.g., `project_proposal.md`, `abstract.md`, future `thesis.md`). Do not use this as a working draft area or internal reference dump.
    - **Thesis workflow**: Will follow a similar decoupled working structure later.

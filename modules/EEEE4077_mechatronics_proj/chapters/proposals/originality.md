@@ -25,7 +25,21 @@ The project's originality lies in **translational systems engineering, open-sour
 
 ---
 
-## 2. Comparison with Current Practice & Academic Frontiers
+## 2. Reverse-Engineered Literature Review & Gap Taxonomy
+
+To ground the project's engineering contributions in rigorous academic scholarship, the design choices are reverse-engineered from current industrial baselines and recent state-of-the-art literature. The table below structures this justification as an **inverted pyramid**: narrowing from the macro commercial imperative down to the micro-algorithmic implementation and empirical validation.
+
+| Pyramid Level | Subsystem / Focus | Baseline Practice & Canonical Foundations | Failure Mode & Root Cause (**Where & Why**) | Academic SOTA Counterparts & Trade-offs (**How**) | **Unoccupied Gap & Justification for Project Goal** |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **Level 1: Macro Context** | **Brownfield Logistics AMR Deployment** | Single-plane 2D LiDAR + 2D Costmap stacks (`nav2_costmap_2d`) [Macenski et al., 2020 (L2), 2023 (L3)]. | **Where:** Dense warehousing and mixed manufacturing plants [IFR, 2025 (L9)].<br>**Why:** Replacing deployed fleets with \$3k–\$10k 3D LiDAR arrays or heavy stereo rigs is commercially prohibitive for brownfield facilities. | Multi-beam 3D LiDAR point cloud processing or multi-camera RGB-D depth networks. | **Retrofit Imperative:** Add low-cost monocular vision (\$30–\$50) to existing 2D LiDAR to deliver semantic and dynamic capabilities under a strictly constrained budget ($<\$480$ total). |
+| **Level 2: Phenomenon** | **The Freezing Robot Problem** | Occupancy grid mapping & reactive 2D obstacle avoidance [Trautman & Krause, 2010 (L1)]. | **Where:** Dynamic corridors with crossing pedestrians or manual pushcarts.<br>**Why:** Standard 2D costmaps model moving humans as static obstacle cells at $t=0$. Local planners detect imminent path invalidation and trigger emergency stops or oscillating recovery rotations. | Social Force Models (SFM) [Helbing & Molnar, 1995 (L14)] and Interactive Gaussian Processes (IGP) [Trautman, 2010 (L1)]. | **Decoupled Architecture:** Static infrastructure is retained in the 2D occupancy grid; moving agents are extracted into metric state space $[x, y, v_x, v_y]^T$ for forward temporal evaluation, eliminating costmap raycasting clearing latency and phantom trails. |
+| **Level 3a: Perception** | **Metric Dynamic Tracking** | Planar laser clustering (Euclidean / DBSCAN) vs. Monocular depth estimation. | **Where:** Intersecting human lower limbs in planar scan plane.<br>**Why:** 2D LiDAR returns are sparse, fragmented cross-sections lacking visual identity; monocular depth suffers from scale ambiguity; stereo depth degrades quadratically beyond 4 m ($O(Z^2)$). | Heavy 3D bounding box detection on dense point clouds (PointPillars, VoxelNet) or monocular metric depth networks (depth-anything) requiring high-end edge GPUs. | **Complementary Late-Fusion:** Exploit ByteTrack [Zhang et al., 2022 (L13)] in 2D image space for identity persistence across occlusions, Zhang-Pless [2004 (L5)] planar frustum projection for metric depth, and a per-track Linear Kalman Filter [Thrun et al., 2005 (L12)] on CPU. |
+| **Level 3b: Local Planning** | **Predictive Trajectory Optimization** | Nav2 MPPI Controller [Williams et al., 2017 (L4); Macenski et al., 2023 (L11)]. | **Where:** Dynamic crossing interactions over lookahead horizon $\tau \in [0.5, 2.0]\text{ s}$.<br>**Why:** All 11 shipped Nav2 MPPI critics evaluate trajectories against static costmaps ($t=0$). The optimizer cannot evaluate where an obstacle will be 1–2 s ahead, causing either premature halts or blind path intersections. | • **SE-MPPI** [Kang, 2024 (L15)]: QP Control Barrier Function safety post-filter.<br>• **EXACT-MPPI** [Peng et al., 2024 (L16)]: JAX CUDA exact signed-distance fields.<br>• **CSC-MPPI** [RCILab, 2025 (L17)]: cuML DBSCAN rollout clustering. | **Native Nav2 C++ Dynamic Critic:** Implement a lightweight `pluginlib` critic evaluating dynamic trajectories directly within MPPI rollouts ($\mathbf{p}_{\text{obs}}(\tau) = \mathbf{p}_0 + \mathbf{v}_{\text{obs}}\tau$). Retains full Nav2 architecture, executes in $<0.3\text{ ms}$ on CPU via SIMD vectorization, and breaks path symmetry naturally via dynamic velocity vectors. |
+| **Level 4: Evaluation** | **Benchmarking & Validation** | Ad-hoc simulation demonstrations reporting monolithic success rate or time-to-goal. | **Where:** Evaluating dynamic obstacle avoidance frameworks.<br>**Why:** Monolithic benchmarks cannot isolate whether improved navigation stems from visual bounding clearance or true temporal motion prediction. | End-to-end black-box metric reporting against legacy DWB or TEB planners without modular ablation. | **Systematic 3-Way Comparative Ablation:** Isolate detection from prediction across standardized scenarios (A–E) comparing **C0** (2D LiDAR baseline), **C1** (Vision detection without prediction, $t=0$), and **C2** (Full predictive MPPI), directly fulfilling the supervisor brief (`SD-MEng-26-01`). |
+
+---
+
+## 3. Comparison with Current Practice & Academic Frontiers
 
 | Capability | Current Industrial Practice | Academic Research SOTA (GPU / SOTA MPPI) | This FYP Project (Brownfield Retrofit) |
 |---|---|---|---|
@@ -38,7 +52,20 @@ The project's originality lies in **translational systems engineering, open-sour
 
 ---
 
-## 3. Acknowledged Limitations & Quantified Constraints
+## 4. Differentiation from Modern MPPI Paradigms
+
+A critical aspect of academic positioning is distinguishing this work from contemporary high-performance MPPI variants published in 2024–2025:
+
+1. **Analytical Safety Filters vs. Proactive Trajectory Reshaping (SE-MPPI [L15]):**
+   Kang's SE-MPPI introduces an online local-minima escape mechanism paired with a Control Barrier Function (CBF) quadratic program (QP) that projects synthesized control commands $\mathbf{u}_0^*$ onto a safe boundary. While CBFs provide rigorous mathematical guarantees for known moving boundaries, they act as reactive post-filters on the immediate control command and do not reshape the predictive rollout distribution over multi-second horizons. In contrast, our dynamic critic biases the stochastic sampling distribution proactively, enabling early yielding maneuvers before the robot reaches barrier boundaries.
+2. **Geometric Complexity vs. Semantic Dynamic Tracking (EXACT-MPPI [L16]):**
+   Peng et al. calculate exact continuous signed-distance functions (SDF) between arbitrary non-convex robot footprints and raw point clouds in JAX. While EXACT-MPPI excels at navigating tight passages with asymmetric geometry, it offloads computation to a dedicated GPU runtime in Python/JAX, relies on dense unsegmented point clouds, and treats obstacles as instantaneous geometry rather than tracking velocity vectors. Our work prioritizes semantic dynamic tracking on standard CPU hardware within native Nav2 C++.
+3. **Clustering Symmetrical Modes vs. Velocity-Driven Asymmetry (CSC-MPPI [L17]):**
+   RCILab addresses MPPI's *mode-averaging collapse*—where symmetrical obstacle encounters cause left- and right-swerving rollouts to average into a fatal head-on collision—by running GPU-accelerated DBSCAN clustering (cuML) and solving primal-dual constrained sampling. In human-robot cross-traffic, however, the dynamic velocity vector of the obstacle ($\mathbf{v}_{\text{obs}}$) naturally breaks spatial symmetry. By penalizing future obstacle locations, our dynamic critic naturally skews rollout costs toward the obstacle's trailing side without requiring heavy GPU clustering.
+
+---
+
+## 5. Acknowledged Limitations & Quantified Constraints
 
 - **Simulation-First Baseline:** Primary quantitative benchmarks are conducted within Gazebo Harmonic using scripted actors. Randomized timing, arrival offsets, speeds ($0.5\text{--}2.0\text{ m/s}$), and crossing angles mitigate trajectory predictability.
 - **Short-Term Kinematic Assumption:** Obstacle motion prediction relies on a Constant Velocity (CV) model valid over short preview horizons ($T \le 2.0\text{ s}$). Long-horizon social intent inferencing and complex crowd interactions are explicitly out of scope.

@@ -1,4 +1,4 @@
-# Note 01: Sensor Coordinate Frames, Transformations & Frustum Gating
+# 3_3: Sensor Coordinate Frames, Transformations & Frustum Gating
 
 > **Context**: Bridges the theoretical and geometric gap in `chapters/research/03_perception_and_tracking.md` (§3.3 Stage 2). Explains how 2D LiDAR range points and monocular camera pixels map across coordinate spaces to achieve metric obstacle tracking.
 
