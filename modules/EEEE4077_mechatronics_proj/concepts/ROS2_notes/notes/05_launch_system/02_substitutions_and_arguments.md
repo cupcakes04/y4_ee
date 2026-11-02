@@ -112,13 +112,21 @@ sim_node = Node(
 
 ---
 
-## 5. CLI Lookup: Working with Arguments
+## 5. CLI Lookup & Running the Workspace Launch Files
+
+The practical launch scripts are implemented in [`ros2_ws/launch/example_substitutions_launch.py`](../../ros2_ws/launch/example_substitutions_launch.py) and [`ros2_ws/launch/example_main_launch.py`](../../ros2_ws/launch/example_main_launch.py).
 
 ```bash
-# 1. Inspect what arguments a launch file accepts:
-ros2 launch my_pkg my_launch.py --show-args
+# 1. Inspect what arguments the launch file accepts:
+ros2 launch launch/example_substitutions_launch.py --show-args
 
-# 2. Pass arguments on CLI:
-ros2 launch my_pkg my_launch.py background_r:=120 params_file:=custom.yaml
+# 2. Launch with defaults (namespace 'turtlesim1', red background remains unchanged):
+ros2 launch launch/example_substitutions_launch.py
+
+# 3. Override arguments at CLI (namespace 'turtlesim3', condition triggers background change to 200):
+ros2 launch launch/example_substitutions_launch.py turtlesim_ns:=turtlesim3 use_provided_red:=True new_background_r:=200
+
+# 4. Run the parent launch file that includes the substitutions file with arguments:
+ros2 launch launch/example_main_launch.py
 ```
 

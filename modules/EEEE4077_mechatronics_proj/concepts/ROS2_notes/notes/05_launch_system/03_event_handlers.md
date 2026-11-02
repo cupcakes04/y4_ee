@@ -54,14 +54,53 @@ shutdown_handler = RegisterEventHandler(
 )
 ```
 
-### 3. Sequential Execution (Run Node B after Node A finishes)
+### 3. Sequential Execution (`OnExecutionComplete` / `OnProcessExit`)
+Run Node or action B only after Node or action A completes:
+
 ```python
-spawn_secondary_node = RegisterEventHandler(
-    OnProcessExit(
-        target_action=initial_calibration_node,
-        on_exit=[
-            LogInfo(msg='Calibration complete. Starting main controller...'),
+from launch.actions import RegisterEventHandler, LogInfo
+from launch.event_handlers import OnExecutionComplete
+
+run_after_setup = RegisterEventHandler(
+    OnExecutionComplete(
+        target_action=setup_process,
+        on_completion=[
+            LogInfo(msg='Setup complete. Starting main controller...'),
             main_controller_node
+        ]
+    )
+)
+```
+
+### 4. Intercepting Process Output (`OnProcessIO`)
+Capture and react to standard output / standard error from launched processes:
+
+```python
+from launch.actions import RegisterEventHandler, LogInfo
+from launch.event_handlers import OnProcessIO
+
+io_listener = RegisterEventHandler(
+    OnProcessIO(
+        target_action=spawn_turtle,
+        on_stdout=lambda event: LogInfo(
+            msg='Spawn output: "{}"'.format(event.text.decode().strip())
+        )
+    )
+)
+```
+
+### 5. Reacting to Launch Tree Termination (`OnShutdown`)
+Catch global launch shutdown triggers (e.g. user `Ctrl-C` or `Shutdown` event) and log exit reasons:
+
+```python
+from launch.actions import RegisterEventHandler, LogInfo
+from launch.event_handlers import OnShutdown
+from launch.substitutions import LocalSubstitution
+
+shutdown_listener = RegisterEventHandler(
+    OnShutdown(
+        on_shutdown=[
+            LogInfo(msg=['Launch system terminating: ', LocalSubstitution('event.reason')])
         ]
     )
 )
@@ -83,7 +122,23 @@ def generate_launch_description():
         sim,
         start_listener,
         shutdown_handler,
-        spawn_secondary_node
+        run_after_setup,
+        io_listener,
+        shutdown_listener
     ])
+```
+
+---
+
+## 4. Running the Workspace Launch File
+
+The complete recipe combining all 5 handlers is implemented in [`ros2_ws/launch/example_event_handlers_launch.py`](../../ros2_ws/launch/example_event_handlers_launch.py):
+
+```bash
+# 1. Run with default parameters:
+ros2 launch launch/example_event_handlers_launch.py
+
+# 2. Run with conditional arguments enabled (spawns turtle, sets background, waits 2s, updates color):
+ros2 launch launch/example_event_handlers_launch.py turtlesim_ns:='turtlesim3' use_provided_red:='True' new_background_r:=200
 ```
 

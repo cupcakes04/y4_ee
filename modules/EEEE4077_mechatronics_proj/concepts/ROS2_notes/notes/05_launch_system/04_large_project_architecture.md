@@ -110,7 +110,22 @@ def generate_launch_description():
 
 ---
 
-## 4. The 4-Tier Industrial Repository Structure
+## 4. Parameter Management & YAML Wildcards (`/**`)
+
+When sharing parameters across multiple nodes or dynamic namespaces, hardcoding namespaces in YAML is fragile. Use wildcard patterns (`/**`) so parameters automatically apply across any namespace:
+
+```yaml
+# config/turtlesim.yaml
+/**:
+  ros__parameters:
+    background_b: 255
+    background_g: 86
+    background_r: 150
+```
+
+---
+
+## 5. The 4-Tier Industrial Repository Structure
 
 In modern ROS 2 robot repositories, divide your packages into clear layers:
 
@@ -120,4 +135,28 @@ In modern ROS 2 robot repositories, divide your packages into clear layers:
 | **Bringup** | `my_robot_bringup` | Top-level launch files (`robot.launch.py`, `sim.launch.py`), master parameters |
 | **Hardware / Drivers** | `my_robot_base` | Motor controller nodes, LiDAR/camera drivers, microcontroller bridges |
 | **Navigation** | `my_robot_navigation` | Nav2 costmap configs, behavior trees, AMCL localization parameters |
+
+---
+
+## 6. Workspace Implementation & CLI Commands
+
+All modular launch components and configurations are organized in [`ros2_ws/launch/04_large_project/`](../../ros2_ws/launch/04_large_project/):
+
+- [`launch_turtlesim_launch.py`](../../ros2_ws/launch/04_large_project/launch_turtlesim_launch.py): Master bringup including all sub-launch files.
+- [`turtlesim_world_1_launch.py`](../../ros2_ws/launch/04_large_project/turtlesim_world_1_launch.py): World 1 configured via launch arguments.
+- [`turtlesim_world_2_launch.py`](../../ros2_ws/launch/04_large_project/turtlesim_world_2_launch.py): World 2 loading [`config/turtlesim.yaml`](../../ros2_ws/launch/04_large_project/config/turtlesim.yaml) under pushed `/turtlesim2` namespace.
+- [`broadcaster_listener_launch.py`](../../ros2_ws/launch/04_large_project/broadcaster_listener_launch.py): Duplicated TF broadcasters with follower listener.
+- [`mimic_launch.py`](../../ros2_ws/launch/04_large_project/mimic_launch.py): Cross-namespace topic remappings (`/turtle2/pose` -> `/turtlesim2/turtle1/cmd_vel`).
+- [`fixed_broadcaster_launch.py`](../../ros2_ws/launch/04_large_project/fixed_broadcaster_launch.py): Dynamic prefixing from environment variables.
+- [`turtlesim_rviz_launch.py`](../../ros2_ws/launch/04_large_project/turtlesim_rviz_launch.py): RViz visualization launch.
+
+```bash
+# Execute directly from workspace root (omitting ros2_ws):
+ros2 launch launch/04_large_project/launch_turtlesim_launch.py
+
+# Or launch any individual sub-component independently:
+ros2 launch launch/04_large_project/turtlesim_world_1_launch.py background_r:=220
+ros2 launch launch/04_large_project/turtlesim_world_2_launch.py
+ros2 launch launch/04_large_project/broadcaster_listener_launch.py target_frame:=carrot1
+```
 

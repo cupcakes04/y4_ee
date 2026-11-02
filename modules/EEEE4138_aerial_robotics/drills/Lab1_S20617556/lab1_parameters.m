@@ -1,0 +1,9 @@
+g = 9.81; 
+m0 = 1.31;              % Replace with your assigned mass, kg 
+m_nom = 1.50*m0;        % Nominal mass including payload 
+m = m_nom;             % Actual mass used by the plant 
+T_hover = m_nom*g;      % Original hover thrust, N 
+T_max = 2*T_hover;      % Fixed hardware thrust limit, N 
+T_cmd = T_hover;        % First test command, N 
+w0 = 0.40;                % Initial downward velocity, m/s 
+z0 = 0;                % Initial downward position, m 
