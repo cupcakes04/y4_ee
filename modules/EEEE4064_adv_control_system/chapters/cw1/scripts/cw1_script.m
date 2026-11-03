@@ -70,21 +70,27 @@ save('cw1_data.mat', 't', 'dt', 'u', 'T_meas', 'T_ambient', 'dT_meas', 'def_meas
     'pole1_zero0', 'pole2_zero0', 'sys_id_T', 'sys_id_D', ...
     'dT_sim', 'T_sim', 'def_sim', 'T_diff', 'def_diff');
 
-% Plot experimental vs. identified model responses
-figure('Name', 'System Identification Verification', 'Color', 'w', 'Position', [100 100 850 380]);
-subplot(1, 2, 1);
+% Plot experimental vs. identified model responses on a single dual-y-axis figure
+figure('Name', 'System Identification Verification', 'Color', 'w', 'Position', [100 100 720 420]);
+yyaxis left
 plot(t, T_meas, 'r-', 'LineWidth', 1.5); hold on;
-plot(t, T_sim, 'k--', 'LineWidth', 1.5);
-xlabel('Time (s)'); ylabel('Temperature (^\circC)');
-title(sprintf('Heater Temperature (%s: %.2f%%)', sys_id_T.Name, fit_T));
-legend('Experimental', 'Identified Model', 'Location', 'northeast'); grid on;
+plot(t, T_sim, 'r--', 'LineWidth', 1.5);
+ylabel('Temperature (^\circC)');
+ylim([20 55]);
+ax = gca; ax.YColor = 'r';
 
-subplot(1, 2, 2);
+yyaxis right
 plot(t, def_meas, 'b-', 'LineWidth', 1.5); hold on;
-plot(t, def_sim, 'k--', 'LineWidth', 1.5);
-xlabel('Time (s)'); ylabel('Deformation (\mum)');
-title(sprintf('Chamber Deformation (%s: %.2f%%)', sys_id_D.Name, fit_D));
-legend('Experimental', 'Identified Model', 'Location', 'northeast'); grid on;
+plot(t, def_sim, 'b--', 'LineWidth', 1.5);
+ylabel('Deformation (\mum)');
+ylim([0 60]);
+ax.YColor = 'b';
+
+xlabel('Time (s)');
+xlim([0 280]);
+title(sprintf('Experimental vs. Identified Model (Temp Fit: %.2f%%, Def Fit: %.2f%%)', fit_T, fit_D));
+legend('Heater Temp (Exp)', 'Heater Temp (Model)', 'Deformation (Exp)', 'Deformation (Model)', 'Location', 'northeast');
+grid on;
 
 %% 3. State-Space Modeling & Analysis
 models = {
@@ -206,31 +212,40 @@ for m = 1:length(models)
     tf_zeros = roots(num(find(num ~= 0, 1):end));
     no_cancellation = isempty(tf_zeros) || all(min(abs(tf_zeros - [lambda1, lambda2])) > 1e-6);
 
-    % --- 9. Compare Formula Results with MATLAB Commands ---
-    [~, p_mat, ~]      = residue(num, den);
-    [num_mat, ~]       = ss2tf(A_CCF, B_CCF, C_CCF, D_CCF);
-    M_matlab           = ctrb(A_CCF, B_CCF);
-    O_matlab           = obsv(A_CCF, C_CCF); % Note: MATLAB obsv() stacks [C; C*A] = O_obs^T
+    % --- 9. Compare Manual Formula Results with MATLAB Commands ---
+    [A_tf2ss, B_tf2ss, C_tf2ss, D_tf2ss] = tf2ss(num, den); % TF to SS
+    [num_mat, den_mat] = ss2tf(A_CCF, B_CCF, C_CCF, D_CCF); % SS to TF
+    [r_mat, p_mat, ~]  = residue(num, den);                 % Partial Fractions (DCF)
+    eig_mat            = eig(A_CCF);                        % Eigenvalues
+    det_mat            = det(A_CCF);                        % Determinant
+    inv_mat            = inv(A_CCF);                        % Matrix Inverse
+    rank_mat           = rank(A_CCF);                       % Matrix Rank
+    M_matlab           = ctrb(A_CCF, B_CCF);                % Controllability Matrix
+    O_matlab           = obsv(A_CCF, C_CCF);                % Observability Matrix (O_obs^T)
 
     fprintf('Eigenvalues & Damping:\n');
-    fprintf('  Eigenvalues (lambda) : %.4f, %.4f (MATLAB eig = %.4f, %.4f)\n', ...
-        lambda1, lambda2, max(eig(A_CCF)), min(eig(A_CCF)));
+    fprintf('  Eigenvalues (Manual) : %.4f, %.4f | MATLAB eig() : %.4f, %.4f\n', ...
+        lambda1, lambda2, max(eig_mat), min(eig_mat));
     fprintf('  Damping Behavior     : %s\n', damping_type);
 
     fprintf('\nControllability & Observability Checks:\n');
-    fprintf('  State Controllability: |M| = %.4f, rank(M) = %d (MATLAB rank(ctrb) = %d) -> Completely Controllable\n', ...
+    fprintf('  State Controllability: |M| = %.4f, rank(M) = %d | MATLAB rank(ctrb) = %d -> Controllable\n', ...
         det_M_ctrl, rank_M, rank(M_matlab));
-    fprintf('  Output Controllability: rank(N) = %d (m = 1) -> Completely Output Controllable\n', rank_N);
-    fprintf('  State Observability  : |O| = %.6f, rank(O) = %d (MATLAB rank(obsv) = %d) -> Completely Observable\n', ...
+    fprintf('  Output Controllability: rank(N) = %d (m = 1) -> Output Controllable\n', rank_N);
+    fprintf('  State Observability  : |O| = %.6f, rank(O) = %d | MATLAB rank(obsv) = %d -> Observable\n', ...
         det_O_obs, rank_O, rank(O_matlab));
     fprintf('  Diagonal Inspection  : E = P^-1*B non-zero = %d | C*P non-zero = %d\n', diag_ctrl_ok, diag_obs_ok);
     fprintf('  s-Plane Cancellation : No pole-zero cancellation = %d (Stabilizable & Detectable)\n', no_cancellation);
 
-    fprintf('\nFormula vs. MATLAB Numerical Precision Check:\n');
-    fprintf('  det(A) / inv(A) max diff  : %.2e / %.2e\n', abs(det_A - det(A_CCF)), max(abs(inv_A - inv(A_CCF)), [], 'all'));
-    fprintf('  DCF vs residue() max diff : %.2e\n', max(abs(sort([lambda1; lambda2]) - sort(p_mat))));
-    fprintf('  SS-to-TF vs ss2tf() diff  : %.2e\n', max(abs(num_manual - num_mat)));
-    fprintf('  ctrb() / obsv() max diff  : %.2e / %.2e\n', max(abs(M_ctrl - M_matlab), [], 'all'), max(abs(O_obs' - O_matlab), [], 'all'));
+    fprintf('\nManual Formula vs. MATLAB 1-Liner Comparison (Max Difference):\n');
+    fprintf('  det(A)  vs det()     : %.2e\n', abs(det_A - det_mat));
+    fprintf('  inv(A)  vs inv()     : %.2e\n', max(abs(inv_A - inv_mat), [], 'all'));
+    fprintf('  rank(A) vs rank()    : %d vs %d\n', rank_A, rank_mat);
+    fprintf('  CCF     vs tf2ss()   : %.2e\n', max(abs(flipud(B_CCF) - B_tf2ss)));
+    fprintf('  DCF     vs residue() : %.2e\n', max(abs(sort([c1; c2]) - sort(r_mat))));
+    fprintf('  SS->TF  vs ss2tf()   : %.2e\n', max(abs(num_manual - num_mat)));
+    fprintf('  M_ctrl  vs ctrb()    : %.2e\n', max(abs(M_ctrl - M_matlab), [], 'all'));
+    fprintf('  O_obs^T vs obsv()    : %.2e\n', max(abs(O_obs' - O_matlab), [], 'all'));
 
     % Build state-space models and compare simulated responses
     sys_TF   = tf(num, den);
