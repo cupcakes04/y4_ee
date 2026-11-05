@@ -1,0 +1,19 @@
+point 1
+Diesel generators commonly consume between 0.2 and 0.4 L/kWh, with poorer efficiency at low loading. For conservative lifecycle estimates in this project, 0.35 L/kWh was adopted.
+
+source:
+https://www.depco.com/faq/diesel-generator-efficiency/
+
+point 2
+
+Combustion of one litre of diesel releases approximately 2.687 kg CO₂e per litre.
+
+source:
+https://uncleesg.com/kopi-talk/diesel-petrol-co2-per-litre-singapore
+
+point 3
+3.5 kW Diesel Generator Purchase Price (CAPEX):
+(the screenshot is using google ai overview, just be honest and say hard to find price range, and the link below is like 1 example)
+
+source:
+https://www.ato.com/3kw-portable-diesel-generator

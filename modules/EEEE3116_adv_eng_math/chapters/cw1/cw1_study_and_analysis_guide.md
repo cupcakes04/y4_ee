@@ -152,22 +152,46 @@ end
 * **Line 28 (`R.relerr_pred(k) = sqrt(sum(sigma(k+1:end).^2) / sum(sigma.^2))`):**
   **Predicted relative error from $\sigma$ alone.** Without touching any $16384 \times 6$ matrices, it simply adds up the squares of the **discarded singular values** ($\sigma_{k+1}^2 + \dots + \sigma_6^2$), divides by the total $\sum_{i=1}^6 \sigma_i^2$, and takes the square root.
 
-> ### 💡 Integrated Study Point (Q3 Part 1): Mathematical Proof That Lines 27 & 28 Must Agree
-> Why does summing all $98,304$ squared pixel errors in $\|A - A_k\|_F^2$ equal the sum of the discarded $\sigma_i^2$?
-> 1. Write the full SVD and rank-$k$ truncation:
->    $$A = \sum_{i=1}^{6} \sigma_i \mathbf{u}_i \mathbf{v}_i^T, \qquad A_k = \sum_{i=1}^{k} \sigma_i \mathbf{u}_i \mathbf{v}_i^T$$
-> 2. Subtracting $A_k$ from $A$ cancels the first $k$ terms, leaving only the discarded modes $i = k+1, \dots, 6$:
->    $$A - A_k = \sum_{i=k+1}^{6} \sigma_i \mathbf{u}_i \mathbf{v}_i^T = U \tilde{\Sigma}_k V^T, \quad \text{where } \tilde{\Sigma}_k = \text{diag}(0, \dots, 0, \sigma_{k+1}, \dots, \sigma_6)$$
-> 3. Use the trace identity for the Frobenius norm, $\|X\|_F^2 = \text{tr}(X^T X)$, together with the orthonormality of the singular vectors ($U^T U = I_6$ and $V^T V = I_6$) and the cyclic property of trace $\text{tr}(BC) = \text{tr}(CB)$:
->    $$\begin{aligned}
->    \|A - A_k\|_F^2 &= \text{tr}\big((A - A_k)^T (A - A_k)\big) \\
->    &= \text{tr}\big((U \tilde{\Sigma}_k V^T)^T (U \tilde{\Sigma}_k V^T)\big) \\
->    &= \text{tr}\big(V \tilde{\Sigma}_k \underbrace{U^T U}_{I_6} \tilde{\Sigma}_k V^T\big) \\
->    &= \text{tr}\big(\tilde{\Sigma}_k^2 \underbrace{V^T V}_{I_6}\big) = \text{tr}(\tilde{\Sigma}_k^2) = \sum_{i=k+1}^{6} \sigma_i^2
->    \end{aligned}$$
-> 4. Setting $k = 0$ gives $\|A\|_F^2 = \sum_{i=1}^6 \sigma_i^2$. Dividing and taking the square root proves that Line 27 and Line 28 are mathematically identical:
->    $$\frac{\|A - A_k\|_F}{\|A\|_F} = \sqrt{\frac{\sum_{i=k+1}^{6} \sigma_i^2}{\sum_{i=1}^{6} \sigma_i^2}}$$
-> * **Why $k=6$ in Table 1 shows `1.40514e-15` (measured) vs `0` (from $\sigma$):** For $k=6$, `sigma(7:end)` is an empty vector so `sum` is exactly `0`, whereas multiplying `U * S * V'` in floating-point arithmetic accumulates tiny IEEE 754 double-precision rounding errors of order $\sim 10^{-15}$.
+> ### 💡 Integrated Study Point (Q3 Part 1): Why Lines 27 & 28 Must Agree (Simple Human Version + Worked Example + Short Proof)
+>
+> #### 1. The Simple Intuition ("The 6-Layer Cake & Pythagoras' Theorem")
+> Think of the SVD equation $A = \sum_{i=1}^6 \sigma_i \mathbf{u}_i \mathbf{v}_i^T$ as splitting your $16384 \times 6$ photo matrix $A$ into **6 perpendicular (orthogonal) image layers**:
+> $$A = \underbrace{\sigma_1 \mathbf{u}_1 \mathbf{v}_1^T}_{\text{Layer 1}} + \underbrace{\sigma_2 \mathbf{u}_2 \mathbf{v}_2^T}_{\text{Layer 2}} + \underbrace{\sigma_3 \mathbf{u}_3 \mathbf{v}_3^T}_{\text{Layer 3}} + \underbrace{\sigma_4 \mathbf{u}_4 \mathbf{v}_4^T}_{\text{Layer 4}} + \underbrace{\sigma_5 \mathbf{u}_5 \mathbf{v}_5^T}_{\text{Layer 5}} + \underbrace{\sigma_6 \mathbf{u}_6 \mathbf{v}_6^T}_{\text{Layer 6}}$$
+> * Because every $\mathbf{u}_i$ and $\mathbf{v}_i$ is a unit vector (length $= 1$), the "size" (Frobenius norm) of Layer $i$ is literally just **$\sigma_i$**.
+> * Because the layers are **mutually perpendicular ($90^\circ$)**, **Pythagoras' Theorem** ($c^2 = a^2 + b^2 + \dots$) says the total squared energy of $A$ is simply the sum of the squares of all 6 layers:
+>   $$\|A\|_F^2 = \sigma_1^2 + \sigma_2^2 + \sigma_3^2 + \sigma_4^2 + \sigma_5^2 + \sigma_6^2$$
+> * Now, what is the rank-$k$ approximation $A_k$? It just **keeps the first $k$ layers**!
+>   When you subtract $A_k$ from $A$, **the first $k$ layers cancel out completely**, leaving **only the discarded layers $(k+1)$ to $6$**:
+>   $$A - A_k = \sum_{i=k+1}^{6} \sigma_i \mathbf{u}_i \mathbf{v}_i^T$$
+> * Applying Pythagoras' Theorem (or the fact that multiplying by orthonormal matrices $U$ and $V^T$ is just a rigid rotation that doesn't change lengths, $\|U D V^T\|_F = \|D\|_F$), the squared error of what is left over is simply the **sum of the squares of the discarded singular values**:
+>   $$\|A - A_k\|_F^2 = \sigma_{k+1}^2 + \dots + \sigma_6^2 = \sum_{i=k+1}^{6} \sigma_i^2$$
+>
+> #### 2. Concrete Example Calculation Using Your Table 1 Numbers (at $k = 4$)
+> Take your 6 singular values from **Table 1**:
+> $$\sigma_1 = 121.846,\quad \sigma_2 = 24.3895,\quad \sigma_3 = 18.8741,\quad \sigma_4 = 13.3354,\quad \sigma_5 = 11.2873,\quad \sigma_6 = 7.46808$$
+> * **Step A — Total Energy $\|A\|_F^2$ (square all 6 and add them up):**
+>   $$\|A\|_F^2 = 121.846^2 + 24.3895^2 + 18.8741^2 + 13.3354^2 + 11.2873^2 + 7.46808^2$$
+>   $$\|A\|_F^2 = 14846.45 + 594.85 + 356.23 + 177.83 + 127.40 + 55.77 = \mathbf{16158.5}$$
+> * **Step B — Squared Error at $k = 4$, $\|A - A_4\|_F^2$ (we kept $\sigma_1\dots\sigma_4$, so only $\sigma_5$ and $\sigma_6$ are left over):**
+>   $$\|A - A_4\|_F^2 = \sigma_5^2 + \sigma_6^2 = 11.2873^2 + 7.46808^2 = 127.40 + 55.77 = \mathbf{183.17}$$
+> * **Step C — Relative Error at $k = 4$ (divide and take square root):**
+>   $$\text{Relative Error}(k=4) = \frac{\|A - A_4\|_F}{\|A\|_F} = \sqrt{\frac{\sigma_5^2 + \sigma_6^2}{\sum_{i=1}^6 \sigma_i^2}} = \sqrt{\frac{183.17}{16158.5}} = \sqrt{0.011336} = \mathbf{0.106471}$$
+>   Look at row $k=4$ of your **Table 1**: both `Relative Error (Measured)` and `Relative Error (from σ)` are **`0.106471`**!
+>   *(And at $k=6$, no singular values are discarded so the formula gives `0`, while MATLAB's matrix subtraction gives `1.40514e-15` because of tiny computer floating-point rounding).*
+>
+> #### 3. Short 3-Line Algebra Proof (For Full Marks in Handwritten Q3)
+> Since $A = U\Sigma V^T$ and $A_k = U_k \Sigma_k V_k^T$, subtracting gives $A - A_k = U \tilde{\Sigma}_k V^T$ where $\tilde{\Sigma}_k = \text{diag}(0, \dots, 0, \sigma_{k+1}, \dots, \sigma_6)$.
+> Because $U$ and $V$ have orthonormal columns ($U^T U = I_6, V^T V = I_6$), they preserve the Frobenius norm ($\|X\|_F^2 = \text{tr}(X^T X)$):
+> $$\|A - A_k\|_F^2 = \text{tr}\big((U \tilde{\Sigma}_k V^T)^T (U \tilde{\Sigma}_k V^T)\big) = \text{tr}\big(V \tilde{\Sigma}_k \underbrace{U^T U}_{I_6} \tilde{\Sigma}_k V^T\big) = \text{tr}(\tilde{\Sigma}_k^2) = \sum_{i=k+1}^{6} \sigma_i^2$$
+>
+> ---
+>
+> ### 💡 Integrated Study Point (Q3 Part 2): Why $\sigma_1 = 121.846$ Is Huge Compared to $\sigma_2 = 24.3895$ (Tiny 2-Pixel Example!)
+> Suppose you have a tiny 2-pixel image under Left lighting and Right lighting, where the average pixel brightness is $0.50$ and the lamp only shifts brightness by $\pm 0.05$:
+> $$A = \begin{bmatrix} 0.55 & 0.45 \\ 0.45 & 0.55 \end{bmatrix} = \underbrace{\begin{bmatrix} 0.50 & 0.50 \\ 0.50 & 0.50 \end{bmatrix}}_{\text{Mode 1: Average Brightness } (\sigma_1 = 1.00)} + \underbrace{\begin{bmatrix} +0.05 & -0.05 \\ -0.05 & +0.05 \end{bmatrix}}_{\text{Mode 2: Lighting Difference } (\sigma_2 = 0.10)}$$
+> Why is $\sigma_1$ ($1.00$) ten times bigger than $\sigma_2$ ($0.10$)?
+> 1. **Pixels are positive $[0, 1]$ and we did NOT subtract the mean face:** Every pixel brightness is $\ge 0$. Because we didn't centre the data before SVD, Mode 1 ($\sigma_1 \mathbf{u}_1 \mathbf{v}_1^T$) has to carry the **entire baseline brightness (average face + background)** of all 6 photos ($\sigma_1 = 121.846$, or $91.88\%$ of total energy).
+> 2. **All 6 photos show the same stationary face and background:** Columns `N1`–`N6` are nearly identical (highly colinear vectors), while modes $\sigma_2 = 24.3895$ to $\sigma_6 = 7.46808$ only represent the small $+ / -$ shadow changes around that average face.
 
 ---
 
@@ -183,24 +207,51 @@ for k = 1:5
     x = X(:,2);  R.res_E1(k) = norm(x - Uk*(Uk'*x)) / norm(x);
 end
 ```
-* **What `X = load_faces({'H1', 'E1'})` loads:**
-  Two held-out test photos ($16384 \times 2$) that were **never used** when computing the SVD of $A$:
-  * `X(:,1)` = **`H1`**: Neutral face, **new lighting direction** (upper-left, halfway between `N1` and `N3`).
-  * `X(:,2)` = **`E1`**: **Smiling expression**, front lighting (same lighting as `N5`).
-* **How the projection `p = Uk * (Uk' * x)` works step-by-step:**
-  Because the columns of $U_k = [\mathbf{u}_1, \dots, \mathbf{u}_k] \in \mathbb{R}^{16384 \times k}$ are orthonormal ($U_k^T U_k = I_k$), the closest vector to $\mathbf{x}$ inside the subspace $\text{span}(\mathbf{u}_1, \dots, \mathbf{u}_k)$ is given by orthogonal projection:
-  1. **`c = Uk' * x` ($k \times 1$ vector):** Computes the dot product $c_i = \mathbf{u}_i^T \mathbf{x}$ of the test photo $\mathbf{x}$ with each of the $k$ basis images. $c_i$ tells us *"how much of basis lighting pattern $\mathbf{u}_i$ is present in test photo $\mathbf{x}$"*.
-  2. **`p = Uk * c` ($16384 \times 1$ vector):** Multiplies each basis image $\mathbf{u}_i$ by its weight $c_i$ and sums them up:
-     $$\mathbf{p} = \sum_{i=1}^{k} (\mathbf{u}_i^T \mathbf{x})\, \mathbf{u}_i = U_k U_k^T \mathbf{x}$$
-     $\mathbf{p}$ is the **best synthetic neutral-face image** that the $k$-dimensional lighting model can construct to match $\mathbf{x}$. Notice why the parentheses in `Uk*(Uk'*x)` matter computationally: `(Uk'*x)` does a $(k \times 16384) \times (16384 \times 1)$ multiply ($O(kM)$ operations), whereas `(Uk*Uk')*x` would build a massive $16384 \times 16384$ projection matrix first!
-  3. **`r = x - p` (Residual Vector) & `norm(x - p) / norm(x)` (Relative Residual):**
-     The residual $\mathbf{r} = \mathbf{x} - \mathbf{p}$ is the **unexplained part of the photo**—everything in $\mathbf{x}$ that is perpendicular to the neutral lighting subspace $\text{span}(U_k)$.
-     In `cw1_figures.m` (lines 47–51), this exact residual vector $\mathbf{r} = \mathbf{x} - \mathbf{p}$ at $k = 3$ is reshaped into $128 \times 128$ and plotted with a colorbar as **Figure 3**:
-     ```matlab
-     p = U(:,1:3) * (U(:,1:3)' * x);          % projection onto span(u1, u2, u3)
-     r = x - p;                               % what the lighting subspace cannot explain
-     subplot(1, 2, j); imshow(reshape(r, 128, 128), []); colorbar;
-     ```
+
+#### 🖼️ The Mental Picture of Step 4 (What `x`, `p`, and `r = x - p` Actually Look Like!)
+The reason Step 4 feels abstract in `cw1_figures.m` is that **Figure 3 only plots the leftover residual `r = x - p`, and never shows you the projected face `p` itself!**
+
+Here is what `x`, `p`, and `r = x - p` actually look like on your face at $k = 3$:
+
+![Step 4 Visualized](step4_visual_explained.png)
+
+Think of $U_k = [\mathbf{u}_1, \dots, \mathbf{u}_k]$ as a **"Neutral-Face Stamp Kit"** containing $k$ transparent stamp templates learned **only** from your 6 neutral photos `N1`–`N6`:
+* **$\mathbf{u}_1$** is the average neutral face stamp.
+* **$\mathbf{u}_2$** is the left–right lighting stamp.
+* **$\mathbf{u}_3$** is the top–bottom lighting stamp.
+* Crucially, **every stamp in this kit has a closed, neutral mouth!** It has *never* seen you smile (`E1`), and it has *never* seen the diagonal upper-left lamp (`H1`).
+
+Now we hand the computer a brand-new test photo **`x`** (`H1` or `E1`) and challenge it:
+> *"Using ONLY a weighted mix of your first $k$ neutral stamps $\mathbf{u}_1, \dots, \mathbf{u}_k$, build the closest fake photo **`p`** that you possibly can to match **`x`**!"*
+
+Here is how the single line `p = Uk * (Uk' * x)` does that in 3 steps:
+
+1. **Step 4a — Find the Recipe Weights: `c = Uk' * x` ($k \times 1$ list of numbers)**
+   * For each stamp $\mathbf{u}_i$, the dot product $c_i = \mathbf{u}_i^T \mathbf{x}$ measures how much of stamp $\mathbf{u}_i$ is present in test photo $\mathbf{x}$.
+   * For your smile photo `E1` at $k = 3$, MATLAB computes the 3 recipe weights:
+     $$c_1 = -46.9, \quad c_2 = +3.5, \quad c_3 = +0.3$$
+
+2. **Step 4b — Build the Best Fake Neutral Photo: `p = Uk * c` ($16384 \times 1$ image)**
+   * MATLAB mixes the $k$ stamps using those exact weights:
+     $$\mathbf{p} = c_1 \mathbf{u}_1 + c_2 \mathbf{u}_2 + c_3 \mathbf{u}_3 = (-46.9)\mathbf{u}_1 + (3.5)\mathbf{u}_2 + (0.3)\mathbf{u}_3$$
+   * **Look at the middle column (`2. Projection p`) in the picture above:**
+     * For **`E1` (bottom middle)**: The computer successfully matches your forehead, hair, glasses, background, and front lighting—**but because its stamp kit only knows neutral faces, the fake photo `p` has a closed, neutral mouth!**
+     * For **`H1` (top middle)**: The computer mixes $\mathbf{u}_1, \mathbf{u}_2, \mathbf{u}_3$ to imitate upper-left lighting, producing a neutral face lit from the upper-left (with a slight double-edge on the right cheek because `N1` had a slight head lean).
+
+3. **Step 4c — Subtract to See What the Stamp Kit Couldn't Explain: `r = x - p` and `norm(r) / norm(x)`**
+   * Now subtract the computer's fake neutral reconstruction **`p`** (Column 2) from your actual photo **`x`** (Column 1):
+     $$\mathbf{r} = \mathbf{x} - \mathbf{p}$$
+   * **Look at the right column (`3. Residual r = x - p`, which is Figure 3 in your coursework):**
+     * **For `E1` (bottom right):**
+       $$\text{(Your Smiling Photo }\mathbf{x}\text{)} - \text{(Reconstructed Neutral Photo }\mathbf{p}\text{)} = \text{Just the Smile!}$$
+       Everywhere that didn't move (forehead, hair, background) cancels out to $0$ (flat grey), and the only thing left over in $\mathbf{r}$ is **your smiling mouth, raised cheeks, and lower glasses rim**!
+     * **For `H1` (top right):**
+       $$\text{(Actual Upper-Left Lit Photo }\mathbf{x}\text{)} - \text{(3-Stamp Lighting Approximation }\mathbf{p}\text{)} = \text{Unmodelled Shadows \& Head-Shift Edges!}$$
+   * Finally, **`norm(x - p) / norm(x)`** (`R.res_H1(k)` and `R.res_E1(k)` in **Table 2**) condenses that entire leftover image $\mathbf{r}$ into **one percentage number**:
+     $$\text{Relative Residual} = \frac{\|\mathbf{r}\|_2}{\|\mathbf{x}\|_2} = \frac{\|\mathbf{x} - \mathbf{p}\|_2}{\|\mathbf{x}\|_2}$$
+     * At $k=3$, for `E1`: $\|\mathbf{r}\|_2 / \|\mathbf{x}\|_2 = 8.49 / 47.81 = \mathbf{0.1777}$ ($17.8\%$ of the image energy could not be explained by the 3 neutral stamps).
+     * At $k=3$, for `H1`: $\|\mathbf{r}\|_2 / \|\mathbf{x}\|_2 = 18.76 / 54.83 = \mathbf{0.3422}$ ($34.2\%$ of the image energy could not be explained).
+     * As $k$ increases from $1 \to 5$, you give the computer **more stamps** ($\mathbf{u}_1$ up to $\mathbf{u}_5$), so its fake photo $\mathbf{p}$ gets closer and closer to $\mathbf{x}$, and the relative residual $\|\mathbf{x} - \mathbf{p}\|_2 / \|\mathbf{x}\|_2$ **must decrease (or stay flat) at every step** (which is the curve plotted in **Figure 2 right**!).
 
 > ### 💡 Integrated Study Point (Q2): Comparing `H1` (New Lighting) vs `E1` (Smile) in Your Results
 > Look at your **Table 2**, **Figure 2 (right)**, and **Figure 3**:
@@ -254,15 +305,15 @@ end
 
 #### **Q3. The mathematics behind Table 1**
 - **Why measured and predicted relative errors in Table 1 agree ($\|A - A_k\|_F^2 = \sum_{i>k} \sigma_i^2$):**
-  Given the economy SVD $A = U\Sigma V^T = \sum_{i=1}^6 \sigma_i \mathbf{u}_i \mathbf{v}_i^T$ with orthonormal columns $U^T U = I_6$ and $V^T V = I_6$, the rank-$k$ approximation is $A_k = \sum_{i=1}^k \sigma_i \mathbf{u}_i \mathbf{v}_i^T$. Subtracting gives:
+  The economy SVD writes $A = U\Sigma V^T = \sum_{i=1}^6 \sigma_i \mathbf{u}_i \mathbf{v}_i^T$ as a sum of 6 mutually orthogonal rank-1 layers ($U^T U = I_6, V^T V = I_6$). Since $A_k = \sum_{i=1}^k \sigma_i \mathbf{u}_i \mathbf{v}_i^T$ keeps the first $k$ layers, subtracting cancels layers $1\dots k$ and leaves only the discarded layers $i > k$:
   $$A - A_k = \sum_{i=k+1}^{6} \sigma_i \mathbf{u}_i \mathbf{v}_i^T = U \tilde{\Sigma}_k V^T, \quad \tilde{\Sigma}_k = \text{diag}(0, \dots, 0, \sigma_{k+1}, \dots, \sigma_6)$$
-  Using $\|X\|_F^2 = \text{tr}(X^T X)$ and the cyclic trace property $\text{tr}(BC) = \text{tr}(CB)$:
-  $$\|A - A_k\|_F^2 = \text{tr}\big((U \tilde{\Sigma}_k V^T)^T (U \tilde{\Sigma}_k V^T)\big) = \text{tr}\big(V \tilde{\Sigma}_k \underbrace{U^T U}_{I_6} \tilde{\Sigma}_k V^T\big) = \text{tr}\big(\tilde{\Sigma}_k^2 \underbrace{V^T V}_{I_6}\big) = \text{tr}(\tilde{\Sigma}_k^2) = \sum_{i=k+1}^{6} \sigma_i^2$$
-  Similarly, for $k=0$, $\|A\|_F^2 = \text{tr}(\Sigma^2) = \sum_{i=1}^6 \sigma_i^2$. Taking the ratio and square root proves:
+  Because orthonormal matrices $U$ and $V$ preserve the Frobenius norm ($\|X\|_F^2 = \text{tr}(X^T X)$):
+  $$\|A - A_k\|_F^2 = \text{tr}\big((U \tilde{\Sigma}_k V^T)^T (U \tilde{\Sigma}_k V^T)\big) = \text{tr}\big(V \tilde{\Sigma}_k \underbrace{U^T U}_{I_6} \tilde{\Sigma}_k V^T\big) = \text{tr}(\tilde{\Sigma}_k^2) = \sum_{i=k+1}^{6} \sigma_i^2$$
+  Similarly, for $k=0$, $\|A\|_F^2 = \sum_{i=1}^6 \sigma_i^2 = 16158.5$. Taking the square root of their ratio gives:
   $$\frac{\|A - A_k\|_F}{\|A\|_F} = \sqrt{\frac{\sum_{i=k+1}^{6} \sigma_i^2}{\sum_{i=1}^{6} \sigma_i^2}}$$
-  In **Table 1**, the two columns match identically for $k=1\text{–}5$ (e.g., $0.284958$ at $k=1$, $0.149472$ at $k=3$, $0.0587501$ at $k=5$). At $k=6$, the predicted value is exactly $0$ while the measured error is $1.40514 \times 10^{-15}$ due to IEEE 754 double-precision rounding.
+  *Example check at $k=4$ (**Table 1**):* $\sqrt{(\sigma_5^2 + \sigma_6^2)/\sum_{i=1}^6 \sigma_i^2} = \sqrt{(11.2873^2 + 7.46808^2)/16158.5} = \sqrt{183.17/16158.5} = \mathbf{0.106471}$, matching the measured error $0.106471$ identically (at $k=6$, predicted is $0$ vs measured $1.405\times 10^{-15}$ from floating-point rounding).
 - **Why $\sigma_1$ is much larger than the other singular values ($\sigma_1 = 121.846 \gg \sigma_2 = 24.3895$):**
-  1. **Un-centred, non-negative pixel values ($A_{ij} \in [0, 1]$):** Unlike PCA, the mean image is not subtracted before SVD. All pixels are non-negative, so the first mode $\sigma_1 \mathbf{u}_1 \mathbf{v}_1^T$ absorbs the large positive **DC / mean face intensity** (**Figure 1**, $\mathbf{u}_1$), accounting for $\sigma_1^2 / \sum \sigma_i^2 = \mathbf{91.88\%}$ of total energy ($121.846^2 / 16158.46$).
-  2. **Strong column colinearity:** All 6 columns of $A$ depict the same face, glasses, and static room background in the same position, so the vectors $\mathbf{a}_1, \dots, \mathbf{a}_6 \in \mathbb{R}^{16384}$ point in nearly the same direction, yielding $\sigma_1 = 121.846$ ($5.00\times$ larger than $\sigma_2 = 24.3895$), while $\sigma_2\text{–}\sigma_6$ only capture zero-mean directional lighting differences around $\mathbf{u}_1$.
+  1. **No mean subtraction & non-negative pixels ($A_{ij} \in [0, 1]$):** Unlike PCA, the mean face is not subtracted before SVD. Because all pixel intensities are positive, the first mode $\sigma_1 \mathbf{u}_1 \mathbf{v}_1^T$ carries the entire **baseline average face and background brightness ("DC offset", Figure 1 $\mathbf{u}_1$)**, capturing $\sigma_1^2 / \sum \sigma_i^2 = 121.846^2 / 16158.5 = \mathbf{91.88\%}$ of total energy.
+  2. **High similarity (colinearity) of the 6 photos:** All 6 columns of $A$ show the same stationary face, glasses, and room background, so vectors $\mathbf{a}_1, \dots, \mathbf{a}_6$ point in nearly the same direction ($\sigma_1 = 121.846$, $5.00\times$ larger than $\sigma_2 = 24.3895$), while $\sigma_2\text{–}\sigma_6$ only capture zero-mean $+ / -$ shadow changes around $\mathbf{u}_1$.
 
 ### [End of 1-Page Handwritten Sheet]

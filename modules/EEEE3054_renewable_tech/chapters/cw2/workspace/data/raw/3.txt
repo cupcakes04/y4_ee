@@ -1,0 +1,24 @@
+Reference 3: Solar Inverter & Controller Pricing and Specifications
+Component: Fronius IG 40 / Fronius Primo (3.0 kW - 3.8 kW AC Solar Inverter)
+Checked Cost: $1,200 USD (or equivalent ~£899 - £950 GBP / €1,000 EUR)
+Expected Lifetime: 10 - 12 Years
+
+Verified Direct Links for Screenshot:
+   
+1. The Eco Supermarket (Live Retail Store Page with Direct Price Tag):
+   URL: https://www.solartopstore.com/products/fronius-primo-3-0-1/
+   - Model: Fronius Primo 3.0-1 Inverter
+   - Price Displayed: £929.00 Ex.
+The communicative inverter for optimised energy management.
+With power categories ranging from 3.0 to 8.2 kW, the Fronius Primo perfectly complements the SnapINverter generation. This single-phase, transformerless device is the ideal inverter for private households. Its innovative SuperFlex Design provides maximum flexibility in system design, while the SnapINverter mounting system makes installation and maintenance as easy as possible. The communication package included as standard with WLAN, energy management, numerous interfaces, and much more besides, makes the Fronius Primo a communicative inverter for owner-occupiers.
+
+3. Official Institutional Benchmark Report (NREL Technical Report PDF):
+   URL: https://research-hub.nlr.gov/en/publications/us-solar-photovoltaic-system-and-energy-storage-cost-benchmarks-w-2/
+
+   using the above url link to get raw report pdf: (i do this cus link may be borken but link source is provided)
+   extension://bfdogplmndidlpjfhoijckpakkdjkkil/pdf/viewer.html?file=https%3A%2F%2Fdocs.nlr.gov%2Fdocs%2Ffy23osti%2F87303.pdf 
+
+   - Document: U.S. Solar Photovoltaic System and
+Energy Storage Cost Benchmarks, With
+Minimum Sustainable Price Analysis:
+Q1 2023

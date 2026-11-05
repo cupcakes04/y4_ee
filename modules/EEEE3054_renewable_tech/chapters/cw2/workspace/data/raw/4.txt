@@ -1,0 +1,13 @@
+Reference 4: Cables, Mounting & Sudan Delivery (Balance of System & Freight)
+Component: Mounting frames, DC/AC cabling, distribution boxes, circuit breakers, shipping to Northern State (Dongola), Sudan
+Checked Cost: $1,800 USD
+Expected Lifetime: 20 Years
+
+Direct Links:
+1. UNDP Sudan - Solar Energy Value Chains in Sudan (Official Study):
+   https://www.undp.org/sudan/publications/solar-energy-value-chain-study
+   Publication: UNDP Sudan (May 2024 / 2026), "Solar Energy Value Chains in Sudan: Fueling Recovery and Resilience"
+   Key Excerpts:
+   - "Following extensive damage to Sudan's electricity grid (exceeding US$3 billion), solar power has transitioned from an alternative option to critical lifeline infrastructure for clinics, irrigation, and households."
+   - "Importers and installers face compounding delivery and Balance of System (BOS) challenges: severe logistical bottlenecks at Port Sudan, high inland transport and security costs across northern transit corridors, and currency depreciation that multiplies landed component costs."
+   - "BOS equipment (cables, mounting structures, switchgear) and remote transport represent a significant portion of off-grid project deployment budgets in remote Sudanese states."

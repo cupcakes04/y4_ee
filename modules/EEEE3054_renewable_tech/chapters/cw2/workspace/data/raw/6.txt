@@ -1,0 +1,17 @@
+Reference 6: Baseline Diesel Generator Economics & Electricity Cost ($0.40/kWh)
+Component: 3.5 kW Diesel Generator ($1,800 CAPEX) + Off-Grid Diesel Fuel Electricity Generation Cost ($0.40/kWh)
+Application: Buyback / Payback Calculation (Table 5 & Section 2)
+
+point 1:
+
+Baseline Diesel Generation Economics
+
+Stand-alone diesel generation in remote and off-grid settings is typically among the most expensive forms of electricity supply. Studies cited by the World Bank and ESMAP indicate that the levelized cost of diesel-generated electricity commonly falls within the range of approximately US$0.35-0.70/kWh, depending on fuel prices, transport costs, load factors, and maintenance requirements.
+
+source:extension://bfdogplmndidlpjfhoijckpakkdjkkil/pdf/viewer.html?file=https%3A%2F%2Fwww.powerforall.org%2Fapplication%2Ffiles%2F4415%2F6700%2F7650%2FFS__Mini-grids_costs_can_be_reduced_by_60_by_2030.pdf
+
+point 2:
+
+Diesel-based electricity generation in remote African communities commonly exhibits levelized costs of approximately US$0.35-0.70/kWh, with costs increasing further where fuel must be transported long distances. In Sudan, conflict-related disruptions, fuel shortages, and deteriorating grid infrastructure have significantly improved the economic attractiveness of solar PV systems for farms, clinics, and households.
+
+source: https://undpsudan.exposure.co/solar-power-report

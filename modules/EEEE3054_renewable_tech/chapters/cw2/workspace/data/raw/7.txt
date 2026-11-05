@@ -1,0 +1,6 @@
+point1:
+Solar PV produces essentially zero direct CO₂ emissions during electricity generation. However, lifecycle assessments that include manufacturing, transportation, installation, and end-of-life processing typically report median emissions of approximately 40-50 g CO₂e/kWh (0.04-0.05 kg CO₂e/kWh).
+
+https://docs.nlr.gov/docs/fy13osti/56487.pdf
+
+(image sreenshoted is harmonised line which is like 46 (40~50))

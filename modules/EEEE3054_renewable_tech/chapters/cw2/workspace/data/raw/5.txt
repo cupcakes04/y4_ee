@@ -1,0 +1,34 @@
+Reference 5: Yearly Running Cost (OPEX) - Operations & Maintenance Benchmark
+Component: Annual panel dusting, visual inspections, cable tightening, fuse/breaker checks
+Checked Cost: $200 / year ($4,000 over 20 years)
+Expected Lifetime: 20 Years
+
+note: old ones suck i replaced here
+
+point 1: 
+Solar photovoltaic systems generally incur relatively low operating and maintenance (O&M) costs compared with their upfront capital investment. Industry and project-finance references commonly estimate annual O&M expenditure at approximately 1%-3% of initial capital cost, depending on system size, site conditions, and maintenance requirements
+
+source: https://pv-maps.com/en/blog/solar-om-costs-per-mw
+The OPEX (Operating Expenditures) of a photovoltaic plant typically represents between 1.5% and 3% of the initial CAPEX per year. For a €10M plant, this means €150,000-300,000 annually over 25-30 years. If you don’t optimize these costs, you could be leaving €1-2 million in net present value on the table.
+Assuming annual O&M costs equal 1.5%-2.0% of CAPEX, an $8,500 solar PV system would require approximately $128-$170 per year for maintenance (author calculation based on industry O&M benchmarks).
+
+point 2:
+PV systems operating in arid and desert environments experience elevated dust accumulation, making periodic cleaning an important maintenance activity. Studies from desert climates report significant energy losses when modules are not cleaned regularly
+
+source: extension://bfdogplmndidlpjfhoijckpakkdjkkil/pdf/viewer.html?file=https%3A%2F%2Fwww.pv-tech.org%2Fwp-content%2Fuploads%2Flegacy-publication-pdfs%2F7214fc38b9-pv-soiling-in-dry-climates-causes-impacts-and-solutions.pdf
+A desert-climate PV study from Qatar found:
+
+"In dry climates soiling rates are typically in the order of 0.1-1% per day."
+
+The same study states:
+
+"At the OTF, soiling causes the power of PV modules ... to decrease by 10-20% per month."
+
+source: https://www.nlr.gov/news/detail/features/2021/scientists-studying-solar-try-solving-a-dusty-problem
+The energy lost annually from soiling amounts to as much as 7% in parts of the United States to as high as 50% in the Middle East.
+
+point 3:
+Given the dusty operating environment expected in Northern Sudan, allocating approximately USD 200 per year for routine PV maintenance, including module cleaning, replacement of minor electrical components, inspections, and basic servicing, represents a conservative maintenance allowance consistent with industry O&M expenditure ranges of approximately 1%-3% of system CAPEX per year.
+
+source:
+https://pv-maps.com/en/blog/solar-om-costs-per-mw
