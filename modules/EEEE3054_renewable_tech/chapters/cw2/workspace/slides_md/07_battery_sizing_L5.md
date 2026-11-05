@@ -43,8 +43,7 @@
 ---
 
 ### What to Say (Speaker Notes)
-- "On Slide 7, I size the battery bank using a 4-hour **Store vs. Drain** energy table across the day."
-- "During the daytime (`8 to 12` and `12 to 16`), our solar panels generate 10.8 kWh per 4-hour block, supplying the clinic directly and storing **2.8 + 4.8 = 7.6 kWh** of excess energy into the battery."
-- "At night, evening, and early morning (`16 to 8`), solar generation is zero, so the clinic drains **0.8 + 4.0 + 2.0 + 0.8 = 7.6 kWh** from the battery."
-- "We choose **Lithium-Ion batteries** because, as shown in Figure 10, Li-Ion ranks 1st in round-trip efficiency (95%) and lifespan (10–15 years), whereas Lead-Acid is ranked 5th."
-- "Using standard **2 kWh Li-Ion units**, **4 batteries (8 kWh)** covers a normal night. To give our hospital a **2x safety margin** for dusty weather and protect battery health, we select **8 batteries = 16 kWh total**."
+- **4-Hour Energy Balance:** Daytime generation (21.6 kWh) supplies 14.0 kWh clinic load + stores **7.6 kWh**.
+- **Overnight Discharge:** Evening & night blocks draw exactly **7.6 kWh** from the battery.
+- **Chemistry Selection:** Li-Ion chosen (Ranked #1, 95% round-trip efficiency, 10–15 yr life vs Lead-Acid 3–6 yr).
+- **Storage Capacity:** Baseline 7.6 kWh / 2 kWh = 3.8 → 4 units. Selected **8 × 2 kWh = 16 kWh** (2× safety buffer for hospital reliability).

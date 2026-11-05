@@ -47,12 +47,10 @@
 ---
 
 ### What to Say (Speaker Notes)
-- "Slide 9 covers our $\text{CO}_2$ emissions savings and 5-point comparison against a fossil-fuel diesel generator."
-- "Over 20 years, the clinic uses **157,680 kWh**. Our Solar + Battery system burns zero fuel and only has **7.9 tonnes of manufacturing $\text{CO}_2$** (at 50 g/kWh). A diesel generator burning 0.35 L/kWh produces **149.8 tonnes of $\text{CO}_2$**, meaning our solar design **saves 141.9 tonnes of $\text{CO}_2$ (a 94.7% reduction)**."
-- "In Table 7, we compare the two systems across **5 numerical criteria**:
-  1. **Initial Cost:** Diesel is better (\$1,800 vs. \$8,500).
-  2. **Annual Running Cost:** Solar is better (\$200/yr vs. \$3,150/yr).
-  3. **20-Year Total Cost:** Solar is better (\$17,700 vs. \$68,400, saving over \$50,000).
-  4. **$\text{CO}_2$ Emissions:** Solar is better (7.9 tonnes vs. 149.8 tonnes).
-  5. **Hospital Noise & Security:** Solar is better (0 dB silent vs. 80 dB generator noise, and no risk of running out of diesel in rural Sudan)."
+- **Lifecycle $\text{CO}_2$ Balance:** Solar lifecycle **7.9 tonnes $\text{CO}_2$** (50 g/kWh) vs. Diesel **149.8 tonnes $\text{CO}_2$** (55,188 L fuel) $\rightarrow$ **141.9 tonnes $\text{CO}_2$ saved (94.7% cut)**.
+- **1. Initial CAPEX:** Diesel performs better ($1,800 vs $8,500; 79% cheaper upfront).
+- **2. Annual OPEX:** Solar performs better ($200/yr vs $3,150/yr; 94% cheaper to operate).
+- **3. 20-Year Total Cost:** Solar performs better ($17,700 vs $68,400; saves $50,700).
+- **4. $\text{CO}_2$ Footprint:** Solar performs better (7.9 t vs 149.8 t).
+- **5. Clinic Quiet & Reliability:** Solar performs better (0 dB silent vs 80 dB engine noise; no fuel convoy risk).
 

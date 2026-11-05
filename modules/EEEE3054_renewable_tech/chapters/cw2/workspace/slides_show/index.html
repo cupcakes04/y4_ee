@@ -1,0 +1,1688 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Off-Grid Health Centre Solar Power System | Nicholas Khor (20617556)</title>
+  <style>
+    :root {
+      --bg: #f8fafc;
+      --surface: #ffffff;
+      --text: #0f172a;
+      --text-muted: #334155;
+      --text-light: #64748b;
+      --border: #e2e8f0;
+      --border-dark: #cbd5e1;
+      --primary: #0f766e;
+      --primary-light: #ccfbf1;
+      --primary-dark: #115e59;
+      --accent: #d97706;
+      --accent-light: #fef3c7;
+      --success: #16a34a;
+      --danger: #dc2626;
+      --radius: 14px;
+      --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      --font-math: "Cambria Math", "Times New Roman", Times, serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background-color: #090d16;
+      color: var(--text);
+      overflow: hidden;
+      height: 100vh;
+      width: 100vw;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      user-select: none;
+    }
+
+    /* 16:9 Presentation Stage */
+    #deck-container {
+      position: relative;
+      width: 100vw;
+      height: 56.25vw; /* 16:9 aspect */
+      max-height: 100vh;
+      max-width: 177.78vh; /* 16:9 aspect */
+      background: var(--bg);
+      box-shadow: 0 30px 60px -15px rgba(0, 0, 0, 0.5);
+      overflow: hidden;
+    }
+
+    .slide {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      padding: 2.8% 4% 5% 4%; /* Bottom padding leaves room for footer */
+      display: none;
+      flex-direction: column;
+      justify-content: space-between;
+      opacity: 0;
+      transition: opacity 0.2s ease-in-out;
+      background: var(--bg);
+    }
+
+    .slide.active {
+      display: flex;
+      opacity: 1;
+      z-index: 2;
+    }
+
+    /* Slide Header - Scaled Up */
+    .slide-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 1.8%;
+      border-bottom: 2px solid var(--border);
+      padding-bottom: 1.2%;
+      flex-shrink: 0;
+    }
+
+    .header-left {
+      max-width: 82%;
+    }
+
+    .topic-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: clamp(0.85rem, 1.1vw, 1.05rem);
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--primary);
+      background: var(--primary-light);
+      padding: 5px 14px;
+      border-radius: 9999px;
+      margin-bottom: 6px;
+    }
+
+    .slide-title {
+      font-size: clamp(2rem, 3.1vw, 2.8rem);
+      font-weight: 800;
+      color: var(--text);
+      line-height: 1.18;
+      letter-spacing: -0.025em;
+    }
+
+    .slide-subtitle {
+      font-size: clamp(1.1rem, 1.45vw, 1.4rem);
+      color: var(--text-muted);
+      margin-top: 5px;
+      font-weight: 500;
+    }
+
+    .header-right {
+      text-align: right;
+      font-size: clamp(1rem, 1.3vw, 1.25rem);
+      color: var(--text-light);
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+
+    .student-badge {
+      font-family: var(--font-mono);
+      font-size: clamp(0.85rem, 1.1vw, 1.05rem);
+      background: #e2e8f0;
+      padding: 5px 12px;
+      border-radius: 8px;
+      color: #1e293b;
+      display: inline-block;
+      margin-top: 5px;
+    }
+
+    /* Slide Body Layouts - Expands to Fill Space */
+    .slide-body {
+      flex: 1;
+      display: flex;
+      gap: 3.5%;
+      align-items: stretch;
+      justify-content: space-between;
+      min-height: 0;
+    }
+
+    .col {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      height: 100%;
+      min-height: 0;
+    }
+
+    .col-35 { flex: 0.7; }
+    .col-40 { flex: 0.8; }
+    .col-45 { flex: 0.9; }
+    .col-50 { flex: 1; }
+    .col-55 { flex: 1.15; }
+    .col-60 { flex: 1.25; }
+    .col-65 { flex: 1.35; }
+
+    /* Hero Metric Cards - Large Presentation Scale */
+    .stat-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 18px;
+      width: 100%;
+    }
+
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 22px 24px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.04);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .stat-card.highlight {
+      border-left: 8px solid var(--primary);
+      background: #fcfdfd;
+    }
+
+    .stat-card.alert {
+      border-left: 8px solid var(--accent);
+    }
+
+    .stat-label {
+      font-size: clamp(0.95rem, 1.2vw, 1.15rem);
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 6px;
+    }
+
+    .stat-value {
+      font-size: clamp(2.4rem, 3.8vw, 3.6rem);
+      font-weight: 800;
+      color: var(--text);
+      line-height: 1.08;
+      letter-spacing: -0.03em;
+    }
+
+    .stat-sub {
+      font-size: clamp(1rem, 1.25vw, 1.25rem);
+      color: var(--text-light);
+      margin-top: 8px;
+      font-weight: 500;
+      line-height: 1.35;
+    }
+
+    /* Key Takeaway Boxes - Big & Confident */
+    .takeaway-list {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      width: 100%;
+      height: 100%;
+      justify-content: space-evenly;
+    }
+
+    .takeaway-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 18px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      padding: 20px 24px;
+      border-radius: var(--radius);
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+    }
+
+    .takeaway-num {
+      width: 38px;
+      height: 38px;
+      background: var(--primary);
+      color: #fff;
+      font-weight: 800;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.15rem;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    .takeaway-text strong {
+      display: block;
+      color: var(--text);
+      font-size: clamp(1.2rem, 1.55vw, 1.55rem);
+      margin-bottom: 4px;
+      line-height: 1.3;
+    }
+
+    .takeaway-text p {
+      color: var(--text-muted);
+      font-size: clamp(1.02rem, 1.28vw, 1.28rem);
+      line-height: 1.48;
+    }
+
+    /* Math Equations - Semantic, Large & High-Contrast */
+    .math {
+      font-family: var(--font-math);
+      font-style: italic;
+      font-size: 1.12em;
+      letter-spacing: 0.02em;
+    }
+
+    .math sup, .math sub {
+      font-size: 0.75em;
+      font-style: normal;
+    }
+
+    .math-block {
+      background: #f1f5f9;
+      padding: 12px 18px;
+      border-radius: 10px;
+      font-family: var(--font-math);
+      font-size: clamp(1.15rem, 1.45vw, 1.45rem);
+      color: #0f172a;
+      display: inline-block;
+      margin: 6px 0;
+      font-weight: 600;
+    }
+
+    /* Visual Media & Figures */
+    .figure-frame {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 0;
+      width: 100%;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.04);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .figure-frame img {
+      max-width: 100%;
+      max-height: calc(100% - 28px);
+      object-fit: contain;
+      border-radius: 6px;
+    }
+
+    .figure-caption {
+      margin-top: 6px;
+      font-size: clamp(0.88rem, 1.1vw, 1.05rem);
+      font-weight: 600;
+      color: var(--text-muted);
+      text-align: center;
+      line-height: 1.3;
+      flex-shrink: 0;
+    }
+
+    .image-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      height: 100%;
+      min-height: 0;
+      width: 100%;
+    }
+
+    .image-stack .figure-frame {
+      flex: 1 1 0;
+      min-height: 0;
+      height: 100%;
+    }
+
+    /* Clean Large Tables - Fills Vertical Height */
+    .clean-table {
+      width: 100%;
+      height: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      font-size: clamp(1.05rem, 1.35vw, 1.35rem);
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.03);
+    }
+
+    .clean-table th {
+      background: #f1f5f9;
+      color: var(--text);
+      font-weight: 800;
+      text-align: left;
+      padding: 16px 20px;
+      border-bottom: 2px solid var(--border);
+      font-size: clamp(1.1rem, 1.4vw, 1.4rem);
+    }
+
+    .clean-table td {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      color: var(--text-muted);
+      line-height: 1.45;
+    }
+
+    .clean-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    .clean-table tr.highlight td {
+      background: #f0fdf4;
+      font-weight: 700;
+      color: #166534;
+    }
+
+    .badge-win {
+      display: inline-block;
+      background: #dcfce7;
+      color: #15803d;
+      font-weight: 800;
+      font-size: clamp(0.9rem, 1.15vw, 1.15rem);
+      padding: 6px 14px;
+      border-radius: 8px;
+      white-space: nowrap;
+    }
+
+    .badge-neutral {
+      display: inline-block;
+      background: #fef3c7;
+      color: #b45309;
+      font-weight: 800;
+      font-size: clamp(0.9rem, 1.15vw, 1.15rem);
+      padding: 6px 14px;
+      border-radius: 8px;
+      white-space: nowrap;
+    }
+
+    /* System Block Diagram Flow - Large Prominent Cards */
+    .system-flow {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      width: 100%;
+      flex-shrink: 0;
+    }
+
+    .flow-step {
+      background: var(--surface);
+      border: 2px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px 18px;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.03);
+    }
+
+    .flow-step.active-step {
+      border-color: var(--primary);
+      background: #f0fdfa;
+    }
+
+    .flow-step-num {
+      font-size: clamp(0.85rem, 1vw, 0.95rem);
+      font-weight: 800;
+      color: var(--primary);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 4px;
+    }
+
+    .flow-step-title {
+      font-size: clamp(1.15rem, 1.4vw, 1.4rem);
+      font-weight: 800;
+      color: var(--text);
+      margin-bottom: 8px;
+      line-height: 1.2;
+    }
+
+    .flow-step-spec {
+      font-size: clamp(0.95rem, 1.15vw, 1.15rem);
+      color: var(--text-muted);
+      line-height: 1.45;
+    }
+
+    .flow-step-tag {
+      margin-top: auto;
+      padding-top: 10px;
+      font-family: var(--font-mono);
+      font-size: clamp(0.92rem, 1.1vw, 1.1rem);
+      font-weight: 700;
+      color: var(--primary-dark);
+    }
+
+    /* Footer & Navigation Controls */
+    .deck-footer {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 52px;
+      padding: 0 4%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(255, 255, 255, 0.95);
+      border-top: 1px solid var(--border);
+      z-index: 10;
+      backdrop-filter: blur(8px);
+    }
+
+    .footer-left {
+      font-size: 0.95rem;
+      color: var(--text-light);
+      font-weight: 600;
+    }
+
+    .footer-right {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .slide-counter {
+      font-family: var(--font-mono);
+      font-weight: 800;
+      font-size: 1rem;
+      color: var(--text);
+      background: #f1f5f9;
+      padding: 5px 12px;
+      border-radius: 6px;
+    }
+
+    .nav-btn {
+      background: var(--surface);
+      border: 1px solid var(--border-dark);
+      color: var(--text);
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-weight: 800;
+      font-size: 1.1rem;
+      transition: all 0.15s ease;
+    }
+
+    .nav-btn:hover {
+      background: #f1f5f9;
+      border-color: #94a3b8;
+    }
+
+    .toggle-notes-btn {
+      background: var(--primary-light);
+      border: 1px solid #99f6e4;
+      color: var(--primary-dark);
+      padding: 6px 14px;
+      border-radius: 8px;
+      font-size: 0.92rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .toggle-notes-btn:hover {
+      background: #a7f3d0;
+    }
+
+    /* Speaker Notes Slide-out Panel */
+    #notes-drawer {
+      position: absolute;
+      top: 0;
+      right: -460px;
+      width: 440px;
+      height: 100%;
+      background: #ffffff;
+      border-left: 2px solid var(--border-dark);
+      box-shadow: -12px 0 30px rgba(0, 0, 0, 0.15);
+      z-index: 100;
+      transition: right 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      display: flex;
+      flex-direction: column;
+      padding: 26px 24px;
+      user-select: text;
+    }
+
+    #notes-drawer.open {
+      right: 0;
+    }
+
+    .drawer-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 14px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 18px;
+    }
+
+    .drawer-title {
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .close-btn {
+      background: transparent;
+      border: none;
+      font-size: 1.4rem;
+      cursor: pointer;
+      color: var(--text-light);
+    }
+
+    .notes-content {
+      flex: 1;
+      overflow-y: auto;
+      font-size: 1rem;
+      line-height: 1.6;
+      color: #334155;
+    }
+
+    .notes-content h4 {
+      font-size: 0.95rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--primary);
+      margin-bottom: 12px;
+      font-weight: 800;
+    }
+
+    .notes-content ul {
+      padding-left: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .notes-content li {
+      font-size: 1rem;
+    }
+
+    .notes-content li strong {
+      color: #0f172a;
+    }
+
+    /* Progress bar */
+    .progress-bar-container {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 4px;
+      background: #e2e8f0;
+      z-index: 15;
+    }
+
+    #progress-bar {
+      height: 100%;
+      width: 10%;
+      background: var(--primary);
+      transition: width 0.25s ease;
+    }
+
+    /* Printable PDF Mode (16:9 Landscape, Single 10-Page Document) */
+    @page {
+      size: 1920px 1080px;
+      margin: 0;
+    }
+
+    @media print {
+      html, body {
+        background: #f8fafc !important;
+        overflow: visible !important;
+        height: auto !important;
+        width: 1920px !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+
+      #deck-container {
+        width: 1920px !important;
+        height: auto !important;
+        max-width: none !important;
+        max-height: none !important;
+        box-shadow: none !important;
+        overflow: visible !important;
+        position: static !important;
+        display: block !important;
+      }
+
+      .slide {
+        position: relative !important;
+        display: flex !important;
+        opacity: 1 !important;
+        page-break-after: always !important;
+        break-after: page !important;
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+        width: 1920px !important;
+        height: 1080px !important;
+        max-width: 1920px !important;
+        max-height: 1080px !important;
+        box-sizing: border-box !important;
+        padding: 45px 65px !important;
+        overflow: hidden !important;
+      }
+
+      .slide:last-of-type {
+        page-break-after: auto !important;
+        break-after: auto !important;
+      }
+
+      .deck-footer, #notes-drawer, .progress-bar-container {
+        display: none !important;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div id="deck-container">
+    <div class="progress-bar-container">
+      <div id="progress-bar"></div>
+    </div>
+
+    <!-- ==========================================
+         SLIDE 1: Title & Health Centre Load Profile
+         ========================================== -->
+    <section class="slide active" id="slide-1" data-notes-id="notes-1">
+      <header class="slide-header">
+        <div class="header-left">
+          <div class="topic-pill">Slide 01 • System Requirements</div>
+          <h1 class="slide-title">Off-Grid Solar System for a Rural Health Centre</h1>
+          <p class="slide-subtitle">Dongola / Argo Island, Northern State, Sudan (19.16° N, 30.48° E)</p>
+        </div>
+        <div class="header-right">
+          <div>Nicholas Khor</div>
+          <div class="student-badge">ID: 20617556</div>
+        </div>
+      </header>
+
+      <div class="slide-body">
+        <!-- Left: Key Load Metrics & Takeaways -->
+        <div class="col col-50">
+          <div class="stat-grid" style="flex: 1; align-items: stretch;">
+            <div class="stat-card highlight">
+              <div class="stat-label">Daily Demand</div>
+              <div class="stat-value">21.6 <span style="font-size:1.6rem; font-weight:700;">kWh/day</span></div>
+              <div class="stat-sub">7,884 kWh annual energy requirement (<span class="math">E = P &times; t</span>)</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Peak Demand</div>
+              <div class="stat-value">2.0 <span style="font-size:1.6rem; font-weight:700;">kW</span></div>
+              <div class="stat-sub">Occurs between 08:00 – 12:00 daytime operating block</div>
+            </div>
+          </div>
+
+          <div class="takeaway-list" style="flex: 1.2; margin-top: 18px;">
+            <div class="takeaway-item">
+              <div class="takeaway-num">✓</div>
+              <div class="takeaway-text">
+                <strong>65% Daytime Solar Alignment (14.0 kWh)</strong>
+                <p>Majority of clinic operations (08:00 – 16:00) align directly with peak daytime solar irradiance.</p>
+              </div>
+            </div>
+            <div class="takeaway-item">
+              <div class="takeaway-num">🌙</div>
+              <div class="takeaway-text">
+                <strong>35% Night-time Battery Storage (7.6 kWh)</strong>
+                <p>Essential overnight loads (16:00 – 08:00) for vaccine refrigeration and medical lighting.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Official Figure 1 Load Chart -->
+        <div class="col col-50">
+          <div class="figure-frame">
+            <img src="../assets/lectures/cw2_fig1_load.png" alt="Figure 1: Case Study Power Requirements">
+            <div class="figure-caption">Figure 1: Coursework power profile across 4-hour intervals over 24 hours</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==========================================
+         SLIDE 2: Location Selection & Climate
+         ========================================== -->
+    <section class="slide" id="slide-2" data-notes-id="notes-2">
+      <header class="slide-header">
+        <div class="header-left">
+          <div class="topic-pill">Slide 02 • Geography & Climate</div>
+          <h1 class="slide-title">Site Selection & Local Microclimate</h1>
+          <p class="slide-subtitle">Applying the 1° Shift: Uninhabited Desert Dunes → Real Riverine Community</p>
+        </div>
+        <div class="header-right">
+          <div>Northern State, Sudan</div>
+          <div class="student-badge">19.16° N, 30.48° E</div>
+        </div>
+      </header>
+
+      <div class="slide-body">
+        <!-- Left: Satellite comparison -->
+        <div class="col col-50">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; height: 100%;">
+            <div class="figure-frame">
+              <img src="../assets/api/desert.png" alt="Original coordinates in empty dunes">
+              <div class="figure-caption"><strong>Original Site (18.7°N, 29.6°E)</strong><br>Empty Sahara sand dunes, 85 km west of Nile</div>
+            </div>
+            <div class="figure-frame" style="border-color: var(--primary); border-width: 2px;">
+              <img src="../assets/api/village.png" alt="Selected community at Argo Island">
+              <div class="figure-caption"><strong>Selected Village (19.16°N, 30.48°E)</strong><br>Argo Island community, health clinic & road access</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Climate summary & chart -->
+        <div class="col col-50">
+          <div class="figure-frame" style="flex: 1.1; margin-bottom: 16px;">
+            <img src="../assets/api/nasa_temp_rain.png" alt="Monthly Temperature & Rainfall">
+            <div class="figure-caption">NASA POWER: Monthly 2m Air Temperature & Precipitation at Dongola</div>
+          </div>
+          <div class="stat-grid" style="flex: 0.9;">
+            <div class="stat-card">
+              <div class="stat-label">Average Temperature</div>
+              <div class="stat-value">28.8°C</div>
+              <div class="stat-sub">High ambient heat (<span class="math">T<sub>amb</sub></span>) requires PV derating</div>
+            </div>
+            <div class="stat-card highlight">
+              <div class="stat-label">Annual Rainfall</div>
+              <div class="stat-value">&lt; 4 <span style="font-size:1.5rem; font-weight:700;">mm/yr</span></div>
+              <div class="stat-sub">Hyper-arid desert environment; virtually zero cloud cover</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==========================================
+         SLIDE 3: Screening All 5 Renewable Sources
+         ========================================== -->
+    <section class="slide" id="slide-3" data-notes-id="notes-3">
+      <header class="slide-header">
+        <div class="header-left">
+          <div class="topic-pill">Slide 03 • Resource Assessment</div>
+          <h1 class="slide-title">Renewable Energy Potential Screening</h1>
+          <p class="slide-subtitle">High-Level Assessment Across All 5 Technologies Covered in Module</p>
+        </div>
+        <div class="header-right">
+          <div>Global Solar & Wind Atlases</div>
+          <div class="student-badge">Evidence-Based</div>
+        </div>
+      </header>
+
+      <div class="slide-body">
+        <!-- Left: GSA & GWA Atlas Reports -->
+        <div class="col col-40">
+          <div class="image-stack">
+            <div class="figure-frame">
+              <img src="../assets/api/gsa_site_info_map.png" alt="Global Solar Atlas Map">
+              <div class="figure-caption">Global Solar Atlas: GTI = 2,474.7 kWh/m²/yr (6.78 PSH/day)</div>
+            </div>
+            <div class="figure-frame">
+              <img src="../assets/api/gwa_wind_chart.png" alt="Global Wind Atlas Weibull">
+              <div class="figure-caption">Global Wind Atlas: 100m Speed = 8.69 m/s (514 W/m²)</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Screening Table -->
+        <div class="col col-60">
+          <table class="clean-table">
+            <thead>
+              <tr>
+                <th style="width: 26%;">Resource</th>
+                <th style="width: 46%;">Measured Evidence at Dongola</th>
+                <th style="width: 28%;">Assessment</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="highlight">
+                <td><strong>1. Solar PV</strong></td>
+                <td><strong>6.78 PSH/day</strong> (GTI 2,475 kWh/m²/yr at 22° tilt); 1,884 kWh/kWp specific yield</td>
+                <td><span class="badge-win">1st Choice (Selected)</span></td>
+              </tr>
+              <tr>
+                <td><strong>2. Wind Power</strong></td>
+                <td>NASA 10m wind: <strong>5.11 m/s</strong>; GWA 100m wind: <strong>8.69 m/s</strong> (514 W/m²)</td>
+                <td><span class="badge-neutral">2nd Choice (Comparison)</span></td>
+              </tr>
+              <tr>
+                <td><strong>3. Hydro Power</strong></td>
+                <td>Annual rainfall &lt; 4 mm/yr; Nile plain has flat elevation and zero hydraulic head</td>
+                <td><strong style="color:var(--text-light);">Unsuitable</strong></td>
+              </tr>
+              <tr>
+                <td><strong>4. Geothermal</strong></td>
+                <td>No tectonic rift or volcanic thermal anomalies within 600 km</td>
+                <td><strong style="color:var(--text-light);">Unsuitable</strong></td>
+              </tr>
+              <tr>
+                <td><strong>5. Wave & Tidal</strong></td>
+                <td>Landlocked inland desert (&gt;650 km inland from Red Sea)</td>
+                <td><strong style="color:var(--text-light);">Impossible</strong></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==========================================
+         SLIDE 4: Solar PV vs. Wind Comparison
+         ========================================== -->
+    <section class="slide" id="slide-4" data-notes-id="notes-4">
+      <header class="slide-header">
+        <div class="header-left">
+          <div class="topic-pill">Slide 04 • Option Evaluation</div>
+          <h1 class="slide-title">Solar PV (1st Choice) vs. Wind Power (2nd Choice)</h1>
+          <p class="slide-subtitle">Qualitative & Quantitative Justification for Primary Clinic Supply</p>
+        </div>
+        <div class="header-right">
+          <div>Head-to-Head Evaluation</div>
+          <div class="student-badge">Trade-Off Review</div>
+        </div>
+      </header>
+
+      <div class="slide-body">
+        <!-- Left: Hourly Profiles -->
+        <div class="col col-40">
+          <div class="figure-frame">
+            <img src="../assets/api/gsa_monthly_hourly_solar.png" alt="GSA Hourly Solar Profiles">
+            <div class="figure-caption">Global Solar Atlas: Predictable daily solar bell curves all 12 months</div>
+          </div>
+        </div>
+
+        <!-- Right: Comparison Table - Full Height & Spacious -->
+        <div class="col col-60">
+          <table class="clean-table">
+            <thead>
+              <tr>
+                <th style="width: 25%;">Criterion</th>
+                <th style="width: 38%;">Solar PV (Preferred)</th>
+                <th style="width: 37%;">Small Wind (2nd Choice)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>1. Resource Reliability</strong></td>
+                <td>Constant daily sun: <strong>6.78 PSH/day</strong> at 22° tilt; zero cloudy months</td>
+                <td>NASA 10m wind: 5.1 m/s; cubic power law (<span class="math">P &prop; v<sup>3</sup></span>) intermittency</td>
+              </tr>
+              <tr>
+                <td><strong>2. Load Synchronisation</strong></td>
+                <td>Directly powers <strong>65% of clinic load</strong> during daylight hours (08:00 – 16:00)</td>
+                <td>Unpredictable daytime lulls require significantly larger battery capacity</td>
+              </tr>
+              <tr>
+                <td><strong>3. Desert Durability</strong></td>
+                <td><strong>Zero moving parts</strong>; only periodic dry dust wiping required</td>
+                <td>Moving blades, bearings, and gears suffer heavy Saharan sand abrasion</td>
+              </tr>
+              <tr>
+                <td><strong>4. Installed Economics</strong></td>
+                <td>Low modular cost (~$0.30/Wp); simple ground-mounted aluminium racks</td>
+                <td>High capital cost: 10–15 m guyed mast, concrete base & crane logistics</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==========================================
+         SLIDE 5: System Block Diagram
+         ========================================== -->
+    <section class="slide" id="slide-5" data-notes-id="notes-5">
+      <header class="slide-header">
+        <div class="header-left">
+          <div class="topic-pill">Slide 05 • System Architecture</div>
+          <h1 class="slide-title">System Block Diagram & Energy Flow</h1>
+          <p class="slide-subtitle">Coupled DC-Bus Architecture with Li-Ion Storage & Single-Phase Inverter</p>
+        </div>
+        <div class="header-right">
+          <div>230V AC • 50 Hz</div>
+          <div class="student-badge">Single-Phase Off-Grid</div>
+        </div>
+      </header>
+
+      <div class="slide-body" style="flex-direction: column; justify-content: space-between; gap: 18px;">
+        <!-- Clean Flow Cards -->
+        <div class="system-flow">
+          <div class="flow-step">
+            <div class="flow-step-num">Stage 1: Generation</div>
+            <div class="flow-step-title">PV Array (21 Panels)</div>
+            <div class="flow-step-spec">
+              • 21 &times; SANYO 210Wp modules<br>
+              • 3 parallel strings &times; 7 series<br>
+              • Tilted 22° South (GTI = 6.78 PSH)
+            </div>
+            <div class="flow-step-tag">4,410 Wp STC Output</div>
+          </div>
+
+          <div class="flow-step active-step">
+            <div class="flow-step-num">Stage 2: DC Bus Split</div>
+            <div class="flow-step-title">Charge Controller</div>
+            <div class="flow-step-spec">
+              • Cable & MPPT efficiency: 95%<br>
+              • Daytime: routes 14.0 kWh to clinic<br>
+              • Diverts 7.6 kWh excess to battery
+            </div>
+            <div class="flow-step-tag">21.6 kWh/day Delivered</div>
+          </div>
+
+          <div class="flow-step">
+            <div class="flow-step-num">Stage 3: Energy Storage</div>
+            <div class="flow-step-title">Li-Ion BESS (16 kWh)</div>
+            <div class="flow-step-spec">
+              • 8 &times; 2 kWh modules (48V bank)<br>
+              • 95% round-trip efficiency<br>
+              • 2&times; Safety buffer for healthcare
+            </div>
+            <div class="flow-step-tag">7.6 kWh Nightly Drain</div>
+          </div>
+
+          <div class="flow-step active-step">
+            <div class="flow-step-num">Stage 4: Power Inversion</div>
+            <div class="flow-step-title">Fronius IG 40 Inverter</div>
+            <div class="flow-step-spec">
+              • Max efficiency: 94.3%<br>
+              • Rated AC: 3,500 W (Peak load = 2.0 kW)<br>
+              • Single-phase 230V AC, 50 Hz
+            </div>
+            <div class="flow-step-tag">Health Centre Loads</div>
+          </div>
+        </div>
+
+        <!-- Schematic Reference -->
+        <div style="display: flex; gap: 16px; width: 100%; flex: 1; min-height: 0;">
+          <div class="figure-frame" style="flex: 1; min-height: 0; padding: 10px 14px;">
+            <img src="../assets/lectures/lec3_single_phase_diagram.png" alt="Lecture 3 Single Phase PV Layout">
+            <div class="figure-caption">Lecture 3: Single-phase PV circuit & protective isolation layout</div>
+          </div>
+          <div class="figure-frame" style="flex: 1; min-height: 0; padding: 10px 14px;">
+            <img src="../assets/lectures/lec5_bess_block_diagram.png" alt="Lecture 5 BESS Layout">
+            <div class="figure-caption">Lecture 5: BESS charge controller & DC bus architecture</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==========================================
+         SLIDE 6: PV Array & Inverter Sizing
+         ========================================== -->
+    <section class="slide" id="slide-6" data-notes-id="notes-6">
+      <header class="slide-header">
+        <div class="header-left">
+          <div class="topic-pill">Slide 06 • Mathematical Sizing</div>
+          <h1 class="slide-title">PV Array Sizing & Inverter Matching</h1>
+          <p class="slide-subtitle">Energy-Constraint Sizing Using Lecture 3 Equations & Hardware Datasheets</p>
+        </div>
+        <div class="header-right">
+          <div>4.41 kWp PV Array</div>
+          <div class="student-badge">Fronius IG 40 Inverter</div>
+        </div>
+      </header>
+
+      <div class="slide-body">
+        <!-- Left: Formulas and Steps -->
+        <div class="col col-55">
+          <div class="stat-grid" style="flex: 0.8; margin-bottom: 16px;">
+            <div class="stat-card highlight">
+              <div class="stat-label">Calculated Array STC</div>
+              <div class="stat-value">4,225 <span style="font-size:1.5rem; font-weight:700;">Wp</span></div>
+              <div class="stat-sub">Minimum capacity required (<span class="math">P<sub>arr_stc</sub></span>)</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Installed Array Power</div>
+              <div class="stat-value">4,410 <span style="font-size:1.5rem; font-weight:700;">Wp</span></div>
+              <div class="stat-sub">21 &times; SANYO HIP-210NKHE1 (210 Wp)</div>
+            </div>
+          </div>
+
+          <div class="takeaway-list" style="flex: 1.2;">
+            <div class="takeaway-item">
+              <div class="takeaway-num">1</div>
+              <div class="takeaway-text">
+                <strong>Annual Required Energy: <span class="math">E<sub>req</sub> = 7,884 kWh/yr</span></strong>
+                <p>Calculated as 21.6 kWh/day &times; 365 days for 100% off-grid reliability.</p>
+              </div>
+            </div>
+            <div class="takeaway-item">
+              <div class="takeaway-num">2</div>
+              <div class="takeaway-text">
+                <strong>Temperature Derate: <span class="math">k<sub>tem</sub> = 0.9136</span></strong>
+                <p>Derived from <span class="math">T<sub>amb</sub> = 28.8°C</span> and SANYO coefficient <span class="math">&beta; = &minus;0.30%/°C</span>.</p>
+              </div>
+            </div>
+            <div class="takeaway-item">
+              <div class="takeaway-num">3</div>
+              <div class="takeaway-text">
+                <strong>Inverter Matching: Fronius IG 40</strong>
+                <p>Max DC input (4,410 W) matches array exactly; rated 3,500 W AC exceeds 2.0 kW peak load.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Datasheets -->
+        <div class="col col-45">
+          <div class="image-stack">
+            <div class="figure-frame">
+              <img src="../assets/lectures/datasheet_sanyo_hip210.png" alt="SANYO HIP-210 Datasheet">
+              <div class="figure-caption">SANYO HIP-210NKHE1 Datasheet (210 Wp, 41.3V Vmp, &minus;0.30%/°C)</div>
+            </div>
+            <div class="figure-frame">
+              <img src="../assets/lectures/datasheet_fronius_ig.png" alt="Fronius IG 40 Datasheet">
+              <div class="figure-caption">Fronius IG 40 Datasheet (4,410 W DC max, 3,500 W AC, 94.3% eff)</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==========================================
+         SLIDE 7: Battery Storage Sizing
+         ========================================== -->
+    <section class="slide" id="slide-7" data-notes-id="notes-7">
+      <header class="slide-header">
+        <div class="header-left">
+          <div class="topic-pill">Slide 07 • Storage Design</div>
+          <h1 class="slide-title">Battery Energy Storage System (BESS)</h1>
+          <p class="slide-subtitle">4-Hour Store vs. Drain Energy Balance & Technology Selection</p>
+        </div>
+        <div class="header-right">
+          <div>16 kWh Li-Ion Bank</div>
+          <div class="student-badge">95% Round-Trip Eff.</div>
+        </div>
+      </header>
+
+      <div class="slide-body">
+        <!-- Left: Net Power Profile Figure -->
+        <div class="col col-45">
+          <div class="figure-frame">
+            <img src="../assets/api/net_power_profile.png" alt="4-Hour Net Power Profile">
+            <div class="figure-caption">4-Hour Load Demand vs. Solar Generation (<span class="math">P<sub>net</sub> = P<sub>solar</sub> &minus; P<sub>load</sub></span>)</div>
+          </div>
+        </div>
+
+        <!-- Right: Store vs Drain Table & Chemistry Selection -->
+        <div class="col col-55">
+          <table class="clean-table" style="margin-bottom: 16px;">
+            <thead>
+              <tr>
+                <th>Time Block</th>
+                <th>Load Energy</th>
+                <th>Solar Energy</th>
+                <th>Store (Excess)</th>
+                <th>Drain (Night)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>00:00 – 08:00</td>
+                <td>4.8 kWh</td>
+                <td>0 kWh</td>
+                <td>—</td>
+                <td><strong>4.8 kWh</strong></td>
+              </tr>
+              <tr class="highlight">
+                <td>08:00 – 16:00</td>
+                <td>14.0 kWh</td>
+                <td>21.6 kWh</td>
+                <td><strong>7.6 kWh</strong></td>
+                <td>—</td>
+              </tr>
+              <tr>
+                <td>16:00 – 24:00</td>
+                <td>2.8 kWh</td>
+                <td>0 kWh</td>
+                <td>—</td>
+                <td><strong>2.8 kWh</strong></td>
+              </tr>
+              <tr style="font-weight: 800; background: #f8fafc;">
+                <td>Total 24 Hours</td>
+                <td>21.6 kWh</td>
+                <td>21.6 kWh</td>
+                <td><strong>7.6 kWh Stored</strong></td>
+                <td><strong>7.6 kWh Drained</strong></td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div class="stat-grid">
+            <div class="stat-card">
+              <div class="stat-label">Nightly Drain</div>
+              <div class="stat-value">7.6 <span style="font-size:1.4rem; font-weight:700;">kWh</span></div>
+              <div class="stat-sub">Normal overnight requirement (16:00 – 08:00)</div>
+            </div>
+            <div class="stat-card highlight">
+              <div class="stat-label">Selected Capacity</div>
+              <div class="stat-value">16 <span style="font-size:1.4rem; font-weight:700;">kWh</span></div>
+              <div class="stat-sub">8 &times; 2 kWh Li-Ion units (2&times; healthcare safety buffer)</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==========================================
+         SLIDE 8: Cost Breakdown & Payback
+         ========================================== -->
+    <section class="slide" id="slide-8" data-notes-id="notes-8">
+      <header class="slide-header">
+        <div class="header-left">
+          <div class="topic-pill">Slide 08 • Economic Evaluation</div>
+          <h1 class="slide-title">System Cost Breakdown & Payback Period</h1>
+          <p class="slide-subtitle">Verified CAPEX, OPEX & Payback Against Rural Diesel Baseline ($0.40/kWh)</p>
+        </div>
+        <div class="header-right">
+          <div>Initial CAPEX: $8,500</div>
+          <div class="student-badge">Payback: 2.88 Years</div>
+        </div>
+      </header>
+
+      <div class="slide-body">
+        <!-- Left: Cost Breakdown Table -->
+        <div class="col col-55">
+          <table class="clean-table">
+            <thead>
+              <tr>
+                <th>Component</th>
+                <th>Quantity</th>
+                <th>Verified Cost</th>
+                <th>Lifetime</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Solar Panels (SANYO 210W)</strong></td>
+                <td>21 panels (4.41 kWp)</td>
+                <td><strong>$1,500</strong></td>
+                <td>20–25 yrs (IRENA 2024)</td>
+              </tr>
+              <tr>
+                <td><strong>Li-Ion BESS (2 kWh units)</strong></td>
+                <td>8 units (16 kWh)</td>
+                <td><strong>$4,000</strong></td>
+                <td>10–15 yrs (NREL 2025)</td>
+              </tr>
+              <tr>
+                <td><strong>Fronius IG 40 + Controller</strong></td>
+                <td>1 unit (3.5 kW AC)</td>
+                <td><strong>$1,200</strong></td>
+                <td>10–12 yrs</td>
+              </tr>
+              <tr>
+                <td><strong>Mounting, BOS & Sudan Delivery</strong></td>
+                <td>Cables, frame, logistics</td>
+                <td><strong>$1,800</strong></td>
+                <td>20 yrs (UNDP Sudan)</td>
+              </tr>
+              <tr class="highlight">
+                <td><strong>Total Initial CAPEX</strong></td>
+                <td>Turnkey System</td>
+                <td><strong>$8,500</strong></td>
+                <td>Complete Installation</td>
+              </tr>
+              <tr>
+                <td><strong>Year 11 Replacement</strong></td>
+                <td>1&times; Battery + Inverter</td>
+                <td><strong>$5,200</strong></td>
+                <td>Refurbished for yrs 11–20</td>
+              </tr>
+              <tr>
+                <td><strong>Annual Maintenance (OPEX)</strong></td>
+                <td>Dust wiping & inspection</td>
+                <td><strong>$200/yr</strong></td>
+                <td>$4,000 over 20 years</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Right: Payback & Savings -->
+        <div class="col col-45">
+          <div class="stat-grid" style="margin-bottom: 16px;">
+            <div class="stat-card highlight">
+              <div class="stat-label">Annual Net Saving</div>
+              <div class="stat-value">$2,954</div>
+              <div class="stat-sub">Displacing $0.40/kWh diesel ($3,154 &minus; $200 OPEX)</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Payback Period</div>
+              <div class="stat-value">2.88 <span style="font-size:1.4rem; font-weight:700;">Years</span></div>
+              <div class="stat-sub">~1,050 operating days to full financial ROI</div>
+            </div>
+          </div>
+
+          <div class="figure-frame">
+            <img src="../assets/lectures/lec5_buyback_example.png" alt="Lecture 5 Buyback Formula">
+            <div class="figure-caption">Lecture 5 Reference: Payback = Initial CAPEX / Annual Net Savings = $8,500 / $2,954 = <strong>2.88 years (~1,050 days)</strong></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==========================================
+         SLIDE 9: CO2 Savings & 5 Comparisons
+         ========================================== -->
+    <section class="slide" id="slide-9" data-notes-id="notes-9">
+      <header class="slide-header">
+        <div class="header-left">
+          <div class="topic-pill">Slide 09 • Environmental & Technology Comparison</div>
+          <h1 class="slide-title">CO₂ Savings & 5 System Comparisons</h1>
+          <p class="slide-subtitle">Proposed Solar PV + BESS vs. 3.5 kW Baseline Diesel Generator</p>
+        </div>
+        <div class="header-right">
+          <div>141.9 Tonnes CO₂ Saved</div>
+          <div class="student-badge">94.7% Emissions Cut</div>
+        </div>
+      </header>
+
+      <div class="slide-body">
+        <!-- Left: Carbon Footprint Metric -->
+        <div class="col col-35">
+          <div class="stat-card highlight" style="flex: 0.9; margin-bottom: 16px;">
+            <div class="stat-label">20-Year CO₂ Saved</div>
+            <div class="stat-value">141.9 <span style="font-size:1.5rem; font-weight:700;">Tonnes</span></div>
+            <div class="stat-sub">Solar Lifecycle: 7.9 t vs. Diesel: 149.8 t</div>
+          </div>
+          <div class="takeaway-list" style="flex: 1.1;">
+            <div class="takeaway-item">
+              <div class="takeaway-num">🌱</div>
+              <div class="takeaway-text">
+                <strong>Zero Operating Emissions</strong>
+                <p>Generates 157,680 kWh over 20 years with zero fuel burned.</p>
+              </div>
+            </div>
+            <div class="takeaway-item">
+              <div class="takeaway-num">⛽</div>
+              <div class="takeaway-text">
+                <strong>55,188 Litres Diesel Saved</strong>
+                <p>Eliminates fragile fuel supply routes in rural Sudan.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: 5 Comparisons Table -->
+        <div class="col col-65">
+          <table class="clean-table">
+            <thead>
+              <tr>
+                <th style="width: 6%;">#</th>
+                <th style="width: 25%;">Criterion</th>
+                <th style="width: 33%;">Solar PV + Battery</th>
+                <th style="width: 36%;">Diesel Generator</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>1</td>
+                <td><strong>Initial CAPEX</strong></td>
+                <td>$8,500 (Panels, battery & inverter)</td>
+                <td><span class="badge-neutral">Diesel: $1,800 (79% cheaper)</span></td>
+              </tr>
+              <tr>
+                <td>2</td>
+                <td><strong>Annual Running Cost</strong></td>
+                <td><span class="badge-win">Solar: $200/yr (94% cheaper)</span></td>
+                <td>$3,150/year (2,760 L fuel + oil changes)</td>
+              </tr>
+              <tr class="highlight">
+                <td>3</td>
+                <td><strong>20-Year Total Cost</strong></td>
+                <td><span class="badge-win">Solar: $17,700 ($0.11/kWh)</span></td>
+                <td>$68,400 ($0.43/kWh) &minus; <strong>Saves $50,700!</strong></td>
+              </tr>
+              <tr>
+                <td>4</td>
+                <td><strong>20-Year CO₂ Footprint</strong></td>
+                <td><span class="badge-win">Solar: 7.9 tonnes (94.7% cut)</span></td>
+                <td>149.8 tonnes (From burning 55,188 L diesel)</td>
+              </tr>
+              <tr>
+                <td>5</td>
+                <td><strong>Noise & Supply Security</strong></td>
+                <td><span class="badge-win">Solar: 0 dB Silent & Free Sun</span></td>
+                <td>75–85 dB continuous noise; fuel shortage risks</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==========================================
+         SLIDE 10: AI Critique & References
+         ========================================== -->
+    <section class="slide" id="slide-10" data-notes-id="notes-10">
+      <header class="slide-header">
+        <div class="header-left">
+          <div class="topic-pill">Slide 10 • Academic Rigour</div>
+          <h1 class="slide-title">Critical AI Evaluation & Key References</h1>
+          <p class="slide-subtitle">Fact-Checking Generative AI Outputs Against Peer-Reviewed Benchmarks</p>
+        </div>
+        <div class="header-right">
+          <div>IRENA • NREL • UNDP</div>
+          <div class="student-badge">Audited & Corrected</div>
+        </div>
+      </header>
+
+      <div class="slide-body">
+        <!-- Left: AI Critique Table -->
+        <div class="col col-55">
+          <table class="clean-table">
+            <thead>
+              <tr>
+                <th style="width: 28%;">Dimension</th>
+                <th style="width: 36%;">Generative AI Output</th>
+                <th style="width: 36%;">Verified Ground-Truth Fix</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>What AI Got Right</strong></td>
+                <td>Solar panel pricing (~$0.30/Wp); zero operating emissions</td>
+                <td><span class="badge-win">Validated</span> Matches IRENA 2024 global report</td>
+              </tr>
+              <tr>
+                <td><strong>What AI Got Wrong</strong></td>
+                <td>Quoted $150/kWh EV battery; assumed 1 battery lasts 20 yrs</td>
+                <td>Corrected to <strong>$250/kWh</strong> rack battery + <strong>$5,200</strong> replacement at Yr 11</td>
+              </tr>
+              <tr>
+                <td><strong>Hidden Assumptions</strong></td>
+                <td>Assumed free local shipping; assumed 100% generator efficiency</td>
+                <td>Added <strong>$1,800</strong> remote Sudan BOS/logistics; used realistic 0.35 L/kWh fuel burn</td>
+              </tr>
+              <tr class="highlight">
+                <td><strong>20-Yr Cost Correction</strong></td>
+                <td><strong>$7,420</strong> (Unrealistically low)</td>
+                <td><strong>$17,700</strong> (Realistic turnkey lifecycle cost)</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Right: Primary Citations -->
+        <div class="col col-45">
+          <div class="takeaway-list">
+            <div class="takeaway-item">
+              <div class="takeaway-num">1</div>
+              <div class="takeaway-text">
+                <strong>Meteorological & Solar Atlases</strong>
+                <p>World Bank / Solargis <em>Global Solar Atlas</em> & NASA POWER Agroclimatology (Dongola 19.16°N, 30.48°E).</p>
+              </div>
+            </div>
+            <div class="takeaway-item">
+              <div class="takeaway-num">2</div>
+              <div class="takeaway-text">
+                <strong>Equipment & Hardware Benchmarks</strong>
+                <p>IRENA (2024) <em>Renewable Power Generation Costs</em>; NREL / NLR (2025) <em>Battery Storage Cost Projections</em>.</p>
+              </div>
+            </div>
+            <div class="takeaway-item">
+              <div class="takeaway-num">3</div>
+              <div class="takeaway-text">
+                <strong>Sudan Logistics & Lifecycle Carbon</strong>
+                <p>UNDP Sudan (2024) <em>Solar Energy Value Chains in Sudan</em>; NREL LCA PV Harmonization Study.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Slide Deck Footer Controls -->
+    <footer class="deck-footer">
+      <div class="footer-left">
+        <span>EEEE3054 Renewable Energy Technologies</span> • <span>University of Nottingham</span>
+      </div>
+      <div class="footer-right">
+        <button class="toggle-notes-btn" id="notes-btn" title="Toggle Speaker Notes (Shortcut: N)">
+          📝 Speaker Notes (N)
+        </button>
+        <button class="nav-btn" id="prev-btn" title="Previous Slide (←)">‹</button>
+        <span class="slide-counter" id="slide-num">01 / 10</span>
+        <button class="nav-btn" id="next-btn" title="Next Slide (→)">›</button>
+      </div>
+    </footer>
+
+    <!-- Speaker Notes Slide-out Drawer -->
+    <aside id="notes-drawer">
+      <div class="drawer-header">
+        <div class="drawer-title">
+          <span>🎙️</span>
+          <span>Presenter Notes</span>
+        </div>
+        <button class="close-btn" id="close-notes-btn">✕</button>
+      </div>
+      <div class="notes-content" id="notes-body">
+        <!-- Injected dynamically via JS based on current slide -->
+      </div>
+    </aside>
+
+  </div>
+
+  <!-- Speaker Notes Data from slides_md -->
+  <script>
+    const speakerNotes = {
+      1: {
+        title: "Slide 1: Health Centre Load Profile",
+        points: [
+          "<strong>Core Objective:</strong> Off-grid renewable power design for a rural health centre in Northern Sudan.",
+          "<strong>Load Metrics:</strong> Daily demand of <strong>21.6 kWh/day</strong> (7,884 kWh/year) with a peak load of <strong>2.0 kW</strong> (08:00–12:00).",
+          "<strong>Daytime Solar Alignment:</strong> <strong>14.0 kWh (65%)</strong> consumed during daylight hours (08:00–16:00), directly matching PV production.",
+          "<strong>Overnight Storage Demand:</strong> <strong>7.6 kWh (35%)</strong> needed during evening/night (16:00–08:00) for refrigeration and lights."
+        ]
+      },
+      2: {
+        title: "Slide 2: Location Selection & Climate",
+        points: [
+          "<strong>1° Rule Adjustment:</strong> Shifted from uninhabited sand dunes (18.7°N, 29.6°E) to <strong>Dongola / Argo Island (19.16°N, 30.48°E)</strong> along the Nile to serve an actual community.",
+          "<strong>Temperature Profile:</strong> Annual average ambient temperature of <strong>28.8°C</strong> (requires thermal derating in PV sizing).",
+          "<strong>Rainfall & Cloud Cover:</strong> Hyper-arid desert with <strong>&lt; 4 mm/year</strong> precipitation (virtually cloudless all year)."
+        ]
+      },
+      3: {
+        title: "Slide 3: Renewable Potential Screening",
+        points: [
+          "<strong>Solar PV (#1 Choice):</strong> <strong>6.78 PSH/day</strong> (GTI 2,475 kWh/m²/yr at 22° tilt), specific yield 1,884 kWh/kWp/yr.",
+          "<strong>Wind Power (#2 Comparison):</strong> 100m speed = <strong>8.69 m/s</strong> (514 W/m²), but 10m mast speed = <strong>5.11 m/s</strong> with high intermittency.",
+          "<strong>Hydro (Unsuitable):</strong> &lt; 4 mm rain/yr; flat river plain with zero elevation drop / hydraulic head.",
+          "<strong>Geothermal (Unsuitable):</strong> Stable sedimentary basin &gt;600 km from active tectonic or volcanic rift zones.",
+          "<strong>Wave / Tidal (Impossible):</strong> Landlocked inland desert (&gt;650 km from Red Sea)."
+        ]
+      },
+      4: {
+        title: "Slide 4: Solar PV vs. Wind Comparison",
+        points: [
+          "<strong>Resource Stability:</strong> Solar provides predictable daily bell curves all 12 months; wind varies cubically (P ∝ v³).",
+          "<strong>Load Synchronisation:</strong> Solar peak directly coincides with the 65% daytime clinic demand window.",
+          "<strong>Harsh Environment Durability:</strong> PV has zero moving parts; wind turbines suffer severe bearing/blade abrasion from Saharan sand.",
+          "<strong>Small-Scale Economics:</strong> PV modular cost (~$0.30/Wp) vs expensive small wind mast, tower crane, and foundation."
+        ]
+      },
+      5: {
+        title: "Slide 5: System Block Diagram",
+        points: [
+          "<strong>Architecture:</strong> DC-coupled hybrid PV + battery feeding a single-phase 230V AC, 50 Hz inverter.",
+          "<strong>Solar Generation:</strong> 21 × SANYO 210W modules (<strong>4.41 kWp STC</strong>) mounted at 22° South tilt.",
+          "<strong>Daytime Power Flow:</strong> 14.0 kWh routed directly to clinic loads via Fronius IG 40 inverter (94.3% eff).",
+          "<strong>Storage Power Flow:</strong> 7.6 kWh excess solar charges Li-Ion battery (95% round-trip eff) to sustain 7.6 kWh night load."
+        ]
+      },
+      6: {
+        title: "Slide 6: PV Array & Inverter Sizing",
+        points: [
+          "<strong>Annual Energy Target:</strong> E_req = 21.6 kWh/day × 365 days = <strong>7,884 kWh/year</strong>.",
+          "<strong>Temperature Derate:</strong> k_tem_p_ave = 1 + (-0.003 × 28.8°C) = <strong>0.9136</strong> (based on -0.30%/°C SANYO coeff).",
+          "<strong>Minimum Array Sizing:</strong> P_arr_stc = 7,884 / (2,474.7 × 0.943 × 0.95 × 0.97 × 0.95 × 0.9136) = <strong>4,225 Wp</strong>.",
+          "<strong>Module Configuration:</strong> ⌈4,225 / 210⌉ = <strong>21 panels</strong> (3 parallel strings × 7 series modules = <strong>4,410 Wp</strong>).",
+          "<strong>Inverter Match:</strong> Fronius IG 40 rated DC input (4,410 W) matches array exactly; 3,500 W AC easily handles 2.0 kW peak load."
+        ]
+      },
+      7: {
+        title: "Slide 7: Battery Storage Sizing",
+        points: [
+          "<strong>4-Hour Energy Balance:</strong> Daytime generation (21.6 kWh) supplies 14.0 kWh clinic load + stores <strong>7.6 kWh</strong>.",
+          "<strong>Overnight Discharge:</strong> Evening & night blocks draw exactly <strong>7.6 kWh</strong> from the battery.",
+          "<strong>Chemistry Selection:</strong> Li-Ion chosen (Ranked #1, 95% round-trip efficiency, 10–15 yr life vs Lead-Acid 3–6 yr).",
+          "<strong>Storage Capacity:</strong> Baseline 7.6 kWh / 2 kWh = 3.8 → 4 units. Selected <strong>8 × 2 kWh = 16 kWh</strong> (2× safety buffer for hospital reliability)."
+        ]
+      },
+      8: {
+        title: "Slide 8: Cost Breakdown & Payback",
+        points: [
+          "<strong>Initial CAPEX:</strong> <strong>$8,500</strong> total ($1,500 PV + $4,000 Li-Ion + $1,200 inverter + $1,800 mounting/Sudan logistics).",
+          "<strong>Lifecycle Costs:</strong> <strong>$5,200</strong> replacement at Year 11 (battery/inverter) + <strong>$200/yr</strong> OPEX → <strong>$17,700</strong> 20-year total.",
+          "<strong>Baseline Comparison:</strong> Displacing rural diesel power at $0.40/kWh saves $3,154/yr - $200 OPEX = <strong>$2,954/yr net</strong>.",
+          "<strong>Payback Period:</strong> Initial CAPEX / Annual Net Savings = $8,500 / $2,954 = <strong>2.88 years</strong> (~1,050 operating days)."
+        ]
+      },
+      9: {
+        title: "Slide 9: CO₂ Savings & Comparisons",
+        points: [
+          "<strong>Lifecycle CO₂ Balance:</strong> Solar lifecycle <strong>7.9 tonnes CO₂</strong> (50 g/kWh) vs. Diesel <strong>149.8 tonnes CO₂</strong> (55,188 L fuel) → <strong>141.9 tonnes CO₂ saved (94.7% cut)</strong>.",
+          "<strong>1. Initial CAPEX:</strong> Diesel performs better ($1,800 vs $8,500; 79% cheaper upfront).",
+          "<strong>2. Annual OPEX:</strong> Solar performs better ($200/yr vs $3,150/yr; 94% cheaper to operate).",
+          "<strong>3. 20-Year Total Cost:</strong> Solar performs better ($17,700 vs $68,400; saves $50,700).",
+          "<strong>4. CO₂ Footprint:</strong> Solar performs better (7.9 t vs 149.8 t).",
+          "<strong>5. Clinic Quiet & Reliability:</strong> Solar performs better (0 dB silent vs 80 dB engine noise; no fuel convoy risk)."
+        ]
+      },
+      10: {
+        title: "Slide 10: AI Critique & References",
+        points: [
+          "<strong>Reliable AI Output:</strong> Accurately predicted solar panel costs (~$0.30/Wp) and identified zero operating emissions.",
+          "<strong>Unreliable AI Output:</strong> Quoted EV battery pricing ($150/kWh vs $250/kWh rack units) and assumed zero mid-life replacements.",
+          "<strong>Hidden Assumptions:</strong> Omitted Sudan remote transport ($1,800) and assumed 100% generator efficiency during 0.2 kW night load.",
+          "<strong>Cost Correction:</strong> Adjusted AI's raw 20-year estimate of $7,420 to verified turnkey cost of <strong>$17,700</strong>.",
+          "<strong>Key References:</strong> Global Solar Atlas, NASA POWER, IRENA (2024), NREL BESS (2025), UNDP Sudan (2024)."
+        ]
+      }
+    };
+
+    // Presentation Engine
+    let currentSlide = 1;
+    const totalSlides = 10;
+    const slides = document.querySelectorAll('.slide');
+    const slideNumDisplay = document.getElementById('slide-num');
+    const progressBar = document.getElementById('progress-bar');
+    const notesDrawer = document.getElementById('notes-drawer');
+    const notesBody = document.getElementById('notes-body');
+    const notesBtn = document.getElementById('notes-btn');
+    const closeNotesBtn = document.getElementById('close-notes-btn');
+
+    function updateSlide(target) {
+      if (target < 1 || target > totalSlides) return;
+      
+      slides.forEach(slide => slide.classList.remove('active'));
+      const activeSlide = document.getElementById(`slide-${target}`);
+      if (activeSlide) {
+        activeSlide.classList.add('active');
+      }
+
+      currentSlide = target;
+      slideNumDisplay.textContent = `${String(currentSlide).padStart(2, '0')} / ${String(totalSlides).padStart(2, '0')}`;
+      progressBar.style.width = `${(currentSlide / totalSlides) * 100}%`;
+      
+      renderNotes(currentSlide);
+    }
+
+    function renderNotes(slideIdx) {
+      const data = speakerNotes[slideIdx];
+      if (!data) return;
+      
+      let html = `<h4>${data.title}</h4><ul>`;
+      data.points.forEach(p => {
+        html += `<li>${p}</li>`;
+      });
+      html += `</ul>`;
+      notesBody.innerHTML = html;
+    }
+
+    // Navigation triggers
+    document.getElementById('next-btn').addEventListener('click', () => updateSlide(currentSlide + 1));
+    document.getElementById('prev-btn').addEventListener('click', () => updateSlide(currentSlide - 1));
+
+    // Notes toggle
+    notesBtn.addEventListener('click', () => {
+      notesDrawer.classList.toggle('open');
+    });
+
+    closeNotesBtn.addEventListener('click', () => {
+      notesDrawer.classList.remove('open');
+    });
+
+    // Keyboard navigation
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') {
+        e.preventDefault();
+        updateSlide(currentSlide + 1);
+      } else if (e.key === 'ArrowLeft' || e.key === 'PageUp' || e.key === 'Backspace') {
+        e.preventDefault();
+        updateSlide(currentSlide - 1);
+      } else if (e.key === 'Home') {
+        e.preventDefault();
+        updateSlide(1);
+      } else if (e.key === 'End') {
+        e.preventDefault();
+        updateSlide(totalSlides);
+      } else if (e.key.toLowerCase() === 'n') {
+        notesDrawer.classList.toggle('open');
+      } else if (e.key.toLowerCase() === 'f') {
+        if (!document.fullscreenElement) {
+          document.documentElement.requestFullscreen().catch(() => {});
+        } else {
+          document.exitFullscreen().catch(() => {});
+        }
+      }
+    });
+
+    // Check hash on load or hashchange
+    function getSlideFromHash() {
+      const match = window.location.hash.match(/slide-(\d+)/);
+      if (match) {
+        const num = parseInt(match[1]);
+        if (num >= 1 && num <= totalSlides) return num;
+      }
+      return 1;
+    }
+
+    window.addEventListener('hashchange', () => {
+      updateSlide(getSlideFromHash());
+    });
+
+    // Initialize from URL hash
+    updateSlide(getSlideFromHash());
+  </script>
+</body>
+</html>

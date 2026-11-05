@@ -31,7 +31,7 @@ flowchart LR
 ---
 
 ### What to Say (Speaker Notes)
-- "Slide 5 shows how our off-grid system is connected, combining a standard single-phase PV protection layout with a Battery Energy Storage System (BESS)."
-- "In Figure 7, sunlight hits our **21 SANYO 210W solar panels (4.41 kWp total)**."
-- "During the daytime (8 AM to 4 PM), **14.0 kWh** goes straight through our **Fronius IG 40 inverter** to run the health centre."
-- "At the same time, the extra **7.6 kWh** generated during the day is stored inside our **Lithium-Ion battery bank**, and then drained at night (4 PM to 8 AM) so the clinic has 24-hour power totaling **21.6 kWh/day**."
+- **Architecture:** DC-coupled hybrid PV + battery feeding a single-phase 230V AC, 50 Hz inverter.
+- **Solar Generation:** 21 × SANYO 210W modules (**4.41 kWp STC**) mounted at 22° South tilt.
+- **Daytime Power Flow:** 14.0 kWh routed directly to clinic loads via Fronius IG 40 inverter (94.3% eff).
+- **Storage Power Flow:** 7.6 kWh excess solar charges Li-Ion battery (95% round-trip eff) to sustain 7.6 kWh night load.

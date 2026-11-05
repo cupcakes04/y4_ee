@@ -27,7 +27,8 @@
 ---
 
 ### What to Say (Speaker Notes)
-- "On Slide 3, we evaluate all five renewable energy sources at our Dongola site."
-- "From the **Global Solar Atlas report** (Figure 4 left), our site gets **2,335.6 kWh/m²/year** of horizontal solar radiation, and **2,474.7 kWh/m²/year** at the optimum 22° tilt—which is **6.78 Peak Sun Hours per day**."
-- "From the **Global Wind Atlas data** (Figure 4 right), the 100m median wind speed is **8.69 m/s** (514 W/m²), and the 10m wind speed is **5.11 m/s**, making Wind our second-best choice for comparison."
-- "The other three sources are self-explanatory: **Hydro** is unsuitable because there is almost zero rain and no waterfall head; **Geothermal** has no volcanic activity nearby; and **Wave/Tidal** is impossible because we are 650 km inland."
+- **Solar PV (#1 Choice):** **6.78 PSH/day** (GTI 2,475 kWh/m²/yr at 22° tilt), specific yield 1,884 kWh/kWp/yr.
+- **Wind Power (#2 Comparison):** 100m speed = **8.69 m/s** (514 W/m²), but 10m mast speed = **5.11 m/s** with high intermittency.
+- **Hydro (Unsuitable):** < 4 mm rain/yr; flat river plain with zero elevation drop / hydraulic head.
+- **Geothermal (Unsuitable):** Stable sedimentary basin >600 km from active tectonic or volcanic rift zones.
+- **Wave / Tidal (Impossible):** Landlocked inland desert (>650 km from Red Sea).

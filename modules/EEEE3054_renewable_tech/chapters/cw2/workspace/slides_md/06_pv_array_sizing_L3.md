@@ -39,8 +39,8 @@
 ---
 
 ### What to Say (Speaker Notes)
-- "On Slide 6, I size the PV array and inverter using standard energy-constraint design formulas and our SANYO and Fronius datasheets."
-- "Step 1: Our yearly energy requirement is **7,884 kWh**."
-- "Step 2: Using the SANYO panel's temperature coefficient of **-0.30%/°C** and the Global Solar Atlas air temperature of **28.8°C**, the temperature derating factor $k_{\text{tem\_p\_ave}}$ is **0.9136**."
-- "Step 3: Plugging in 2,474.7 annual Peak Sun Hours (at the 22° optimum tilt), the Fronius inverter's **94.3% efficiency**, and standard cable (0.95), dirt (0.97), and mismatch (0.95) factors gives **4,225 Wp**."
-- "Step 4: Dividing 4,225 Wp by 210 Wp gives 20.12, which rounds up to **21 panels** arranged in 3 parallel strings of 7 panels (**4,410 Wp**), matching the **Fronius IG 40** inverter's 4,410 W DC input and 3,500 W AC output."
+- **Annual Energy Target:** $E_{\text{req}} = 21.6\text{ kWh/day} \times 365\text{ days} = \mathbf{7,884\text{ kWh/year}}$.
+- **Temperature Derate:** $k_{\text{tem\_p\_ave}} = 1 + (-0.003 \times 28.8^\circ\text{C}) = \mathbf{0.9136}$ (based on $-0.30\%/^\circ\text{C}$ SANYO coeff).
+- **Minimum Array Sizing:** $P_{\text{arr\_stc}} = \frac{7,884}{2,474.7 \times 0.943 \times 0.95 \times 0.97 \times 0.95 \times 0.9136} = \mathbf{4,225\text{ Wp}}$.
+- **Module Configuration:** $\lceil 4,225 / 210 \rceil = \mathbf{21\text{ panels}}$ (3 parallel strings × 7 series modules = **4,410 Wp**).
+- **Inverter Match:** Fronius IG 40 rated DC input (4,410 W) matches array exactly; 3,500 W AC easily handles 2.0 kW peak load.

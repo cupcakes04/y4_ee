@@ -26,6 +26,7 @@
 ---
 
 ### What to Say (Speaker Notes)
-- "Slide 4 compares our preferred choice—**Solar PV**—against our second choice—**Wind Power**."
-- "Look at the hourly solar curves from Global Solar Atlas on the left of Figure 5: every single month from January to December has a clean, predictable bell curve between 7 AM and 5 PM, giving **6.78 Peak Sun Hours per day** at a 22° tilt."
-- "Solar PV beats Wind across all four criteria in Table 3: First, solar is consistent every day, whereas wind power depends on velocity cubed ($v^3$) and only reaches 8.7 m/s at 100m height (at 10m height it is only ~5.1 m/s). Second, solar peaks right when the clinic uses 65% of its energy (8 AM to 4 PM). Third, solar panels have no moving parts to break in desert sandstorms, and fourth, solar is much cheaper at a 2 kW clinic scale."
+- **Resource Stability:** Solar provides predictable daily bell curves all 12 months; wind varies cubically ($P \propto v^3$).
+- **Load Synchronisation:** Solar peak directly coincides with the 65% daytime clinic demand window.
+- **Harsh Environment Durability:** PV has zero moving parts; wind turbines suffer severe bearing/blade abrasion from Saharan sand.
+- **Small-Scale Economics:** PV modular cost (~$0.30/Wp) vs expensive small wind mast, tower crane, and foundation.

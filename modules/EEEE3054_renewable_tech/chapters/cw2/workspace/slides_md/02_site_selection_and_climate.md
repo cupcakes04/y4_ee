@@ -24,6 +24,6 @@
 ---
 
 ### What to Say (Speaker Notes)
-- "My original coordinates (18.7° N, 29.6° E) land in the middle of empty Sahara sand dunes in Northern State, Sudan, where nobody lives."
-- "Since the brief allows a 1-degree shift, I moved within 1 degree to **Dongola / Argo Island (19.16° N, 30.48° E)** along the Nile River, where there is an actual rural community that needs a health clinic."
-- "As shown in Figure 3, the average annual air temperature is **28.8°C**, and rainfall is practically **zero (under 4 mm per year)**."
+- **1° Rule Adjustment:** Shifted from uninhabited sand dunes (18.7°N, 29.6°E) to **Dongola / Argo Island (19.16°N, 30.48°E)** along the Nile to serve an actual community.
+- **Temperature Profile:** Annual average ambient temperature of **28.8°C** (requires thermal derating in PV sizing).
+- **Rainfall & Cloud Cover:** Hyper-arid desert with **< 4 mm/year** precipitation (virtually cloudless all year).

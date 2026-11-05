@@ -40,8 +40,8 @@
 ---
 
 ### What to Say (Speaker Notes)
-- "Finally, Slide 10 evaluates the Generative AI results we used in Section 3."
-- "First, **what was reliable**: The AI gave accurate solar panel prices (\~\$0.30/Wp, matching IRENA) and correctly noted that solar $\text{CO}_2$ comes only from manufacturing."
-- "Second, **what was wrong**: The AI used cheap \$150/kWh electric-car battery prices instead of \$250/kWh off-grid battery prices. Even worse, it assumed the battery lasts 20 years without replacement—whereas Lithium-Ion batteries actually have a **10 to 15 year lifespan**."
-- "Third, **hidden assumptions**: The AI assumed free city shipping (ignoring remote transport to Northern Sudan) and assumed a diesel generator runs at 100% efficiency even during our tiny 0.2 kW night load."
-- "Fourth, **how we fixed it**: We raised battery cost to \$250/kWh, added a **\$5,200 mid-life replacement at Year 11**, and added Sudan delivery costs, bringing the realistic 20-year cost from \$7,420 to **\$17,700**. Thank you for listening, and I'm happy to take any questions!"
+- **Reliable AI Output:** Accurately predicted solar panel costs (~$0.30/Wp) and identified zero operating emissions.
+- **Unreliable AI Output:** Quoted EV battery pricing ($150/kWh vs $250/kWh rack units) and assumed zero mid-life replacements.
+- **Hidden Assumptions:** Omitted Sudan remote transport ($1,800) and assumed 100% generator efficiency during 0.2 kW night load.
+- **Cost Correction:** Adjusted AI's raw 20-year estimate of $7,420 to verified turnkey cost of **$17,700**.
+- **Key References:** Global Solar Atlas, NASA POWER, IRENA (2024), NREL BESS (2025), UNDP Sudan (2024).

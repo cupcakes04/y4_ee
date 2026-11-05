@@ -33,6 +33,7 @@
 ---
 
 ### What to Say (Speaker Notes)
-- "Hi, I'm Nicholas (ID 20617556). My task is to design an off-grid renewable power system for a rural health centre in Northern Sudan."
-- "From Figure 1, multiplying each 4-hour power block by 4 hours gives a total daily demand of **21.6 kWh/day**, or **7,884 kWh/year**, with a peak power of **2.0 kW**."
-- "Notice that **14 kWh out of 21.6 kWh (65%)** is needed between 8 AM and 4 PM during daylight hours, while only **7.6 kWh** is needed at night."
+- **Core Objective:** Off-grid renewable power design for a rural health centre in Northern Sudan.
+- **Load Metrics:** Daily demand of **21.6 kWh/day** (7,884 kWh/year) with a peak load of **2.0 kW** (08:00–12:00).
+- **Daytime Solar Alignment:** **14.0 kWh (65%)** consumed during daylight hours (08:00–16:00), directly matching PV production.
+- **Overnight Storage Demand:** **7.6 kWh (35%)** needed during evening/night (16:00–08:00) for refrigeration and lights.

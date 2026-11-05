@@ -39,7 +39,7 @@
 ---
 
 ### What to Say (Speaker Notes)
-- "Slide 8 shows the cost of every major component, its expected lifetime, and the running cost."
-- "Our verified initial start-up cost is **\$8,500**: **\$1,500** for the 21 solar panels, **\$4,000** for the 16 kWh Lithium-Ion battery bank, **\$1,200** for the inverter and charge controller, and **\$1,800** for mounting frames, cables, and shipping to Sudan."
-- "Because Lithium-Ion batteries have a **10 to 15 year lifespan**, over a 20-year project we also include **one battery and inverter replacement at Year 11 (\$5,200)** plus **\$200/year** for panel cleaning and maintenance, giving a 20-year total cost of **\$17,700**."
-- "Using the buyback equation in Figure 12, compared to paying \$0.40/kWh for diesel generator power (saving \$2,954/year), our \$8,500 initial investment pays for itself in just **2.9 years**."
+- **Initial CAPEX:** **$8,500** total ($1,500 PV + $4,000 Li-Ion + $1,200 inverter + $1,800 mounting/Sudan logistics).
+- **Lifecycle Costs:** **$5,200** replacement at Year 11 (battery/inverter) + **$200/yr** OPEX $\rightarrow$ **$17,700** 20-year total.
+- **Baseline Comparison:** Displacing rural diesel power at $0.40/kWh saves $3,154/yr - $200 OPEX = **$2,954/yr net**.
+- **Payback Period:** Initial CAPEX / Annual Net Savings = $\$8,500 / \$2,954 =$ **2.88 years** (~1,050 operating days).
