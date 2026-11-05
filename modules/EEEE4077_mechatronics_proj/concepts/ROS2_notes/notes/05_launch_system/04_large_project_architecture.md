@@ -154,6 +154,9 @@ All modular launch components and configurations are organized in [`ros2_ws/laun
 # Execute directly from workspace root (omitting ros2_ws):
 ros2 launch launch/04_large_project/launch_turtlesim_launch.py
 
+# Then in a second terminal, start the teleop keyboard controller: (for testing)
+ros2 run turtlesim turtle_teleop_key
+
 # Or launch any individual sub-component independently:
 ros2 launch launch/04_large_project/turtlesim_world_1_launch.py background_r:=220
 ros2 launch launch/04_large_project/turtlesim_world_2_launch.py
