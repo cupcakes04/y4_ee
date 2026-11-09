@@ -34,9 +34,9 @@ While great for static walls and shelves, this creates two major failure modes w
 
 ## 2. How the Custom Critic Plugin Solves It (§4.3)
 
-Instead of relying on a time-blind costmap grid, we write a **custom C++ Critic Plugin** (`DynamicObstaclesCriticPlugin`) dynamically loaded into MPPI via ROS 2 `pluginlib`.
-
-It injects a new spatio-temporal loss term directly into **Phase 3** of MPPI:
+Instead of relying on a time-blind costmap grid, we do two things:
+1. **Dynamic Ray Masking (`/scan` $\to$ `/scan_static`):** The tracker masks out laser hits belonging to confirmed tracked pedestrians ($R_{\text{mask}} = 0.50\text{ m}$) before sending `/scan_static` to `nav2_costmap_2d::ObstacleLayer`. That way, the static costmap only sees real walls and unconfirmed obstacles (100% fail-safe if the camera misses something), preventing default `ObstaclesCritic` from freezing the robot at $t = 0$.
+2. **Custom C++ Critic Plugin (`DynamicObstaclesCriticPlugin`):** Dynamically loaded into MPPI via ROS 2 `pluginlib`, it injects a spatio-temporal loss term directly into **Phase 3** of MPPI:
 
 ```
            /tracked_obstacles (ROS 2 Topic from Kalman Filter)

@@ -18,27 +18,27 @@ The proposed system establishes a deterministic, high-rate multi-modal perceptio
                     └─────────────┬──────────────┘
                                   │ Active 2D Bounding Frustums [u_min, u_max]
                                   ▼
-[2D LiDAR Scan] ──► ┌────────────────────────────┐
-(/scan @ 20-40 Hz)  │ LiDAR Frustum Gating &     │ Extrinsic Calibration [R | t] (Zhang & Pless)
-                    │ Median Depth Association   │ Planar range returns assigned to track_id
-                    └─────────────┬──────────────┘
-                                  │ Metric Observation (z_x, z_y) per track_id
-                                  ▼
-                    ┌────────────────────────────┐
-                    │ Per-Track Kalman Filter    │ Discrete Constant Velocity (CV) / CTRV Model
-                    │ State & Covariance Update  │ Smooth [x, y, v_x, v_y]^T per track_id
-                    └─────────────┬──────────────┘
-                                  │ ROS 2 Topic: /tracked_obstacles (30 Hz)
-══════════════════════════════════╪═══════════════════════════════════════════════════════════════
+[2D LiDAR Scan] ──► ┌────────────────────────────┐ ──► /scan_static (Dynamic Rays Masked to NaN/Inf)
+(/scan @ 20-40 Hz)  │ LiDAR Frustum Gating &     │     │ (Unconfirmed/static rays pass 100% untouched)
+                    │ ABD Foreground Clustering  │     ▼
+                    └─────────────┬──────────────┘ ┌──────────────────────┐
+                                  │ Metric (z_x,z_y)│ nav2_costmap_2d      │
+                                  ▼                 │ (Static Walls Only)  │
+                    ┌────────────────────────────┐ └──────────┬───────────┘
+                    │ Per-Track Kalman Filter    │            │
+                    │ State & Covariance Update  │            │
+                    └─────────────┬──────────────┘            │
+                                  │ /tracked_obstacles (30 Hz)│
+══════════════════════════════════╪═══════════════════════════╪════════════════════════════════════
                                   │  NAV2 PREDICTIVE LOCAL PLANNING PIPELINE
-                                  ▼
+                                  ▼                           ▼
                     ┌────────────────────────────────────────────────────────────┐
                     │            nav2_mppi_controller (20-50 Hz)                 │
                     │                                                            │
                     │ ┌──────────────────────┐  ┌──────────────────────────────┐ │
                     │ │ Trajectory Rollouts  │  │ DynamicObstaclesCriticPlugin │ │
                     │ │ {p(tau_k)}_k=1..N    │──►  p_obs(tau) = p0 + v_obs*tau │ │
-                    │ └──────────────────────┘  │  Cost = f(dist(p_r, p_obs))  │ │
+                    │ └──────────────────────┘  │  Anisotropic Velocity Penalty│ │
                     │                           └──────────────┬───────────────┘ │
                     │ ┌──────────────────────┐                 │                 │
                     │ │ Default Static       │                 │ Penalized Cost  │
@@ -71,8 +71,9 @@ The system is decomposed into three cohesive subsystems:
 
 ### 1. Multi-Modal Perception & Tracking Subsystem (`lidar_vision_tracker`)
 - **Visual Association in Image Space:** Monocular RGB frames are processed by an edge-optimized detector (YOLO via TensorRT). Bounding boxes are tracked across frames using ByteTrack. By solving data association in image space, persistent target identities (`track_id`) are maintained through occlusions without fragile point-cloud clustering.
-- **LiDAR Frustum Gating & Depth Association:** Using rigid extrinsic calibration $[R \mid t]$, 2D planar LiDAR returns are projected into image coordinates. Range points falling within the horizontal frustum of each tracked bounding box are filtered via median distance clustering to establish unambiguous metric $(x, y)$ positions.
-- **Metric State Filtering:** For each active `track_id`, an independent linear Kalman filter with a Constant Velocity (CV) model estimates the full state vector $[x, y, v_x, v_y]^T$ and dynamic uncertainty covariance, publishing `/tracked_obstacles` at $\ge 30\text{ Hz}$.
+- **LiDAR Frustum Gating & ABD Foreground Clustering:** Using rigid extrinsic calibration $[R \mid t]$ and positive optical half-space culling ($Z_C > r_{\min}$), 2D planar LiDAR returns are projected into image coordinates. Because up to $70\text{--}80\%$ of horizontal laser rays inside a pedestrian's torso-width bounding box $[u_{\min}, u_{\max}]$ can pass between or beside their legs and hit background walls, a naive statistical median across all frustum rays would falsely lock onto the background wall. Instead, rays inside each frustum are segmented via an **Adaptive Breakpoint Detector (ABD)** (Borges & Aldon range-adaptive jump distance), selecting the **nearest foreground cluster** ($\ge 2$ contiguous points gated by Kalman innovation) to establish unambiguous metric $(x, y)$ positions.
+- **Track-Gated Dynamic Scan Masking (`/scan_static`):** To prevent `nav2_costmap_2d::ObstacleLayer` from painting tracked pedestrians as lethal static barriers at $t = 0$ (which would cause default `ObstaclesCritic` to freeze the robot despite our custom dynamic critic), laser rays falling within $R_{\text{mask}} = 0.50\text{ m}$ of confirmed active tracks ($\Delta t_{\text{age}} < 100\text{ ms}$) are masked (`NaN`/`Inf`) on `/scan_static`. Untracked or out-of-FoV rays pass through $100\%$ untouched as a fail-safe fallback.
+- **Metric State Filtering:** For each active `track_id`, an independent linear Kalman filter with a Constant Velocity (CV) model in the fixed `odom` frame estimates the full state vector $[x, y, v_x, v_y]^T$ and dynamic uncertainty covariance, publishing `/tracked_obstacles` at $\ge 30\text{ Hz}$.
 
 ### 2. Predictive Trajectory Control Subsystem (`nav2_mppi_dynamic_critic`)
 - **Idiomatic Nav2 Extension:** Implemented as a C++ `pluginlib` critic inside the standard `nav2_mppi_controller`.

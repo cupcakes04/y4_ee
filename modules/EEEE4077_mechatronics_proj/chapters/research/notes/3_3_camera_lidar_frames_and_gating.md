@@ -100,17 +100,25 @@ Camera 2D Image View:
 A laser ray belongs to the candidate object if its horizontal projection falls within the box columns:
 $$u_{\min} \le u_j \le u_{\max}$$
 
-### 4.2 The "Shoot-Through" Problem & Median Range Filtering
-In real warehouse environments, some laser rays passing through a pedestrian's bounding box slip between their legs or past their torso and strike background walls:
+### 4.2 The "Shoot-Through" Asymmetry & Adaptive Breakpoint Foreground Clustering
+In real warehouse environments, a pedestrian's 2D bounding box covers their torso/shoulders ($50\text{--}60\text{ cm}$ wide), while the 2D planar LiDAR scans a horizontal slice at ankle/shin height ($15\text{ cm}$ above the floor). Because human legs are narrow and separated by an air gap, **only $20\text{--}30\%$ of the horizontal rays inside $[u_{\min}, u_{\max}]$ actually hit the shins**, while $70\text{--}80\%$ shoot between or beside the ankles and strike background walls:
 
 ```
-AMR LiDAR ───► Ray 1 (hits shin) ───────────────► 2.80 m
-          ───► Ray 2 (hits shin) ───────────────► 2.85 m
-          ───► Ray 3 (passes between legs) ─────► [Wall behind target] ──► 18.5 m!
+AMR LiDAR ───► Ray 1 (passes left of ankle) ────► [Wall behind target] ──► 18.5 m!
+          ───► Ray 2 (hits left shin) ──────────► 2.80 m  ┐ Foreground
+          ───► Ray 3 (hits left shin) ──────────► 2.85 m  ┘ Leg Cluster (C*)
+          ───► Ray 4 (passes between legs) ─────► [Wall behind target] ──► 18.5 m!
+          ───► Ray 5 (passes right of ankle) ───► [Wall behind target] ──► 18.5 m!
 ```
 
-- **Arithmetic Mean Failure:** $\frac{2.80 + 2.85 + 18.5}{3} = 8.05\text{ m}$ (catastrophically corrupts distance).
-- **Median Filter Solution:** Sorting $[2.80, 2.85, 18.5]$ yields the median **$2.85\text{ m}$**, robustly rejecting background outliers.
+- **Why Naive Mean AND Naive Median Fail:**
+  - **Arithmetic Mean:** $\frac{2.80 + 2.85 + 18.5 + 18.5 + 18.5}{5} = 12.23\text{ m}$ (catastrophic error).
+  - **Naive Median Across All Box Rays:** Sorting $[2.80, 2.85, \mathbf{18.5}, 18.5, 18.5]$ yields **$18.5\text{ m}$** because $>50\%$ of the rays inside the bounding box hit the background wall!
+- **The Two-Stage ABD Foreground Solution:**
+  1. **Adaptive Breakpoint Detector (ABD):** Partition consecutive rays inside $[u_{\min}, u_{\max}]$ whenever the Euclidean jump distance between adjacent rays exceeds the Borges & Aldon range-adaptive threshold:
+     $$D(r_j, r_{j+1}) > \min(r_j, r_{j+1}) \frac{\sin\Delta\theta}{\sin(\lambda - \Delta\theta)} + 3\sigma_{\text{lidar}}$$
+     This cleanly splits the foreground leg returns ($[2.80, 2.85]\text{ m}$) from the background wall returns ($[18.5, 18.5, 18.5]\text{ m}$).
+  2. **Foreground Cluster Selection & Intra-Cluster Median:** Discard single-ray flying pixels ($N < 2$), select the **nearest foreground cluster** $\mathcal{C}^*$ (gated by Kalman innovation when two pedestrians overlap), and take the median strictly *inside* that foreground cluster ($\operatorname{median}[2.80, 2.85] = \mathbf{2.825\text{ m}}$).
 
 ---
 

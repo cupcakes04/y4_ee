@@ -5,7 +5,7 @@ description: Keep the FYP proposal, planning, and deliverable files in sync with
 
 # FYP Synchronization & Deliverable Management
 
-> **Operational Contract**: See [`.agents/docs/system_contract.md`](../docs/system_contract.md) for full architecture rules.
+> **Operational Contract**: See [`system_contract.md`](./system_contract.md) for full architecture rules.
 
 ## Layout (`modules/EEEE4077_mechatronics_proj/`)
 

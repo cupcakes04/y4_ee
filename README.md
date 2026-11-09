@@ -31,7 +31,7 @@ modules/{SUBJECT}/
 
 ## Study Toolkit & Automation Scripts (`scripts/`)
 
-A suite of complementary CLI tools designed for processing engineering lecture slides, managing notes, and maintaining link integrity.
+A suite of complementary CLI tools designed for processing engineering lecture slides, managing notes, and maintaining link integrity,  with [skills](./SKILLS.md).
 
 ### 1. `pdf_extract.py` — Lecture PDF to Markdown & Assets
 Extracts structured text blocks, tables, and embedded images from lecture PDFs into clean Markdown (`.md`).

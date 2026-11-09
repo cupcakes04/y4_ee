@@ -75,24 +75,29 @@
 
 ---
 
-## 8.4 Trade-Off 4: Tracking Architecture (2D MOT vs. 3D Hungarian Matching)
+## 8.4 Trade-Off 4: Tracking Architecture — Why 2D Visual MOT + Frustum Gating vs. 2D-LiDAR-Only Leg Trackers (`obstacle_detector_2`) or 3D Clustering?
 
 ### The Doubt / Question
-*"Should data association and tracking be done in 3D metric space after clustering LiDAR points, or in 2D image space directly from the object detector?"*
+*"Existing open-source ROS 2 packages like `obstacle_detector_2` (Inscribed Angle Variance circle extraction + KF) or `adbscan_ros2` can already cluster and track moving circles from a 2D planar LiDAR scan alone. Why add a monocular camera, YOLO, and ByteTrack at all? Should data association be done in 2D LiDAR metric space or in 2D image space?"*
 
 ### Comparison Matrix
 
-| Evaluation Dimension | Decoupled: 2D MOT (ByteTrack) + Linear KF (Selected) | Coupled: Metric 3D Clustering + Hungarian Matching |
+| Evaluation Dimension | Decoupled: 2D Visual MOT (ByteTrack) + ABD Frustum Gating + Linear KF (Selected) | 2D-LiDAR-Only Geometric Clustering (`obstacle_detector_2` / `adbscan_ros2` + Hungarian) |
 |---|---|---|
-| **Data Association Layer** | **Image space:** Uses 2D IoU and visual detection similarity across frames | **Metric space:** Uses Euclidean / Mahalanobis distances on laser clusters |
-| **Occlusion Handling** | ByteTrack rescues occluded detections via two-stage matching; visual context persists ID | Laser clusters merge into a single blob or swap IDs when pedestrians cross paths |
-| **Algorithmic Complexity** | **Standard library (`boxmot`):** Zero custom association code required | Must build a combinatorial assignment engine (Hungarian algorithm, gating thresholds, birth/death logic) from scratch |
-| **State Estimator** | Clean, decoupled 1D/2D **Linear Kalman Filter** per track ID ($[x, y, v_x, v_y]^T$) | Complex multi-target EKF maintaining coupled measurement-to-track association matrices |
-| **Execution Speed** | $>30\text{ FPS}$ on edge devices | Dependent on clustering resolution and cluster count |
+| **Data Association Layer** | **Image space:** Uses full-body 2D visual bounding boxes, IoU, and ByteTrack two-stage matching | **Planar metric space:** Uses Euclidean / Mahalanobis distances on $15\text{ cm}$-elevation laser clusters |
+| **Semantic Disambiguation** | **High:** Distinguishes `Pedestrian`, `Forklift`, and `Cart` from static columns or pallet legs | **Zero:** Circular table legs, bollards, and warehouse racking columns look identical to stationary human legs |
+| **Leg-Swing & Multi-Agent Occlusion** | **Full-body persistence:** ByteTrack tracks the entire upper/lower body box through partial occlusions | **Severe fragmentation & ID swaps:** Two legs oscillate, self-occlude during stride, and merge into a single blob when two people pass closely |
+| **Computational Bottleneck** | Pre-gating LiDAR by visual frustum restricts ABD clustering to validated regions ($<1\text{ ms}$) | Unconstrained single-linkage cluster merging and shape fitting across full $360^\circ$ clutter consumes $\sim 75\%$ of CPU time |
+| **State Estimator Choice** | Decoupled 4D **Linear Kalman Filter (CV)** ($[x, y, v_x, v_y]^T$) in `odom` frame with expanding horizon variance $\sigma(\tau_k)$ | Coupled multi-target EKF/CTRV; point clusters lack direct yaw orientation $\psi$ observability, causing EKF-CTRV heading jitter at low speeds |
 
 ### Defense Rationale
-- Decoupling visual association from metric estimation separates concerns: **Vision handles identity persistence (who is who)**, **LiDAR handles metric scale (exact distance in meters)**, and **the Kalman Filter handles noise reduction (velocity in m/s)**.
-- This avoids reinventing fragile clustering association algorithms and eliminates the highest algorithmic failure point in sensor fusion.
+1. **Why 2D-LiDAR-Only Leg Trackers (`obstacle_detector_2`) Fail in Shared Warehouses:**
+   - A planar 2D LiDAR slices the environment at $10\text{--}20\text{ cm}$ above the floor. At this height, a walking human consists of two small, oscillating semicircles ($\approx 10\text{ cm}$ wide) that repeatedly occlude one another during every step cycle.
+   - Purely geometric 2D laser trackers (`obstacle_detector_2`) suffer from two fatal failure modes: (a) when two pedestrians cross paths, their leg clusters merge or swap IDs, producing violent Kalman velocity spikes; and (b) every cylindrical bollard, pallet corner, or workbench leg triggers false circle detections.
+   - By solving data association in **2D RGB image space** (ByteTrack on full-body detections) and only using the 2D LiDAR (via **Adaptive Breakpoint Detector** foreground clustering inside the visual frustum) to anchor metric depth, we get the best of both worlds: rock-solid visual identity persistence and millimeter-accurate ToF distance.
+2. **Why 4D Linear CV + Expanding Covariance Over 5D Nonlinear EKF-CTRV:**
+   - While a 5D Constant Turn Rate and Velocity (CTRV) model ($[x, y, v, \psi, \omega]^T$) is standard for autonomous cars tracking L-shaped vehicles at $50\text{ m}$, a pedestrian's foreground leg cluster in 2D LiDAR is a near-isotropic point measurement $(z_x, z_y)$ that does not directly observe body yaw angle $\psi$. Estimating $\psi$ and turn rate $\omega$ purely from noisy point derivatives induces severe EKF linearization jitter when a pedestrian slows down or pivots.
+   - Over short indoor MPPI horizons ($T = 2.0\text{ s}$), a 4D linear Constant Velocity (CV) Kalman filter paired with a time-expanding safety buffer ($\sigma_i(\tau_k) = R_{\text{lethal}} + \alpha \tau_k$) is unconditionally stable, requires zero Jacobian trigonometry, and naturally absorbs minor trajectory curvature inside the expanding Gaussian envelope.
 
 ---
 

@@ -6,6 +6,15 @@
 
 ---
 
+## Research Handover Packets (Pre-Research Briefs & Specs)
+
+| File | Date | Status | Scope & Target Modules |
+|---|---|---|---|
+| [`20261108_fyp_core_research_brief.md`](./20261108_fyp_core_research_brief.md) | 2026-11-08 | **Outward Brief (Mode 1)** | End-to-end constraints, I/O schemas, and open research questions for O1 (`lidar_vision_tracker`), O2 (`nav2_mppi_dynamic_critic`), and costmap dynamic obstacle masking. |
+| [`brief.md`](./brief.md) | 2026-11-08 | **Inward Synthesis (Mode 2 Ingested)** | External Deep Research literature synthesis on 2D LiDAR + monocular fusion (ABD breakpoint clustering, ByteTrack, CV vs CTRV) and O2 resolution spec (`/scan_static` masking & anisotropic MPPI critic). |
+
+---
+
 ## Index of Parked Explorations
 
 | File | Topic | Key Concepts Investigated | Rationale for Parking |

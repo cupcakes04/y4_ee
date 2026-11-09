@@ -10,9 +10,9 @@ To isolate the specific mechanisms that resolve the "freezing robot" problem, th
 
 | Configuration ID | System Name | Sensor Modalities | Tracking & State Estimation | Local Controller Formulation |
 |---|---|---|---|---|
-| **C0** | **Baseline Nav2 (LiDAR-Only)** | 2D Planar LiDAR only | None (Raw scan points fed directly into local costmap) | Default `nav2_mppi_controller` querying static 2D costmap via `ObstaclesCritic` / `CostCritic` |
-| **C1** | **Vision-Augmented Detection (No Prediction)** | 2D Planar LiDAR + Monocular RGB Camera | ByteTrack + LiDAR frustum gating; Instantaneous position $(x_m, y_m)$, but velocity zeroed ($\mathbf{v}_{\text{obs}} = \mathbf{0}$) | MPPI evaluates dynamic obstacles as static spatial clearance circles ($t=0$ position) with no forward temporal projection |
-| **C2** | **Full Predictive MPPI (Proposed)** | 2D Planar LiDAR + Monocular RGB Camera | ByteTrack + LiDAR frustum gating + Linear Kalman Filter ($[x, y, v_x, v_y]^T$) | Custom `DynamicObstaclesCriticPlugin` forward-propagating obstacle states over lookahead horizon $\tau \in [0, 2.0]\text{ s}$ |
+| **C0** | **Baseline Nav2 (LiDAR-Only)** | 2D Planar LiDAR only | None (Raw `/scan` points fed directly into local costmap) | Default `nav2_mppi_controller` querying static 2D costmap via `ObstaclesCritic` / `CostCritic` |
+| **C1** | **Vision-Augmented Detection (No Prediction)** | 2D Planar LiDAR + Monocular RGB Camera | ByteTrack + ABD LiDAR frustum gating + `/scan_static` masking; Instantaneous position $(x_m, y_m)$, velocity zeroed ($\mathbf{v}_{\text{obs}} = \mathbf{0}$) | `DynamicObstaclesCriticPlugin` (`zero_velocity_ablation = true`) evaluates dynamic obstacles as static clearance circles ($t=0$ position) with no forward temporal projection |
+| **C2** | **Full Predictive MPPI (Proposed)** | 2D Planar LiDAR + Monocular RGB Camera | ByteTrack + ABD LiDAR frustum gating + `/scan_static` masking + Linear Kalman Filter ($[x, y, v_x, v_y]^T$) | `DynamicObstaclesCriticPlugin` (`zero_velocity_ablation = false`) forward-propagating obstacle states with anisotropic velocity penalty over $\tau \in [0, 2.0]\text{ s}$ |
 
 ### 5.1.1 Scientific Rationale of the C0 vs. C1 vs. C2 Ablation
 - **C0 $\to$ C1 Comparison:** Isolates the effect of **visual bounding and semantic segmentation**. Demonstrates whether having persistent bounding frustums and eliminating point-cloud noise alone prevents false stops, or whether static costmap representations still cause controller freezes.

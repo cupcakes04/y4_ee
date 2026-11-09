@@ -70,24 +70,36 @@ To resolve this limitation without replacing the robust Nav2 infrastructure, we 
 └────────────────────────────────────────────────────────┘
 ```
 
-### 4.3.1 Forward Motion Projection Formulation
-The critic subscribes to `/tracked_obstacles` published by the perception subsystem at $30\text{ Hz}$. For each sampled trajectory rollout $m$ and time index $k \in \{0, \dots, N-1\}$ corresponding to lookahead time $\tau_k = k \cdot \Delta t$:
+### 4.3.1 Costmap Decoupling & Dynamic Scan Masking (`/scan_static`)
+Before evaluating dynamic trajectories, a critical architectural coupling must be resolved: if the raw `/scan` topic still feeds directly into `nav2_costmap_2d::ObstacleLayer`, walking pedestrians are simultaneously painted onto the static local costmap as lethal barriers ($C = 254$) at $t = 0$. Consequently, the default shipped `ObstaclesCritic` and `CostCritic` would penalize forward rollouts against the $t = 0$ static costmap and freeze the robot even if `DynamicObstaclesCriticPlugin` predicts the corridor will clear by $\tau = 1.5\text{ s}$.
+
+To achieve clean decoupling without modifying `nav2_costmap_2d` internals:
+1. **Track-Gated Ray Masking:** In configurations **C1** and **C2**, `lidar_vision_tracker` publishes `/scan_static` for `nav2_costmap_2d::ObstacleLayer` (**C0** retains raw `/scan`). Any laser ray $(r_j, \theta_j)$ falling within $R_{\text{mask}} = R_{\text{obs}} + \delta_{\text{margin}} = 0.50\text{ m}$ of a confirmed active track's centroid $\mathbf{z}_i$ ($\Delta t_{\text{age}} < 100\text{ ms}$) is masked (`NaN` / $+\infty$ so raycasting clears behind the agent without marking a hit point).
+2. **100% Fail-Safe Fallback Invariant:** If YOLO/ByteTrack drops a detection or an obstacle approaches from outside the camera's $80^\circ$ horizontal FoV (side/rear), no confirmed track exists at $(r_j, \theta_j)$. The laser return passes through untouched into `/scan_static`, immediately registering on the static costmap and triggering standard Nav2 collision avoidance.
+
+### 4.3.2 Forward Motion Projection Formulation
+The critic subscribes to `/tracked_obstacles` (tracked in the fixed `odom` frame to match `data.trajectories` in `nav2_mppi_controller`) published by the perception subsystem at $30\text{ Hz}$. For each sampled trajectory rollout $m \in \{1, \dots, M\}$ and time index $k \in \{0, \dots, N-1\}$ corresponding to lookahead time $\tau_k = k \cdot \Delta t$:
 
 The dynamic obstacle position $\mathbf{p}_{\text{obs}, i}(\tau_k)$ is projected forward assuming constant velocity:
 
 $$\mathbf{p}_{\text{obs}, i}(\tau_k) = \mathbf{p}_{\text{obs}, i}(0) + \mathbf{v}_{\text{obs}, i} \cdot \tau_k$$
 
-### 4.3.2 Spatio-Temporal Dynamic Cost Function
-The instantaneous dynamic risk penalty $\mathcal{L}_{\text{dyn}}(\mathbf{p}_{\text{robot}}(\tau_k), \tau_k)$ is formulated as a Gaussian repulsion field expanding over time to account for growing state estimation uncertainty:
+*(Note: In ablation configuration **C1**, $\mathbf{v}_{\text{obs}, i}$ is zeroed via a boolean parameter `zero_velocity_ablation = true` so $\mathbf{p}_{\text{obs}, i}(\tau_k) = \mathbf{p}_{\text{obs}, i}(0)$ across all $k$, isolating perception from prediction with zero confounding code differences).*
 
-$$\mathcal{L}_{\text{dyn}}(\mathbf{p}_{\text{robot}}(\tau_k), \tau_k) = \sum_{i=1}^{K} w_{\text{dyn}} \cdot \exp\left( -\frac{\|\mathbf{p}_{\text{robot}}(\tau_k) - \mathbf{p}_{\text{obs}, i}(\tau_k)\|^2}{2 \, \sigma_i^2(\tau_k)} \right)$$
+### 4.3.3 Spatio-Temporal Anisotropic Dynamic Cost Function
+To account for growing state estimation uncertainty over the horizon while breaking spatial symmetry (encouraging the robot to pass *behind* crossing pedestrians rather than cutting in front of them), the instantaneous dynamic risk penalty $\mathcal{L}_{\text{dyn}}(\mathbf{p}_{\text{robot}, m}(\tau_k), \tau_k)$ uses a velocity-oriented anisotropic Gaussian repulsion field:
 
-where:
-- $w_{\text{dyn}}$ is a user-configurable critic weight factor.
-- $\sigma_i(\tau_k) = R_{\text{robot}} + R_{\text{obs}} + \alpha \cdot \tau_k$ defines the dynamic safety buffer, where $R_{\text{robot}}$ is the robot circumscribed radius, $R_{\text{obs}}$ is the obstacle clearance radius ($0.3\text{--}0.5\text{ m}$ for pedestrians), and $\alpha \ge 0$ is a temporal expansion rate reflecting velocity covariance growth over the horizon.
-- If $\|\mathbf{p}_{\text{robot}}(\tau_k) - \mathbf{p}_{\text{obs}, i}(\tau_k)\| < R_{\text{robot}} + R_{\text{obs}}$, a lethal collision penalty ($C_{\text{lethal}} = 10^5$) is immediately applied, discarding the trajectory.
+1. **Time-Expanding Lateral & Rear Buffer:**
+   $$\sigma_i(\tau_k) = R_{\text{robot}} + R_{\text{obs}} + \alpha \cdot \tau_k$$
+   where $R_{\text{robot}} = 0.22\text{ m}$, $R_{\text{obs}} = 0.35\text{ m}$ ($R_{\text{lethal}} = 0.57\text{ m}$), and $\alpha \ge 0$ is the temporal uncertainty expansion rate ($\approx 0.15\text{ m/s}$).
+2. **Forward Velocity-Biased Elongation (Protecting TTC):**
+   Projecting the relative displacement $\mathbf{d}_{m,k,i} = \mathbf{p}_{\text{robot}, m}(\tau_k) - \mathbf{p}_{\text{obs}, i}(\tau_k)$ onto the obstacle's unit heading vector $\hat{\mathbf{e}}_{\parallel, i} = \mathbf{v}_{\text{obs}, i} / \|\mathbf{v}_{\text{obs}, i}\|$ yields longitudinal projection $d_{\parallel} = \mathbf{d}_{m,k,i} \cdot \hat{\mathbf{e}}_{\parallel, i}$ and lateral squared distance $d_{\perp}^2 = \|\mathbf{d}_{m,k,i}\|^2 - d_{\parallel}^2$. The longitudinal variance is elongated forward of the moving agent ($d_{\parallel} > 0$) by $\sigma_{\text{front}}(\tau_k) = \sigma_i(\tau_k) + \beta_{\text{ttc}}\|\mathbf{v}_{\text{obs}, i}\|$:
+   $$\sigma_{\parallel}(\tau_k) = \begin{cases} \sigma_i(\tau_k) + \beta_{\text{ttc}}\|\mathbf{v}_{\text{obs}, i}\|, & \text{if } d_{\parallel} > 0 \text{ (in front of moving obstacle)} \\ \sigma_i(\tau_k), & \text{if } d_{\parallel} \le 0 \text{ (behind obstacle or } \beta_{\text{ttc}} = 0\text{)} \end{cases}$$
+3. **Piecewise Cost Evaluation:**
+   $$\mathcal{L}_{\text{dyn}}(\mathbf{p}_{\text{robot}, m}(\tau_k), \tau_k) = \sum_{i=1}^{K} \begin{cases} C_{\text{lethal}}, & \text{if } \|\mathbf{d}_{m,k,i}\| < R_{\text{lethal}} \\ w_{\text{dyn}} \cdot \exp\left( -\frac{1}{2}\left(\frac{d_{\parallel}^2}{\sigma_{\parallel}^2(\tau_k)} + \frac{d_{\perp}^2}{\sigma_i^2(\tau_k)}\right) \right), & \text{if } R_{\text{lethal}} \le \|\mathbf{d}_{m,k,i}\| < 3\sigma_{\parallel}(\tau_k) \\ 0, & \text{otherwise} \end{cases}$$
+   where $C_{\text{lethal}} = 10^5$ immediately disqualifies colliding trajectories, and the $3\sigma_{\parallel}$ cutoff avoids unnecessary `std::exp` evaluations on distant trajectories.
 
-### 4.3.3 Plugin Interface & Implementation Footprint
+### 4.3.4 Plugin Interface & Implementation Footprint
 The plugin adheres to Nav2's modern C++ interface:
 ```cpp
 namespace nav2_mppi_dynamic_critic

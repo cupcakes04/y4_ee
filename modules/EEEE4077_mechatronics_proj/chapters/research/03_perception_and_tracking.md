@@ -52,14 +52,22 @@ where:
 - $\mathbf{R} \in SO(3)$ and $\mathbf{t} \in \mathbb{R}^3$ represent the extrinsic rotation and translation rigidly relating $\mathcal{F}_{\text{lidar}}$ to $\mathcal{F}_{\text{cam}}$.
 - $\lambda$ is a projective scale factor corresponding to the optical axis depth $Z_{\text{cam}}$.
 
-### 3.3.2 Frustum Ray Gating & Depth Association
+### 3.3.2 Frustum Ray Gating & Adaptive Breakpoint Foreground Clustering
 For each laser scan ray $\mathbf{P}_j = (r_j, \theta_j)$ received from `/scan`:
-1. The ray is converted to Cartesian coordinates $(X_L, Y_L)$ and projected to pixel coordinates $(u_j, v_j)$ using the calibrated extrinsic matrix.
-2. A ray is associated with active track $B_k = [u_{\min}^k, v_{\min}^k, u_{\max}^k, v_{\max}^k]$ if its projected horizontal coordinate falls strictly within the bounding box frustum:
+1. **Positive Half-Space Culling & Projection:** The ray is converted to Cartesian coordinates $(X_L, Y_L)$ and transformed into camera optical coordinates $\mathbf{P}_{\text{cam}} = \mathbf{R}\mathbf{P}_L + \mathbf{t}$. Rays in the rear hemisphere ($Z_{\text{cam}} \le r_{\min}$) are strictly culled before homogeneous division to prevent negative-$Z_{\text{cam}}$ sign inversion from projecting rear obstacles onto the front image plane. Valid forward rays are projected to pixel coordinates $(u_j, v_j)$.
+2. **Azimuthal Frustum Gating:** A ray is associated with active track $B_k = [u_{\min}^k, v_{\min}^k, u_{\max}^k, v_{\max}^k]$ if its projected horizontal coordinate falls within the bounding box frustum:
    $$u_{\min}^k \le u_j \le u_{\max}^k$$
-3. **Median Range Clustering:** Because a 2D laser ray passing through an image bounding box may penetrate behind the target and hit background walls or shelving, raw range returns within the frustum are clustered. A median distance filter extracts the primary foreground cluster:
-   $$d_k^* = \operatorname{median} \{ r_j \mid u_j \in [u_{\min}^k, u_{\max}^k] \text{ and } r_j < r_{\text{background\_threshold}} \}$$
-4. The metric Cartesian observation $\mathbf{z}_k = [x_m, y_m]^T$ in the robot base frame $\mathcal{F}_{\text{base}}$ is computed directly from $(d_k^*, \theta_k^*)$, establishing an unambiguous metric position bound to `track_id`.
+3. **Why Naive Median Filtering Fails on Pedestrian Legs (The "Shoot-Through" Asymmetry):**
+   A camera's 2D bounding box bounds a pedestrian's full torso/shoulders ($50\text{--}60\text{ cm}$ wide), whereas a 2D planar LiDAR scans a horizontal slice at ankle/shin height ($15\text{ cm}$ off the floor). Because human legs are narrow and separated by an air gap, **only $20\text{--}30\%$ of the horizontal rays inside $[u_{\min}^k, u_{\max}^k]$ physically strike the legs**, while $70\text{--}80\%$ shoot between or beside the ankles and strike background walls $5\text{--}12\text{ m}$ behind the target. Taking a naive statistical median across all frustum rays ($\operatorname{median}\{r_j\}$) will therefore lock onto the background wall whenever $>50\%$ of the frustum rays shoot through!
+4. **Adaptive Breakpoint Detector (ABD) Foreground Segmentation:**
+   To isolate the true foreground legs without background wall contamination, the ordered subset of frustum-gated rays $\mathcal{R}_k = \{(r_j, \theta_j) \mid u_j \in [u_{\min}^k, u_{\max}^k]\}$ is partitioned into contiguous physical segments using the **Borges & Aldon Adaptive Breakpoint Detector (ABD)** (or Dietmayer jump-distance clustering):
+   $$D(r_j, r_{j+1}) = \sqrt{r_j^2 + r_{j+1}^2 - 2 r_j r_{j+1} \cos\Delta\theta} > D_{\text{thd}}^{\text{ABD}}, \qquad D_{\text{thd}}^{\text{ABD}} = \min(r_j, r_{j+1}) \frac{\sin\Delta\theta}{\sin(\lambda - \Delta\theta)} + 3\sigma_{\text{lidar}}$$
+   where $\Delta\theta$ is the angular resolution, $\lambda \approx 10^\circ$ is the minimum permissible surface incidence angle, and $\sigma_{\text{lidar}} \approx 0.02\text{ m}$.
+   - From the resulting clusters $\mathcal{C}_1, \mathcal{C}_2, \dots \subset \mathcal{R}_k$ containing at least $N_{\min} \ge 2$ returns (rejecting single-ray flying pixels), the tracker selects the **nearest foreground cluster** $\mathcal{C}_k^*$ (or the cluster minimizing Mahalanobis innovation distance to the Kalman filter's predicted position $\hat{\mathbf{x}}_{k|k-1}$ when two pedestrians partially occlude one another).
+   - The robust cluster distance $d_k^* = \operatorname{median}_{r_j \in \mathcal{C}_k^*}(r_j)$ and bearing $\theta_k^* = \operatorname{median}_{\theta_j \in \mathcal{C}_k^*}(\theta_j)$ are then computed strictly *within* the foreground cluster $\mathcal{C}_k^*$.
+5. **Metric Observation & Dynamic Costmap Ray Masking (`/scan_static`):**
+   - The metric Cartesian observation $\mathbf{z}_k = [x_m, y_m]^T$ is transformed into the fixed odometry frame (`odom`) so robot ego-motion $(\mathbf{v}_{\text{robot}}, \omega_{\text{robot}})$ does not corrupt downstream velocity differentiation.
+   - Simultaneously, to prevent `nav2_costmap_2d::ObstacleLayer` from marking confirmed dynamic pedestrians as static $t=0$ walls (which would cause default `ObstaclesCritic` to freeze the robot), all laser rays within $R_{\text{mask}} = 0.50\text{ m}$ of a confirmed active track's centroid $\mathbf{z}_k$ ($\Delta t_{\text{age}} < 100\text{ ms}$) are masked (`NaN`/`Inf`) and published on `/scan_static` for the static costmap. Untracked or out-of-FoV rays remain $100\%$ untouched in `/scan_static` as a fail-safe fallback.
 
 ---
 
@@ -122,7 +130,8 @@ The subsystem is encapsulated in the `lidar_vision_tracker` ROS 2 package:
   - `/camera/camera_info` (`sensor_msgs/msg/CameraInfo`)
   - `/scan` (`sensor_msgs/msg/LaserScan`, 20–40 Hz)
   - `/tf`, `/tf_static` (Rigid frame tree: `camera_link` $\to$ `base_link` $\to$ `map`)
-- **Published Topic:**
+- **Published Topics:**
+  - `/scan_static` (`sensor_msgs/msg/LaserScan`, 20–40 Hz: dynamic track rays masked for `nav2_costmap_2d::ObstacleLayer` in C1/C2)
   - `/tracked_obstacles` (`custom_interfaces/msg/TrackedObstacleArray`, 30 Hz)
     ```
     std_msgs/Header header
