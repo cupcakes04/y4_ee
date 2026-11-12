@@ -1,0 +1,603 @@
+{
+  "timestamp": "2026-11-12T03:14:18Z",
+  "duration_seconds": 0.8024,
+  "total": 74,
+  "passed": 74,
+  "failed": 0,
+  "warnings": 0,
+  "pass_rate_pct": 100.0,
+  "results": [
+    {
+      "tier": 1,
+      "name": "Chapter Existence: topic_1_uav_architectures.md",
+      "passed": true,
+      "message": "Found (38.7 KB)",
+      "details": null,
+      "severity": "ERROR"
+    },
+    {
+      "tier": 1,
+      "name": "Chapter Existence: topic_2_coordinate_frames.md",
+      "passed": true,
+      "message": "Found (66.6 KB)",
+      "details": null,
+      "severity": "ERROR"
+    },
+    {
+      "tier": 1,
+      "name": "Chapter Existence: topic_3_kinematics_dynamics.md",
+      "passed": true,
+      "message": "Found (50.5 KB)",
+      "details": null,
+      "severity": "ERROR"
+    },
+    {
+      "tier": 1,
+      "name": "Chapter Existence: topic_4_forces_moments.md",
+      "passed": true,
+      "message": "Found (66.5 KB)",
+      "details": null,
+      "severity": "ERROR"
+    },
+    {
+      "tier": 1,
+      "name": "Chapter Existence: topic_5_flight_control.md",
+      "passed": true,
+      "message": "Found (52.9 KB)",
+      "details": null,
+      "severity": "ERROR"
+    },
+    {
+      "tier": 1,
+      "name": "Widget Existence: widget_1_flight_envelope.html",
+      "passed": true,
+      "message": "Found (40.2 KB)",
+      "details": null,
+      "severity": "ERROR"
+    },
+    {
+      "tier": 1,
+      "name": "Widget Existence: widget_2_frames_gimbal_lock.html",
+      "passed": true,
+      "message": "Found (53.8 KB)",
+      "details": null,
+      "severity": "ERROR"
+    },
+    {
+      "tier": 1,
+      "name": "Widget Existence: widget_3_rigid_body_dynamics.html",
+      "passed": true,
+      "message": "Found (53.1 KB)",
+      "details": null,
+      "severity": "ERROR"
+    },
+    {
+      "tier": 1,
+      "name": "Widget Existence: widget_4_rotor_mixer_allocation.html",
+      "passed": true,
+      "message": "Found (50.5 KB)",
+      "details": null,
+      "severity": "ERROR"
+    },
+    {
+      "tier": 1,
+      "name": "Widget Existence: widget_5_cascaded_flight_control.html",
+      "passed": true,
+      "message": "Found (57.4 KB)",
+      "details": null,
+      "severity": "ERROR"
+    },
+    {
+      "tier": 1,
+      "name": "Chapter Section [topic_1_uav_architectures.md]: Title & Metadata",
+      "passed": true,
+      "message": "Present",
+      "details": null,
+      "severity": "ERROR"
+    },
+    {
+      "tier": 1,
+      "name": "Chapter Section [topic_1_uav_architectures.md]: Architecture & API Contract Table",
+      "passed": true,
+      "message": "Present",
+      "details": null,
+      "severity": "ERROR"
+    },
+    {
+      "tier": 1,
+      "name": "Chapter Section [topic_1_uav_architectures.md]: Prerequisite Bridge",
+      "passed": true,
+      "message": "Present",
+      "details": null,
+      "severity": "ERROR"
+    },
+    {
+      "tier": 1,
+      "name": "Chapter Section [topic_1_uav_architectures.md]: Step-by-Step Derivations",
+      "passed": true,
+      "message": "Present",
+      "details": null,
+      "severity": "ERROR"
+    },
+    {
+      "tier": 1,
+      "name": "Chapter Section [topic_1_uav_architectures.md]: Mermaid / Flow Diagram",
+      "passed": true,
+      "message": "Present",
+      "details": null,
+      "severity": "ERROR"
+    },
+    {
+      "tier": 1,
+      "name": "Chapter Section [topic_1_uav_architectures.md]: Worked Numerical Examples",
+      "passed": true,
+      "message": "Present",
+      "details": null,
+      "severity": "ERROR"
+    },
+    {
+      "tier": 1,
+      "name": "Chapter Section [topic_1_uav_architectures.md]: Exam Pitfalls / Watch Out For",
+      "passed": true,
+      "message": "Present",
+      "details": null,
+      "severity": "ERROR"
+    },
+    {
+      "tier": 1,
+      "name": "Chapter Section [topic_1_uav_architectures.md]: Bidirectional Links",
+      "passed": true,
+      "message": "Present",
+      "details": null,
+      "severity": "ERROR"
+    },
+    {
+      "tier": 1,
+      "name": "Chapter Section [topic_2_coordinate_frames.md]: Title & Metadata",
+      "passed": true,
+      "message": "Present",
+      "details": null,
+      "severity": "ERROR"
+    },
+    {
+      "tier": 1,
+      "name": "Chapter Section [topic_2_coordinate_frames.md]: Architecture & API Contract Table",
+      "passed": true,
+      "message": "Present",
+      "details": null,
+      "severity": "ERROR"
+    },
+    {
+      "tier": 1,
+      "name": "Chapter Section [topic_2_coordinate_frames.md]: Prerequisite Bridge",
+      "passed": true,
+      "message": "Present",
+      "details": null,
+      "severity": "ERROR"
+    },
+    {
+      "tier": 1,
+      "name": "Chapter Section [topic_2_coordinate_frames.md]: Step-by-Step Derivations",
+      "passed": true,
+      "message": "Present",
+      "details": null,
+      "severity": "ERROR"
+    },
+    {
+      "tier": 1,
+      "name": "Chapter Section [topic_2_coordinate_frames.md]: Mermaid / Flow Diagram",
+      "passed": true,
+      "message": "Present",
+      "details": null,
+      "severity": "ERROR"
+    },
+    {
+      "tier": 1,
+      "name": "Chapter Section [topic_2_coordinate_frames.md]: Worked Numerical Examples",
+      "passed": true,
+      "message": "Present",
+      "details": null,
+      "severity": "ERROR"
+    },
+    {
+      "tier": 1,
+      "name": "Chapter Section [topic_2_coordinate_frames.md]: Exam Pitfalls / Watch Out For",
+      "passed": true,
+      "message": "Present",
+      "details": null,
+      "severity": "ERROR"
+    },
+    {
+      "tier": 1,
+      "name": "Chapter Section [topic_2_coordinate_frames.md]: Bidirectional Links",
+      "passed": true,
+      "message": "Present",
+      "details": null,
+      "severity": "ERROR"
+    },
+    {
+      "tier": 1,
+      "name": "Chapter Section [topic_3_kinematics_dynamics.md]: Title & Metadata",
+      "passed": true,
+      "message": "Present",
+      "details": null,
+      "severity": "ERROR"
+    },
+    {
+      "tier": 1,
+      "name": "Chapter Section [topic_3_kinematics_dynamics.md]: Architecture & API Contract Table",
+      "passed": true,
+      "message": "Present",
+      "details": null,
+      "severity": "ERROR"
+    },
+    {
+      "tier": 1,
+      "name": "Chapter Section [topic_3_kinematics_dynamics.md]: Prerequisite Bridge",
+      "passed": true,
+      "message": "Present",
+      "details": null,
+      "severity": "ERROR"
+    },
+    {
+      "tier": 1,
+      "name": "Chapter Section [topic_3_kinematics_dynamics.md]: Step-by-Step Derivations",
+      "passed": true,
+      "message": "Present",
+      "details": null,
+      "severity": "ERROR"
+    },
+    {
+      "tier": 1,
+      "name": "Chapter Section [topic_3_kinematics_dynamics.md]: Mermaid / Flow Diagram",
+      "passed": true,
+      "message": "Present",
+      "details": null,
+      "severity": "ERROR"
+    },
+    {
+      "tier": 1,
+      "name": "Chapter Section [topic_3_kinematics_dynamics.md]: Worked Numerical Examples",
+      "passed": true,
+      "message": "Present",
+      "details": null,
+      "severity": "ERROR"
+    },
+    {
+      "tier": 1,
+      "name": "Chapter Section [topic_3_kinematics_dynamics.md]: Exam Pitfalls / Watch Out For",
+      "passed": true,
+      "message": "Present",
+      "details": null,
+      "severity": "ERROR"
+    },
+    {
+      "tier": 1,
+      "name": "Chapter Section [topic_3_kinematics_dynamics.md]: Bidirectional Links",
+      "passed": true,
+      "message": "Present",
+      "details": null,
+      "severity": "ERROR"
+    },
+    {
+      "tier": 1,
+      "name": "Chapter Section [topic_4_forces_moments.md]: Title & Metadata",
+      "passed": true,
+      "message": "Present",
+      "details": null,
+      "severity": "ERROR"
+    },
+    {
+      "tier": 1,
+      "name": "Chapter Section [topic_4_forces_moments.md]: Architecture & API Contract Table",
+      "passed": true,
+      "message": "Present",
+      "details": null,
+      "severity": "ERROR"
+    },
+    {
+      "tier": 1,
+      "name": "Chapter Section [topic_4_forces_moments.md]: Prerequisite Bridge",
+      "passed": true,
+      "message": "Present",
+      "details": null,
+      "severity": "ERROR"
+    },
+    {
+      "tier": 1,
+      "name": "Chapter Section [topic_4_forces_moments.md]: Step-by-Step Derivations",
+      "passed": true,
+      "message": "Present",
+      "details": null,
+      "severity": "ERROR"
+    },
+    {
+      "tier": 1,
+      "name": "Chapter Section [topic_4_forces_moments.md]: Mermaid / Flow Diagram",
+      "passed": true,
+      "message": "Present",
+      "details": null,
+      "severity": "ERROR"
+    },
+    {
+      "tier": 1,
+      "name": "Chapter Section [topic_4_forces_moments.md]: Worked Numerical Examples",
+      "passed": true,
+      "message": "Present",
+      "details": null,
+      "severity": "ERROR"
+    },
+    {
+      "tier": 1,
+      "name": "Chapter Section [topic_4_forces_moments.md]: Exam Pitfalls / Watch Out For",
+      "passed": true,
+      "message": "Present",
+      "details": null,
+      "severity": "ERROR"
+    },
+    {
+      "tier": 1,
+      "name": "Chapter Section [topic_4_forces_moments.md]: Bidirectional Links",
+      "passed": true,
+      "message": "Present",
+      "details": null,
+      "severity": "ERROR"
+    },
+    {
+      "tier": 1,
+      "name": "Chapter Section [topic_5_flight_control.md]: Title & Metadata",
+      "passed": true,
+      "message": "Present",
+      "details": null,
+      "severity": "ERROR"
+    },
+    {
+      "tier": 1,
+      "name": "Chapter Section [topic_5_flight_control.md]: Architecture & API Contract Table",
+      "passed": true,
+      "message": "Present",
+      "details": null,
+      "severity": "ERROR"
+    },
+    {
+      "tier": 1,
+      "name": "Chapter Section [topic_5_flight_control.md]: Prerequisite Bridge",
+      "passed": true,
+      "message": "Present",
+      "details": null,
+      "severity": "ERROR"
+    },
+    {
+      "tier": 1,
+      "name": "Chapter Section [topic_5_flight_control.md]: Step-by-Step Derivations",
+      "passed": true,
+      "message": "Present",
+      "details": null,
+      "severity": "ERROR"
+    },
+    {
+      "tier": 1,
+      "name": "Chapter Section [topic_5_flight_control.md]: Mermaid / Flow Diagram",
+      "passed": true,
+      "message": "Present",
+      "details": null,
+      "severity": "ERROR"
+    },
+    {
+      "tier": 1,
+      "name": "Chapter Section [topic_5_flight_control.md]: Worked Numerical Examples",
+      "passed": true,
+      "message": "Present",
+      "details": null,
+      "severity": "ERROR"
+    },
+    {
+      "tier": 1,
+      "name": "Chapter Section [topic_5_flight_control.md]: Exam Pitfalls / Watch Out For",
+      "passed": true,
+      "message": "Present",
+      "details": null,
+      "severity": "ERROR"
+    },
+    {
+      "tier": 1,
+      "name": "Chapter Section [topic_5_flight_control.md]: Bidirectional Links",
+      "passed": true,
+      "message": "Present",
+      "details": null,
+      "severity": "ERROR"
+    },
+    {
+      "tier": 2,
+      "name": "KaTeX Syntax: topic_1_uav_architectures.md",
+      "passed": true,
+      "message": "KaTeX syntax, delimiters, and environments valid",
+      "details": null,
+      "severity": "ERROR"
+    },
+    {
+      "tier": 2,
+      "name": "KaTeX Syntax: topic_2_coordinate_frames.md",
+      "passed": true,
+      "message": "KaTeX syntax, delimiters, and environments valid",
+      "details": null,
+      "severity": "ERROR"
+    },
+    {
+      "tier": 2,
+      "name": "KaTeX Syntax: topic_3_kinematics_dynamics.md",
+      "passed": true,
+      "message": "KaTeX syntax, delimiters, and environments valid",
+      "details": null,
+      "severity": "ERROR"
+    },
+    {
+      "tier": 2,
+      "name": "KaTeX Syntax: topic_4_forces_moments.md",
+      "passed": true,
+      "message": "KaTeX syntax, delimiters, and environments valid",
+      "details": null,
+      "severity": "ERROR"
+    },
+    {
+      "tier": 2,
+      "name": "KaTeX Syntax: topic_5_flight_control.md",
+      "passed": true,
+      "message": "KaTeX syntax, delimiters, and environments valid",
+      "details": null,
+      "severity": "ERROR"
+    },
+    {
+      "tier": 2,
+      "name": "Widget HTML & Dependencies: widget_1_flight_envelope.html",
+      "passed": true,
+      "message": "HTML5 structure, zero external JS, visualizer elements, and offline styles valid",
+      "details": null,
+      "severity": "ERROR"
+    },
+    {
+      "tier": 2,
+      "name": "Widget HTML & Dependencies: widget_2_frames_gimbal_lock.html",
+      "passed": true,
+      "message": "HTML5 structure, zero external JS, visualizer elements, and offline styles valid",
+      "details": null,
+      "severity": "ERROR"
+    },
+    {
+      "tier": 2,
+      "name": "Widget HTML & Dependencies: widget_3_rigid_body_dynamics.html",
+      "passed": true,
+      "message": "HTML5 structure, zero external JS, visualizer elements, and offline styles valid",
+      "details": null,
+      "severity": "ERROR"
+    },
+    {
+      "tier": 2,
+      "name": "Widget HTML & Dependencies: widget_4_rotor_mixer_allocation.html",
+      "passed": true,
+      "message": "HTML5 structure, zero external JS, visualizer elements, and offline styles valid",
+      "details": null,
+      "severity": "ERROR"
+    },
+    {
+      "tier": 2,
+      "name": "Widget HTML & Dependencies: widget_5_cascaded_flight_control.html",
+      "passed": true,
+      "message": "HTML5 structure, zero external JS, visualizer elements, and offline styles valid",
+      "details": null,
+      "severity": "ERROR"
+    },
+    {
+      "tier": 3,
+      "name": "Coordinate Invariants [topic_2_coordinate_frames.md]: NED & FRD",
+      "passed": true,
+      "message": "NED inertial and FRD body frame conventions confirmed",
+      "details": null,
+      "severity": "ERROR"
+    },
+    {
+      "tier": 3,
+      "name": "Coordinate Invariants [topic_3_kinematics_dynamics.md]: NED & FRD",
+      "passed": true,
+      "message": "NED inertial and FRD body frame conventions confirmed",
+      "details": null,
+      "severity": "ERROR"
+    },
+    {
+      "tier": 3,
+      "name": "Kinematics Invariant [Topic 2]: Tait-Bryan ZYX & R_b^n (3,1) element",
+      "passed": true,
+      "message": "Canonical aerospace Tait-Bryan ZYX rotation sequence verified",
+      "details": null,
+      "severity": "ERROR"
+    },
+    {
+      "tier": 3,
+      "name": "Flight Control Invariant [Topic 5]: Tilt-to-Acceleration Mapping (\u03b8^d = -u_x/g, \u03c6^d = +u_y/g)",
+      "passed": true,
+      "message": "Strict tilt sign mapping (nose-down pitch accelerates forward) confirmed",
+      "details": null,
+      "severity": "ERROR"
+    },
+    {
+      "tier": 3,
+      "name": "Stability Invariant [Topic 5]: Motor Lag Routh-Hurwitz Condition (k_d > \u03c4_m k_p)",
+      "passed": true,
+      "message": "Motor lag stability condition k_d > \u03c4_m k_p confirmed",
+      "details": null,
+      "severity": "ERROR"
+    },
+    {
+      "tier": 3,
+      "name": "Actuator Compensation Invariant [Topic 5]: Tilt Thrust Scaling (1 / cos \u03c6 cos \u03b8)",
+      "passed": true,
+      "message": "Tilt thrust compensation formula confirmed",
+      "details": null,
+      "severity": "ERROR"
+    },
+    {
+      "tier": 3,
+      "name": "Cross-Topic Bidirectional Link Target Resolution",
+      "passed": true,
+      "message": "All 52 relative cross-topic links resolve successfully",
+      "details": null,
+      "severity": "ERROR"
+    },
+    {
+      "tier": 4,
+      "name": "Momentum Theory & Sizing Oracle",
+      "passed": true,
+      "message": "Momentum theory sizing: v_i=5.62 m/s, P_ideal=88.2 W, t=16.9 min, \u03b8_max=60.6\u00b0",
+      "details": null,
+      "severity": "ERROR"
+    },
+    {
+      "tier": 4,
+      "name": "SO(3) Rotation Matrix & Euler Rates Oracle",
+      "passed": true,
+      "message": "SO(3) orthonormality det(R)=1, det(M_\u03c9)=cos(theta), v_inertial=[3.4641, 2.0, 0.0]",
+      "details": null,
+      "severity": "ERROR"
+    },
+    {
+      "tier": 4,
+      "name": "Mixer Matrix Inverses Oracle (+ and x)",
+      "passed": true,
+      "message": "Mixer matrix analytical inverses valid; Tutorial 3 alloc = [7.0, 6.0, 5.0, 6.0]",
+      "details": null,
+      "severity": "ERROR"
+    },
+    {
+      "tier": 4,
+      "name": "Hexarotor Pseudo-Inverse Allocation Oracle",
+      "passed": true,
+      "message": "Hexarotor pseudo-inverse rank=4, equal allocation T_i=4.0 N",
+      "details": null,
+      "severity": "ERROR"
+    },
+    {
+      "tier": 4,
+      "name": "6-DoF Rigid-Body Coriolis & Euler Oracle",
+      "passed": true,
+      "message": "Coriolis v_dot=[2.4, -1.2, 0.0], Rotational Euler p_dot=2.00 rad/s\u00b2",
+      "details": null,
+      "severity": "ERROR"
+    },
+    {
+      "tier": 4,
+      "name": "Longitudinal Controllability & Observability Oracle",
+      "passed": true,
+      "message": "Longitudinal controllability det(C) = g**2/Jy**4 != 0 (Rank 4), det(O) = g**2",
+      "details": null,
+      "severity": "ERROR"
+    },
+    {
+      "tier": 4,
+      "name": "Motor Lag Routh-Hurwitz Stability Oracle",
+      "passed": true,
+      "message": "Routh-Hurwitz H_2 = kd - kp*tau_m > 0 implies stability condition kd > tau_m * kp",
+      "details": null,
+      "severity": "ERROR"
+    }
+  ]
+}

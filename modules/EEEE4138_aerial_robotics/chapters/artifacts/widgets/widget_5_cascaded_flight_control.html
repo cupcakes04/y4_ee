@@ -1,0 +1,1364 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Widget 5: Cascaded Flight Control & LQR Simulation</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Offline Fallback Styling -->
+  <style>
+    /* Robust Fallback styling if Tailwind CDN is offline */
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: #020617;
+      color: #f8fafc;
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+    .offline-card {
+      background-color: #0f172a;
+      border: 1px solid #1e293b;
+      border-radius: 0.5rem;
+      padding: 1rem;
+    }
+    .custom-slider {
+      -webkit-appearance: none;
+      width: 100%;
+      height: 6px;
+      border-radius: 3px;
+      background: #1e293b;
+      outline: none;
+    }
+    .custom-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: #38bdf8;
+      cursor: pointer;
+      border: 2px solid #0f172a;
+    }
+    .custom-slider::-moz-range-thumb {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: #38bdf8;
+      cursor: pointer;
+      border: 2px solid #0f172a;
+    }
+    .tab-btn.active {
+      background-color: #0284c7;
+      color: #ffffff;
+      border-color: #38bdf8;
+    }
+    /* Monospace telemetry readouts */
+    .mono {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    }
+    canvas {
+      touch-action: none;
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col selection:bg-cyan-500 selection:text-white">
+
+  <!-- Header & Navigation Bar -->
+  <header class="border-b border-slate-800 bg-slate-900/90 backdrop-blur px-4 py-3 flex flex-wrap items-center justify-between gap-4 sticky top-0 z-20">
+    <div class="flex items-center gap-3">
+      <div class="w-9 h-9 rounded-lg bg-gradient-to-tr from-cyan-600 to-blue-500 flex items-center justify-center font-bold text-lg shadow-lg shadow-cyan-500/20 text-white">
+        W5
+      </div>
+      <div>
+        <h1 class="text-base font-bold text-white leading-tight flex items-center gap-2">
+          Cascaded Flight Control & State-Space LQR
+          <span class="text-xs px-2 py-0.5 rounded bg-cyan-950 border border-cyan-700/60 text-cyan-400 font-mono">EEEE4138 Topic 5</span>
+        </h1>
+        <p class="text-xs text-slate-400">Interactive 2D Flight Dynamics & Timescale Separation Laboratory</p>
+      </div>
+    </div>
+
+    <!-- Status Badges & Quick Action Controls -->
+    <div class="flex items-center gap-2 flex-wrap text-xs">
+      <span id="badgeStatus" class="px-2.5 py-1 rounded-full font-mono bg-emerald-950/80 border border-emerald-500/40 text-emerald-300 flex items-center gap-1.5 shadow-sm">
+        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+        FLIGHT ACTIVE
+      </span>
+      <span id="badgeSeparation" class="px-2.5 py-1 rounded-full font-mono bg-slate-800 border border-slate-700 text-slate-300">
+        ω_att / ω_pos = <strong id="ratioValue" class="text-cyan-400">6.0×</strong>
+      </span>
+      <button id="btnPlayPause" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 active:bg-slate-600 rounded text-slate-200 border border-slate-700 transition font-medium flex items-center gap-1">
+        <span id="playPauseIcon">⏸</span> <span id="playPauseText">Pause</span>
+      </button>
+      <button id="btnReset" class="px-3 py-1.5 bg-rose-950/40 hover:bg-rose-900/60 active:bg-rose-800/80 rounded text-rose-300 border border-rose-800/50 transition font-medium">
+        ↺ Reset
+      </button>
+      <a href="../chapters/topic_5_flight_control.md" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 rounded text-slate-300 border border-slate-700 transition flex items-center gap-1">
+        📖 Chapter
+      </a>
+    </div>
+  </header>
+
+  <!-- Main Application Body -->
+  <main class="flex-1 p-4 grid grid-cols-1 lg:grid-cols-12 gap-4 max-w-[1700px] w-full mx-auto">
+
+    <!-- LEFT / CENTER: Interactive 2D Flight Canvas & Oscilloscope HUD (8 Columns) -->
+    <div class="lg:col-span-8 flex flex-col gap-4">
+
+      <!-- Flight Simulation Canvas Card -->
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-3 shadow-xl flex flex-col relative overflow-hidden">
+        <!-- Canvas Top Bar Overlay -->
+        <div class="flex items-center justify-between text-xs font-mono text-slate-400 mb-2 px-1">
+          <div class="flex items-center gap-3">
+            <span class="flex items-center gap-1 text-slate-300">
+              <span class="w-2 h-2 rounded-full bg-cyan-400"></span> Drone: <strong id="telemetryPos" class="text-cyan-400">[0.00, 2.50]m</strong>
+            </span>
+            <span class="flex items-center gap-1 text-slate-300">
+              <span class="w-2 h-2 rounded-full bg-amber-400"></span> Pitch: <strong id="telemetryPitch" class="text-amber-400">0.0°</strong>
+            </span>
+            <span class="flex items-center gap-1 text-slate-300">
+              <span class="w-2 h-2 rounded-full bg-emerald-400"></span> Waypoint: <strong id="telemetryTarget" class="text-emerald-400">[0.00, 2.50]m</strong>
+            </span>
+          </div>
+          <div class="flex items-center gap-2">
+            <span id="telemetryFPS" class="text-slate-500">60 FPS</span>
+            <span class="text-slate-600">|</span>
+            <span class="text-cyan-300">💡 Drag crosshair or click canvas to fly</span>
+          </div>
+        </div>
+
+        <!-- Canvas Container -->
+        <div class="relative w-full aspect-[16/9] bg-slate-950 rounded-lg overflow-hidden border border-slate-800/80 cursor-crosshair">
+          <canvas id="flightCanvas" class="w-full h-full block"></canvas>
+
+          <!-- Wind Stream HUD Overlay -->
+          <div id="windIndicator" class="absolute top-3 left-3 bg-slate-900/85 backdrop-blur border border-slate-800 px-2.5 py-1.5 rounded-lg text-xs font-mono flex items-center gap-2 pointer-events-none">
+            <span id="windIcon" class="text-sm">🍃</span>
+            <span class="text-slate-400">Wind:</span>
+            <span id="windReadout" class="font-bold text-cyan-400">0.0 N</span>
+            <span id="windArrow" class="text-slate-500 text-xs">→</span>
+          </div>
+
+          <!-- Accelerometer G-Force & Thrust HUD Overlay -->
+          <div class="absolute top-3 right-3 bg-slate-900/85 backdrop-blur border border-slate-800 px-2.5 py-1.5 rounded-lg text-xs font-mono flex items-center gap-3 pointer-events-none">
+            <div>
+              <span class="text-slate-500">T_cmd:</span>
+              <strong id="hudThrust" class="text-amber-300">14.7 N</strong>
+            </div>
+            <div>
+              <span class="text-slate-500">M_y:</span>
+              <strong id="hudMoment" class="text-purple-300">0.00 Nm</strong>
+            </div>
+            <div>
+              <span class="text-slate-500">TWR:</span>
+              <strong id="hudTWR" class="text-emerald-400">1.00</strong>
+            </div>
+          </div>
+
+          <!-- Instruction Toast -->
+          <div id="canvasHint" class="absolute bottom-3 left-1/2 -translate-x-1/2 bg-slate-900/90 border border-slate-700/80 px-4 py-1.5 rounded-full text-xs text-slate-300 pointer-events-none shadow-lg transition-opacity duration-300">
+            🎯 Click or drag the <span class="text-amber-400 font-bold">Target Crosshair</span> to command a step response
+          </div>
+        </div>
+
+        <!-- Quick Setpoint Buttons Bar -->
+        <div class="mt-3 flex items-center justify-between gap-2 flex-wrap text-xs pt-1 border-t border-slate-800/60">
+          <div class="flex items-center gap-1.5 flex-wrap">
+            <span class="text-slate-400 font-mono">Step Tests:</span>
+            <button onclick="window.stepWaypoint(-2.0, 0)" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 active:bg-slate-600 text-slate-200 border border-slate-700">← -2m X</button>
+            <button onclick="window.stepWaypoint(+2.0, 0)" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 active:bg-slate-600 text-slate-200 border border-slate-700">+2m X →</button>
+            <button onclick="window.stepWaypoint(0, -1.0)" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 active:bg-slate-600 text-slate-200 border border-slate-700">▲ +1m Climb</button>
+            <button onclick="window.stepWaypoint(0, +1.0)" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 active:bg-slate-600 text-slate-200 border border-slate-700">▼ -1m Sink</button>
+            <button onclick="window.centerWaypoint()" class="px-2.5 py-1 rounded bg-cyan-950 hover:bg-cyan-900 text-cyan-300 border border-cyan-800">Center (0, 2.5m)</button>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <button onclick="window.injectWindGust(+3.0)" class="px-2.5 py-1 rounded bg-amber-950/60 hover:bg-amber-900/80 text-amber-300 border border-amber-800/60 font-mono">💨 Gust +3N</button>
+            <button onclick="window.injectWindGust(-3.0)" class="px-2.5 py-1 rounded bg-amber-950/60 hover:bg-amber-900/80 text-amber-300 border border-amber-800/60 font-mono">💨 Gust -3N</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3-Channel Real-Time Oscilloscope HUD -->
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-3 shadow-xl flex flex-col">
+        <div class="flex items-center justify-between text-xs font-mono text-slate-400 mb-2 px-1">
+          <div class="font-bold text-slate-200 flex items-center gap-2">
+            <span>📈 Real-Time 3-Channel Telemetry Oscilloscope</span>
+            <span class="text-[10px] text-slate-500 font-normal">(Last 6 Seconds History)</span>
+          </div>
+          <div class="flex items-center gap-3 text-[11px]">
+            <span class="flex items-center gap-1 text-cyan-400"><span class="w-3 h-0.5 bg-cyan-400"></span> Pos x(t)</span>
+            <span class="flex items-center gap-1 text-white"><span class="w-3 h-0.5 border-t border-dashed border-white"></span> Ref xᵈ</span>
+            <span class="flex items-center gap-1 text-emerald-400"><span class="w-3 h-0.5 bg-emerald-400"></span> Pitch θ(t)</span>
+            <span class="flex items-center gap-1 text-amber-400"><span class="w-3 h-0.5 border-t border-dashed border-amber-400"></span> Desired θᵈ</span>
+            <span class="flex items-center gap-1 text-purple-400"><span class="w-3 h-0.5 bg-purple-400"></span> Torque M_y</span>
+          </div>
+        </div>
+        <div class="w-full h-36 bg-slate-950 rounded-lg overflow-hidden border border-slate-800/80 relative">
+          <canvas id="scopeCanvas" class="w-full h-full block"></canvas>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- RIGHT: Controller Tuning Panel, Tabs, Presets & Physics Sliders (4 Columns) -->
+    <div class="lg:col-span-4 flex flex-col gap-4">
+
+      <!-- Controller Mode Tabs Card -->
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-xl flex flex-col gap-3">
+        
+        <!-- Tab Selectors -->
+        <div class="grid grid-cols-2 p-1 bg-slate-950 rounded-lg border border-slate-800 text-xs font-semibold">
+          <button id="tabBtnPID" class="tab-btn active py-2 rounded-md transition text-center flex items-center justify-center gap-1">
+            <span>Cascaded PID</span>
+          </button>
+          <button id="tabBtnLQR" class="tab-btn py-2 rounded-md transition text-center text-slate-400 hover:text-white flex items-center justify-center gap-1">
+            <span>State-Space LQR</span>
+          </button>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- TAB A: CASCADED PID CONTROLLER CONTROLS   -->
+        <!-- ========================================== -->
+        <div id="panelPID" class="flex flex-col gap-3.5">
+          <!-- Tuning Presets -->
+          <div>
+            <label class="text-xs font-bold text-slate-300 block mb-1.5 flex items-center justify-between">
+              <span>Pedagogical Tuning Presets</span>
+              <span class="text-[10px] text-cyan-400 font-mono">Interactive Experiments</span>
+            </label>
+            <div class="grid grid-cols-3 gap-1.5 text-[11px]">
+              <button id="presetPerfect" class="px-2 py-1.5 rounded bg-cyan-950/70 border border-cyan-800/70 text-cyan-300 hover:bg-cyan-900 transition font-medium text-center">
+                ⭐ 5x Separation<br><span class="text-[9px] text-cyan-400/80">Smooth & Stable</span>
+              </button>
+              <button id="presetSluggish" class="px-2 py-1.5 rounded bg-rose-950/60 border border-rose-800/60 text-rose-300 hover:bg-rose-900 transition font-medium text-center">
+                💥 Sluggish Att<br><span class="text-[9px] text-rose-400/80">Crash / Diverge</span>
+              </button>
+              <button id="presetAggressive" class="px-2 py-1.5 rounded bg-amber-950/60 border border-amber-800/60 text-amber-300 hover:bg-amber-900 transition font-medium text-center">
+                ⚡ Aggressive Pos<br><span class="text-[9px] text-amber-400/80">Oscillatory</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Section: Outer Loop (Position) -->
+          <div class="p-3 bg-slate-950/70 rounded-lg border border-slate-800/80">
+            <div class="flex items-center justify-between text-xs font-bold text-cyan-400 mb-2">
+              <span class="flex items-center gap-1.5">
+                <span class="w-1.5 h-3 bg-cyan-400 rounded-sm"></span>
+                Outer Loop: Position x(t) ➔ Tilt θᵈ
+              </span>
+              <span class="text-[10px] text-slate-400 font-mono">Slow: ~2 rad/s</span>
+            </div>
+
+            <!-- Kp Pos -->
+            <div class="mb-2">
+              <div class="flex justify-between text-xs font-mono text-slate-300 mb-1">
+                <span>K_p,pos (Stiffness):</span>
+                <span id="val_kp_pos" class="text-cyan-400 font-bold">4.00</span>
+              </div>
+              <input id="slider_kp_pos" type="range" min="0.5" max="25.0" step="0.5" value="4.0" class="custom-slider">
+            </div>
+
+            <!-- Kd Pos -->
+            <div class="mb-2">
+              <div class="flex justify-between text-xs font-mono text-slate-300 mb-1">
+                <span>K_d,pos (Velocity Damping):</span>
+                <span id="val_kd_pos" class="text-cyan-400 font-bold">2.80</span>
+              </div>
+              <input id="slider_kd_pos" type="range" min="0.2" max="10.0" step="0.2" value="2.8" class="custom-slider">
+            </div>
+
+            <!-- Ki Pos -->
+            <div>
+              <div class="flex justify-between text-xs font-mono text-slate-300 mb-1">
+                <span>K_i,pos (Wind Disturbance Rejection):</span>
+                <span id="val_ki_pos" class="text-cyan-400 font-bold">1.20</span>
+              </div>
+              <input id="slider_ki_pos" type="range" min="0.0" max="5.0" step="0.1" value="1.2" class="custom-slider">
+            </div>
+          </div>
+
+          <!-- Section: Inner Loop (Attitude) -->
+          <div class="p-3 bg-slate-950/70 rounded-lg border border-slate-800/80">
+            <div class="flex items-center justify-between text-xs font-bold text-amber-400 mb-2">
+              <span class="flex items-center gap-1.5">
+                <span class="w-1.5 h-3 bg-amber-400 rounded-sm"></span>
+                Inner Loop: Attitude θ(t) ➔ Moment M_y
+              </span>
+              <span class="text-[10px] text-slate-400 font-mono">Fast: ~12-25 rad/s</span>
+            </div>
+
+            <!-- Kp Att -->
+            <div class="mb-2">
+              <div class="flex justify-between text-xs font-mono text-slate-300 mb-1">
+                <span>k_p,θ (Attitude Natural Freq):</span>
+                <span id="val_kp_att" class="text-amber-400 font-bold">144.0</span>
+              </div>
+              <input id="slider_kp_att" type="range" min="10.0" max="400.0" step="5.0" value="144.0" class="custom-slider">
+            </div>
+
+            <!-- Kd Att -->
+            <div class="mb-2">
+              <div class="flex justify-between text-xs font-mono text-slate-300 mb-1">
+                <span>k_d,θ (Rate Gyro Damping):</span>
+                <span id="val_kd_att" class="text-amber-400 font-bold">19.2</span>
+              </div>
+              <input id="slider_kd_att" type="range" min="1.0" max="45.0" step="0.5" value="19.2" class="custom-slider">
+            </div>
+
+            <!-- Motor Lag Check Status Bar -->
+            <div id="lagCheckBanner" class="mt-1 px-2.5 py-1 rounded text-[11px] font-mono flex items-center justify-between bg-emerald-950/80 text-emerald-300 border border-emerald-700/50">
+              <span>Motor Lag: k_d > τ_m k_p</span>
+              <span id="lagCheckVal" class="font-bold">19.2 > 3.6 ✓</span>
+            </div>
+          </div>
+
+          <!-- Section: Altitude Loop -->
+          <div class="p-3 bg-slate-950/70 rounded-lg border border-slate-800/80">
+            <div class="flex items-center justify-between text-xs font-bold text-emerald-400 mb-2">
+              <span class="flex items-center gap-1.5">
+                <span class="w-1.5 h-3 bg-emerald-400 rounded-sm"></span>
+                Altitude Channel z(t) ➔ Thrust T
+              </span>
+              <span class="text-[10px] text-slate-400 font-mono">Double Integrator</span>
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <div class="flex justify-between text-[11px] font-mono text-slate-300 mb-0.5">
+                  <span>K_p,z:</span>
+                  <span id="val_kp_z" class="text-emerald-400 font-bold">9.0</span>
+                </div>
+                <input id="slider_kp_z" type="range" min="1.0" max="25.0" step="1.0" value="9.0" class="custom-slider">
+              </div>
+              <div>
+                <div class="flex justify-between text-[11px] font-mono text-slate-300 mb-0.5">
+                  <span>K_d,z:</span>
+                  <span id="val_kd_z" class="text-emerald-400 font-bold">4.8</span>
+                </div>
+                <input id="slider_kd_z" type="range" min="0.5" max="12.0" step="0.2" value="4.8" class="custom-slider">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- TAB B: STATE-SPACE LQR CONTROLLER CONTROLS-->
+        <!-- ========================================== -->
+        <div id="panelLQR" class="hidden flex flex-col gap-3.5">
+          <!-- Real-Time Riccati Solver Telemetry -->
+          <div class="p-3 bg-slate-950 rounded-lg border border-cyan-900/60 shadow-inner">
+            <div class="flex items-center justify-between text-xs font-bold text-cyan-300 mb-1">
+              <span>Live Riccati Equation Solver (CARE)</span>
+              <span class="px-1.5 py-0.5 rounded bg-cyan-950 text-[10px] font-mono text-cyan-400 border border-cyan-800">Newton-Kleinman</span>
+            </div>
+            <div class="text-[11px] font-mono text-slate-400 mb-1.5">
+              Cost: J = ∫ (xᵀ Q x + uᵀ R u) dt ➔ u = -K_LQR x
+            </div>
+            <div class="p-2 bg-slate-900 rounded font-mono text-xs text-slate-200 border border-slate-800 flex flex-col gap-1">
+              <div class="text-slate-400 text-[10px]">Optimal Gain Vector K = [k_x, k_v, k_θ, k_q]:</div>
+              <div id="lqrGainVector" class="text-cyan-300 font-bold tracking-tight">[-1.41, -1.36, 4.68, 0.70]</div>
+              <div class="text-slate-400 text-[10px] mt-0.5">Closed-Loop Eigenvalues:</div>
+              <div id="lqrPoles" class="text-emerald-400 text-[11px]">-1.84 ± 1.62j, -6.12 ± 4.35j</div>
+            </div>
+          </div>
+
+          <!-- LQR Q & R Weight Sliders -->
+          <div class="p-3 bg-slate-950/70 rounded-lg border border-slate-800/80 flex flex-col gap-2.5">
+            <div class="text-xs font-bold text-slate-200 flex items-center justify-between">
+              <span>Bryson's Tuning Penalty Sliders</span>
+              <span class="text-[10px] text-slate-500 font-mono">Q ⪰ 0, R > 0</span>
+            </div>
+
+            <!-- Q_x -->
+            <div>
+              <div class="flex justify-between text-xs font-mono text-slate-300 mb-1">
+                <span>q_x (Position Error Penalty):</span>
+                <span id="val_qx" class="text-cyan-400 font-bold">4.0</span>
+              </div>
+              <input id="slider_qx" type="range" min="0.1" max="50.0" step="0.5" value="4.0" class="custom-slider">
+            </div>
+
+            <!-- Q_v -->
+            <div>
+              <div class="flex justify-between text-xs font-mono text-slate-300 mb-1">
+                <span>q_v (Velocity Error Penalty):</span>
+                <span id="val_qv" class="text-cyan-400 font-bold">1.0</span>
+              </div>
+              <input id="slider_qv" type="range" min="0.1" max="25.0" step="0.2" value="1.0" class="custom-slider">
+            </div>
+
+            <!-- Q_theta -->
+            <div>
+              <div class="flex justify-between text-xs font-mono text-slate-300 mb-1">
+                <span>q_θ (Attitude Tilt Penalty):</span>
+                <span id="val_qtheta" class="text-amber-400 font-bold">8.0</span>
+              </div>
+              <input id="slider_qtheta" type="range" min="0.1" max="50.0" step="0.5" value="8.0" class="custom-slider">
+            </div>
+
+            <!-- Q_q -->
+            <div>
+              <div class="flex justify-between text-xs font-mono text-slate-300 mb-1">
+                <span>q_q (Pitch Rate Penalty):</span>
+                <span id="val_qq" class="text-amber-400 font-bold">0.5</span>
+              </div>
+              <input id="slider_qq" type="range" min="0.05" max="10.0" step="0.1" value="0.5" class="custom-slider">
+            </div>
+
+            <!-- R_u -->
+            <div>
+              <div class="flex justify-between text-xs font-mono text-slate-300 mb-1">
+                <span>r_u (Torque Control Effort Penalty):</span>
+                <span id="val_ru" class="text-purple-400 font-bold">2.0</span>
+              </div>
+              <input id="slider_ru" type="range" min="0.1" max="20.0" step="0.2" value="2.0" class="custom-slider">
+            </div>
+          </div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- ENVIRONMENT & DISTURBANCE SLIDERS          -->
+        <!-- ========================================== -->
+        <div class="p-3 bg-slate-950/70 rounded-lg border border-slate-800/80 flex flex-col gap-2.5">
+          <div class="text-xs font-bold text-slate-200 flex items-center justify-between">
+            <span>Environmental & Physics Disturbances</span>
+            <span class="text-[10px] text-slate-500 font-mono">Real-World Aero</span>
+          </div>
+
+          <!-- Wind Disturbance -->
+          <div>
+            <div class="flex justify-between text-xs font-mono text-slate-300 mb-1">
+              <span>Horizontal Wind Force (F_wind,x):</span>
+              <span id="val_wind" class="text-cyan-400 font-bold">0.0 N</span>
+            </div>
+            <input id="slider_wind" type="range" min="-5.0" max="5.0" step="0.2" value="0.0" class="custom-slider">
+          </div>
+
+          <!-- Drone Mass -->
+          <div>
+            <div class="flex justify-between text-xs font-mono text-slate-300 mb-1">
+              <span>Drone Mass (m):</span>
+              <span id="val_mass" class="text-slate-300 font-bold">1.50 kg</span>
+            </div>
+            <input id="slider_mass" type="range" min="0.5" max="3.0" step="0.1" value="1.5" class="custom-slider">
+          </div>
+
+          <!-- Motor ESC Lag Time Constant -->
+          <div>
+            <div class="flex justify-between text-xs font-mono text-slate-300 mb-1">
+              <span>ESC Mechanical Time Constant (τ_m):</span>
+              <span id="val_taum" class="text-slate-300 font-bold">0.025 s</span>
+            </div>
+            <input id="slider_taum" type="range" min="0.010" max="0.080" step="0.005" value="0.025" class="custom-slider">
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- Interactive JavaScript Engine (Zero External Dependencies) -->
+  <script>
+    (function() {
+      // =========================================================================
+      // Simulation State & Parameters
+      // =========================================================================
+      const state = {
+        // Drone Physical State in 2D (x, z in NED coords: +x right/forward, +z down)
+        // For visual canvas display: origin is at canvas center-bottom, positive z is UP visually.
+        x: 0.0,            // meters
+        vx: 0.0,           // m/s
+        z: 2.5,            // meters altitude above ground
+        vz: 0.0,           // m/s
+        theta: 0.0,        // radians (pitch angle, positive = nose-up)
+        q: 0.0,            // rad/s (pitch rate)
+
+        // Delayed Actuator States (Motor first-order lag)
+        thrust_act: 14.715,// N (balances 1.5kg * 9.81)
+        moment_act: 0.0,   // Nm
+
+        // Reference Waypoint Target
+        xd: 0.0,
+        zd: 2.5,
+
+        // Disturbance States
+        wind_x: 0.0,       // N
+
+        // Integrated Errors
+        int_pos_x: 0.0,
+        int_pos_z: 0.0,
+        int_att_theta: 0.0,
+
+        // Controller Mode: 'PID' or 'LQR'
+        mode: 'PID',
+        isPaused: false,
+
+        // Trajectory History for Trailing Path
+        trail: [],
+
+        // Wind stream particles
+        particles: []
+      };
+
+      // Physical Drone Parameters
+      const physics = {
+        g: 9.81,           // m/s^2
+        m: 1.50,           // kg
+        Jy: 0.0250,        // kg*m^2
+        tau_m: 0.0250,     // seconds (motor time constant)
+        arm_l: 0.22,       // meters
+        theta_max: 35.0 * Math.PI / 180.0, // rad
+        T_max: 35.0        // N
+      };
+
+      // Cascaded PID Gains
+      const pidGains = {
+        kp_pos: 4.0,
+        kd_pos: 2.8,
+        ki_pos: 1.2,
+        kp_att: 144.0,
+        kd_att: 19.2,
+        ki_att: 0.0,
+        kp_z: 9.0,
+        kd_z: 4.8,
+        ki_z: 1.5
+      };
+
+      // State-Space LQR Weights & Computed Gains
+      const lqrWeights = {
+        qx: 4.0,
+        qv: 1.0,
+        qtheta: 8.0,
+        qq: 0.5,
+        ru: 2.0
+      };
+      let lqrGain = [-1.414, -1.359, 4.675, 0.696]; // [k_x, k_v, k_theta, k_q]
+
+      // Telemetry History for Oscilloscope (6 seconds at 60 FPS = 360 points)
+      const MAX_SCOPE_POINTS = 360;
+      const scopeData = {
+        time: [],
+        x: [],
+        xd: [],
+        theta: [],
+        theta_d: [],
+        My: [],
+        T: []
+      };
+      let simTime = 0.0;
+
+      // DOM Elements
+      const canvas = document.getElementById('flightCanvas');
+      const ctx = canvas.getContext('2d');
+      const scopeCanvas = document.getElementById('scopeCanvas');
+      const scopeCtx = scopeCanvas.getContext('2d');
+
+      // Initialize Canvas Dimensions
+      function resizeCanvas() {
+        const rect = canvas.getBoundingClientRect();
+        canvas.width = rect.width * window.devicePixelRatio;
+        canvas.height = rect.height * window.devicePixelRatio;
+        ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+
+        const scopeRect = scopeCanvas.getBoundingClientRect();
+        scopeCanvas.width = scopeRect.width * window.devicePixelRatio;
+        scopeCanvas.height = scopeRect.height * window.devicePixelRatio;
+        scopeCtx.scale(window.devicePixelRatio, window.devicePixelRatio);
+      }
+      window.addEventListener('resize', resizeCanvas);
+      setTimeout(resizeCanvas, 50);
+
+      // Initialize Wind Particles
+      for (let i = 0; i < 45; i++) {
+        state.particles.push({
+          x: Math.random() * 10 - 5,
+          z: Math.random() * 5,
+          speed: Math.random() * 0.8 + 0.6,
+          size: Math.random() * 2 + 1,
+          alpha: Math.random() * 0.5 + 0.2
+        });
+      }
+
+      // =========================================================================
+      // Live Continuous Algebraic Riccati Equation (CARE) Solver in Vanilla JS
+      // =========================================================================
+      // Solves A^T P + P A - P B R^(-1) B^T P + Q = 0 for the 4-state hover model.
+      function solveLQR() {
+        const g = physics.g;
+        const Jy = physics.Jy;
+        const A = [
+          [0, 1, 0, 0],
+          [0, 0, -g, 0],
+          [0, 0, 0, 1],
+          [0, 0, 0, 0]
+        ];
+        const B = [0, 0, 0, 1.0 / Jy];
+        const Q = [
+          [lqrWeights.qx, 0, 0, 0],
+          [0, lqrWeights.qv, 0, 0],
+          [0, 0, lqrWeights.qtheta, 0],
+          [0, 0, 0, lqrWeights.qq]
+        ];
+        const R = lqrWeights.ru;
+        const invR = 1.0 / R;
+
+        // Custom 10x10 Lyapunov solver for F^T P + P F + M = 0
+        const lookup = [
+          [0, 1, 2, 3],
+          [1, 4, 5, 6],
+          [2, 5, 7, 8],
+          [3, 6, 8, 9]
+        ];
+
+        function solveLyap(F, M) {
+          const Asys = Array(10).fill(0).map(() => Array(10).fill(0));
+          const bsys = Array(10).fill(0);
+          let eq = 0;
+          for (let i = 0; i < 4; i++) {
+            for (let j = i; j < 4; j++) {
+              for (let k = 0; k < 4; k++) {
+                Asys[eq][lookup[k][j]] += F[k][i];
+                Asys[eq][lookup[i][k]] += F[k][j];
+              }
+              bsys[eq] = -M[i][j];
+              eq++;
+            }
+          }
+
+          // Gaussian elimination with partial pivoting on 10x10 system
+          const p = Array(10).fill(0);
+          for (let i = 0; i < 10; i++) {
+            let maxRow = i;
+            for (let r = i + 1; r < 10; r++) {
+              if (Math.abs(Asys[r][i]) > Math.abs(Asys[maxRow][i])) {
+                maxRow = r;
+              }
+            }
+            if (maxRow !== i) {
+              const tempRow = Asys[i]; Asys[i] = Asys[maxRow]; Asys[maxRow] = tempRow;
+              const tempB = bsys[i]; bsys[i] = bsys[maxRow]; bsys[maxRow] = tempB;
+            }
+            const pivot = Asys[i][i];
+            if (Math.abs(pivot) < 1e-12) continue;
+            for (let r = i + 1; r < 10; r++) {
+              const factor = Asys[r][i] / pivot;
+              for (let c = i; c < 10; c++) {
+                Asys[r][c] -= factor * Asys[i][c];
+              }
+              bsys[r] -= factor * bsys[i];
+            }
+          }
+          // Back substitution
+          for (let i = 9; i >= 0; i--) {
+            let sum = bsys[i];
+            for (let c = i + 1; c < 10; c++) {
+              sum -= Asys[i][c] * p[c];
+            }
+            p[i] = Asys[i][i] !== 0 ? sum / Asys[i][i] : 0;
+          }
+
+          const P = Array(4).fill(0).map(() => Array(4).fill(0));
+          for (let i = 0; i < 4; i++) {
+            for (let j = 0; j < 4; j++) {
+              P[i][j] = p[lookup[i][j]];
+            }
+          }
+          return P;
+        }
+
+        // Newton-Kleinman iteration starting with stabilizing gain K0
+        let K = [-0.5, -1.0, 2.0, 0.5];
+        for (let iter = 0; iter < 12; iter++) {
+          // F = A - B * K
+          const F = Array(4).fill(0).map(() => Array(4).fill(0));
+          for (let r = 0; r < 4; r++) {
+            for (let c = 0; c < 4; c++) {
+              F[r][c] = A[r][c] - B[r] * K[c];
+            }
+          }
+          // M = Q + K^T * R * K
+          const M = Array(4).fill(0).map(() => Array(4).fill(0));
+          for (let r = 0; r < 4; r++) {
+            for (let c = 0; c < 4; c++) {
+              M[r][c] = Q[r][c] + K[r] * R * K[c];
+            }
+          }
+
+          const P = solveLyap(F, M);
+
+          // Update K_new = inv(R) * B^T * P
+          const K_new = [0, 0, 0, 0];
+          for (let c = 0; c < 4; c++) {
+            K_new[c] = invR * (B[0]*P[0][c] + B[1]*P[1][c] + B[2]*P[2][c] + B[3]*P[3][c]);
+          }
+
+          let diff = 0;
+          for (let c = 0; c < 4; c++) diff += Math.abs(K_new[c] - K[c]);
+          K = K_new;
+          if (diff < 1e-5) break;
+        }
+
+        lqrGain = K;
+        document.getElementById('lqrGainVector').textContent = 
+          `[${K[0].toFixed(2)}, ${K[1].toFixed(2)}, ${K[2].toFixed(2)}, ${K[3].toFixed(2)}]`;
+      }
+
+      // =========================================================================
+      // Numerical Physics Engine: Sub-Stepped RK4 Simulation Loop
+      // =========================================================================
+      function stepPhysics(dt) {
+        // Run 4 sub-steps per frame for stiff rotational dynamics
+        const subSteps = 4;
+        const subDt = dt / subSteps;
+
+        for (let step = 0; step < subSteps; step++) {
+          // --- 1. Compute Controller Demands ---
+          let T_cmd = physics.m * physics.g;
+          let My_cmd = 0.0;
+          let theta_d = 0.0;
+
+          if (state.mode === 'PID') {
+            // === Outer Position Loop (Horizontal) ===
+            const ex = state.xd - state.x;
+            const evx = 0.0 - state.vx;
+            state.int_pos_x += ex * subDt;
+            // Anti-windup clamping on position integrator
+            state.int_pos_x = Math.max(-2.5, Math.min(2.5, state.int_pos_x));
+
+            const ux = pidGains.kp_pos * ex + pidGains.kd_pos * evx + pidGains.ki_pos * state.int_pos_x;
+
+            // Tilt Mapping: theta_d = -u_x / g (with clamp)
+            theta_d = -Math.max(-physics.theta_max, Math.min(physics.theta_max, ux / physics.g));
+
+            // === Outer Altitude Loop (Vertical) ===
+            const ez = state.zd - state.z;
+            const evz = 0.0 - state.vz;
+            state.int_pos_z += ez * subDt;
+            state.int_pos_z = Math.max(-2.0, Math.min(2.0, state.int_pos_z));
+
+            const uz = pidGains.kp_z * ez + pidGains.kd_z * evz + pidGains.ki_z * state.int_pos_z;
+
+            // Tilt Thrust Compensation: T_cmd = m(g + uz) / cos(theta)
+            // (Note: positive uz is upward acceleration in visual altitude z)
+            const cosTilt = Math.max(0.65, Math.cos(state.theta));
+            T_cmd = (physics.m * (physics.g + uz)) / cosTilt;
+
+            // === Inner Attitude Loop (Pitch) ===
+            const e_theta = theta_d - state.theta;
+            const eq = 0.0 - state.q;
+            state.int_att_theta += e_theta * subDt;
+            state.int_att_theta = Math.max(-0.5, Math.min(0.5, state.int_att_theta));
+
+            const alpha_cmd = pidGains.kp_att * e_theta + pidGains.kd_att * eq + pidGains.ki_att * state.int_att_theta;
+            My_cmd = physics.Jy * alpha_cmd;
+
+          } else {
+            // === State-Space LQR Controller ===
+            // State deviation: x_err = x - xd, vx, theta, q
+            const ex = state.x - state.xd;
+            const evx = state.vx;
+            const e_theta = state.theta;
+            const eq = state.q;
+
+            // Integral augmentation for horizontal wind rejection
+            state.int_pos_x += (state.xd - state.x) * subDt;
+            state.int_pos_x = Math.max(-2.0, Math.min(2.0, state.int_pos_x));
+            const u_int = 0.8 * state.int_pos_x;
+
+            My_cmd = -(lqrGain[0]*ex + lqrGain[1]*evx + lqrGain[2]*e_theta + lqrGain[3]*eq) + u_int;
+
+            // Altitude PD for LQR mode
+            const ez = state.zd - state.z;
+            const evz = 0.0 - state.vz;
+            const uz = 9.0 * ez + 4.8 * evz;
+            const cosTilt = Math.max(0.65, Math.cos(state.theta));
+            T_cmd = (physics.m * (physics.g + uz)) / cosTilt;
+            theta_d = -Math.max(-physics.theta_max, Math.min(physics.theta_max, (ex * 0.5) / physics.g));
+          }
+
+          // Actuator Saturation Clamping
+          T_cmd = Math.max(0.0, Math.min(physics.T_max, T_cmd));
+          My_cmd = Math.max(-1.5, Math.min(1.5, My_cmd));
+
+          // Motor First-Order Low-Pass Lag Filter: tau_m * T_dot + T = T_cmd
+          state.thrust_act += (T_cmd - state.thrust_act) * (subDt / physics.tau_m);
+          state.moment_act += (My_cmd - state.moment_act) * (subDt / physics.tau_m);
+
+          // --- 2. Nonlinear Equations of Motion ---
+          // In standard coordinates:
+          // x_ddot = (T / m) * sin(theta) + F_wind / m   (forward tilt nose-down theta < 0 accelerates +x)
+          // z_ddot = (T / m) * cos(theta) - g
+          // theta_ddot = My / Jy
+          const ax = -(state.thrust_act / physics.m) * Math.sin(state.theta) + (state.wind_x / physics.m);
+          const az = (state.thrust_act / physics.m) * Math.cos(state.theta) - physics.g;
+          const alpha = state.moment_act / physics.Jy;
+
+          // Symplectic Euler / Velocity Verlet Integration
+          state.vx += ax * subDt;
+          state.x += state.vx * subDt;
+
+          state.vz += az * subDt;
+          state.z += state.vz * subDt;
+
+          state.q += alpha * subDt;
+          state.theta += state.q * subDt;
+
+          // Ground Collision Clamp
+          if (state.z < 0.15) {
+            state.z = 0.15;
+            state.vz = 0.0;
+            state.vx *= 0.8;
+          }
+
+          // Record latest commands for telemetry
+          state.last_T_cmd = T_cmd;
+          state.last_My_cmd = My_cmd;
+          state.last_theta_d = theta_d;
+        }
+
+        // Update Oscilloscope Telemetry Buffer
+        simTime += dt;
+        scopeData.time.push(simTime);
+        scopeData.x.push(state.x);
+        scopeData.xd.push(state.xd);
+        scopeData.theta.push(state.theta * 180 / Math.PI);
+        scopeData.theta_d.push(state.last_theta_d * 180 / Math.PI);
+        scopeData.My.push(state.moment_act);
+        scopeData.T.push(state.thrust_act);
+
+        if (scopeData.time.length > MAX_SCOPE_POINTS) {
+          scopeData.time.shift();
+          scopeData.x.shift();
+          scopeData.xd.shift();
+          scopeData.theta.shift();
+          scopeData.theta_d.shift();
+          scopeData.My.shift();
+          scopeData.T.shift();
+        }
+
+        // Update Flight Trajectory Trail
+        state.trail.push({ x: state.x, z: state.z });
+        if (state.trail.length > 180) state.trail.shift();
+
+        // Update Wind Stream Particles
+        for (const p of state.particles) {
+          p.x += (state.wind_x * 0.4 + (state.wind_x >= 0 ? 0.8 : -0.8)) * p.speed * dt;
+          if (state.wind_x >= 0 && p.x > 5.5) p.x = -5.5;
+          if (state.wind_x < 0 && p.x < -5.5) p.x = 5.5;
+        }
+      }
+
+      // =========================================================================
+      // Canvas Rendering: 2D Drone, Thrust Vectors, Waypoint Crosshair
+      // =========================================================================
+      function drawSimulation() {
+        const rect = canvas.getBoundingClientRect();
+        const W = rect.width;
+        const H = rect.height;
+
+        ctx.clearRect(0, 0, W, H);
+
+        // Coordinate Mapping: (0, 0) at center of ground, scale = 75 pixels per meter
+        const scale = Math.min(W / 11.0, H / 6.0);
+        const originX = W / 2.0;
+        const originY = H - 40; // Ground line 40px above bottom
+
+        function worldToCanvas(wx, wz) {
+          return {
+            cx: originX + wx * scale,
+            cy: originY - wz * scale
+          };
+        }
+
+        // --- 1. Draw Background Grid & Horizon ---
+        ctx.strokeStyle = '#1e293b';
+        ctx.lineWidth = 1;
+        for (let gx = -6; gx <= 6; gx += 1.0) {
+          const p1 = worldToCanvas(gx, 0);
+          const p2 = worldToCanvas(gx, 5.5);
+          ctx.beginPath();
+          ctx.moveTo(p1.cx, p1.cy);
+          ctx.lineTo(p2.cx, p2.cy);
+          ctx.stroke();
+        }
+        for (let gz = 0; gz <= 5; gz += 1.0) {
+          const p1 = worldToCanvas(-6, gz);
+          const p2 = worldToCanvas(6, gz);
+          ctx.beginPath();
+          ctx.moveTo(p1.cx, p1.cy);
+          ctx.lineTo(p2.cx, p2.cy);
+          ctx.stroke();
+        }
+
+        // Draw Ground Line
+        ctx.strokeStyle = '#334155';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(0, originY);
+        ctx.lineTo(W, originY);
+        ctx.stroke();
+
+        // Ground text
+        ctx.fillStyle = '#64748b';
+        ctx.font = '10px ui-monospace, monospace';
+        ctx.fillText('GROUND LEVEL (z = 0m)', 12, originY + 16);
+
+        // --- 2. Draw Wind Particles ---
+        if (Math.abs(state.wind_x) > 0.1) {
+          ctx.fillStyle = state.wind_x > 0 ? 'rgba(56, 189, 248, 0.4)' : 'rgba(251, 146, 60, 0.4)';
+          for (const p of state.particles) {
+            const pos = worldToCanvas(p.x, p.z);
+            ctx.beginPath();
+            ctx.arc(pos.cx, pos.cy, p.size, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        }
+
+        // --- 3. Draw Trailing Flight Trajectory Path ---
+        if (state.trail.length > 1) {
+          ctx.beginPath();
+          for (let i = 0; i < state.trail.length; i++) {
+            const pt = worldToCanvas(state.trail[i].x, state.trail[i].z);
+            if (i === 0) ctx.moveTo(pt.cx, pt.cy);
+            else ctx.lineTo(pt.cx, pt.cy);
+          }
+          ctx.strokeStyle = 'rgba(56, 189, 248, 0.45)';
+          ctx.lineWidth = 2;
+          ctx.setLineDash([4, 4]);
+          ctx.stroke();
+          ctx.setLineDash([]);
+        }
+
+        // --- 4. Draw Waypoint Target Crosshair ---
+        const targetCanvas = worldToCanvas(state.xd, state.zd);
+        ctx.save();
+        ctx.translate(targetCanvas.cx, targetCanvas.cy);
+
+        // Outer pulsing ring
+        ctx.strokeStyle = '#f59e0b';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(0, 0, 14, 0, Math.PI * 2);
+        ctx.stroke();
+
+        // Inner crosshair lines
+        ctx.beginPath();
+        ctx.moveTo(-18, 0); ctx.lineTo(-6, 0);
+        ctx.moveTo(6, 0);  ctx.lineTo(18, 0);
+        ctx.moveTo(0, -18); ctx.lineTo(0, -6);
+        ctx.moveTo(0, 6);   ctx.lineTo(0, 18);
+        ctx.stroke();
+
+        // Target label
+        ctx.fillStyle = '#fef08a';
+        ctx.font = 'bold 10px ui-monospace, monospace';
+        ctx.fillText(`Target [${state.xd.toFixed(1)}, ${state.zd.toFixed(1)}]`, 18, -4);
+        ctx.restore();
+
+        // --- 5. Draw 2D Quadrotor Aircraft ---
+        const droneCanvas = worldToCanvas(state.x, state.z);
+        ctx.save();
+        ctx.translate(droneCanvas.cx, droneCanvas.cy);
+        // Canvas rotation: standard math positive angle is counter-clockwise.
+        // In our 2D coordinate system, nose-up pitch tilts clockwise on screen.
+        ctx.rotate(-state.theta);
+
+        const armPx = physics.arm_l * scale;
+
+        // Fuselage Central Body Pod
+        ctx.fillStyle = '#0f172a';
+        ctx.strokeStyle = '#06b6d4';
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.roundRect(-22, -9, 44, 18, 5);
+        ctx.fill();
+        ctx.stroke();
+
+        // Carbon Fiber Arms
+        ctx.strokeStyle = '#475569';
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.moveTo(-armPx, 0);
+        ctx.lineTo(armPx, 0);
+        ctx.stroke();
+
+        // Left & Right Motor Pods
+        ctx.fillStyle = '#1e293b';
+        ctx.strokeStyle = '#94a3b8';
+        ctx.lineWidth = 2;
+        // Left motor
+        ctx.beginPath();
+        ctx.roundRect(-armPx - 8, -6, 16, 12, 3);
+        ctx.fill(); ctx.stroke();
+        // Right motor
+        ctx.beginPath();
+        ctx.roundRect(armPx - 8, -6, 16, 12, 3);
+        ctx.fill(); ctx.stroke();
+
+        // Spinning Rotor Blade Blur Discs
+        const rotorW = 34;
+        ctx.fillStyle = 'rgba(56, 189, 248, 0.35)';
+        ctx.strokeStyle = '#38bdf8';
+        ctx.lineWidth = 1.5;
+        // Left rotor disc
+        ctx.beginPath();
+        ctx.ellipse(-armPx, -7, rotorW, 3, 0, 0, Math.PI * 2);
+        ctx.fill(); ctx.stroke();
+        // Right rotor disc
+        ctx.beginPath();
+        ctx.ellipse(armPx, -7, rotorW, 3, 0, 0, Math.PI * 2);
+        ctx.fill(); ctx.stroke();
+
+        // Status Center LED
+        ctx.fillStyle = state.mode === 'PID' ? '#38bdf8' : '#a855f7';
+        ctx.shadowColor = ctx.fillStyle;
+        ctx.shadowBlur = 8;
+        ctx.beginPath();
+        ctx.arc(0, 0, 4, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.shadowBlur = 0;
+
+        // Individual Rotor Thrust Vectors (Arrows shooting UP from motors)
+        // Differential thrust from moment: T1 = T/2 + My/(2l), T2 = T/2 - My/(2l)
+        const dF = state.moment_act / (2 * physics.arm_l);
+        const T_left = Math.max(0, state.thrust_act * 0.5 - dF);
+        const T_right = Math.max(0, state.thrust_act * 0.5 + dF);
+
+        function drawThrustVector(motorX, thrustVal) {
+          const vLen = Math.min(65, (thrustVal / (physics.m * physics.g)) * 32);
+          ctx.strokeStyle = '#f59e0b';
+          ctx.lineWidth = 2.5;
+          ctx.beginPath();
+          ctx.moveTo(motorX, -7);
+          ctx.lineTo(motorX, -7 - vLen);
+          ctx.stroke();
+
+          // Arrow head
+          ctx.fillStyle = '#f59e0b';
+          ctx.beginPath();
+          ctx.moveTo(motorX - 4, -7 - vLen + 6);
+          ctx.lineTo(motorX + 4, -7 - vLen + 6);
+          ctx.lineTo(motorX, -7 - vLen);
+          ctx.closePath();
+          ctx.fill();
+        }
+
+        drawThrustVector(-armPx, T_left);
+        drawThrustVector(armPx, T_right);
+
+        // Attitude Angle Arc Readout
+        ctx.restore();
+      }
+
+      // =========================================================================
+      // Real-Time Oscilloscope Strip Chart Rendering
+      // =========================================================================
+      function drawOscilloscope() {
+        const rect = scopeCanvas.getBoundingClientRect();
+        const W = rect.width;
+        const H = rect.height;
+
+        scopeCtx.clearRect(0, 0, W, H);
+
+        if (scopeData.time.length < 2) return;
+
+        // Background Horizontal Gridlines
+        scopeCtx.strokeStyle = '#1e293b';
+        scopeCtx.lineWidth = 1;
+        for (let y = 0; y <= H; y += H / 4) {
+          scopeCtx.beginPath();
+          scopeCtx.moveTo(0, y);
+          scopeCtx.lineTo(W, y);
+          scopeCtx.stroke();
+        }
+
+        // Center zero line
+        scopeCtx.strokeStyle = '#334155';
+        scopeCtx.beginPath();
+        scopeCtx.moveTo(0, H / 2);
+        scopeCtx.lineTo(W, H / 2);
+        scopeCtx.stroke();
+
+        // Helper to plot channel
+        function plotChannel(arr, minVal, maxVal, color, isDashed = false) {
+          scopeCtx.strokeStyle = color;
+          scopeCtx.lineWidth = 1.5;
+          scopeCtx.setLineDash(isDashed ? [3, 3] : []);
+          scopeCtx.beginPath();
+
+          const span = maxVal - minVal;
+          const n = arr.length;
+          for (let i = 0; i < n; i++) {
+            const px = (i / (MAX_SCOPE_POINTS - 1)) * W;
+            const normY = (arr[i] - minVal) / span;
+            const py = H - normY * H;
+            if (i === 0) scopeCtx.moveTo(px, py);
+            else scopeCtx.lineTo(px, py);
+          }
+          scopeCtx.stroke();
+          scopeCtx.setLineDash([]);
+        }
+
+        // Plot Channel 1: Position x(t) & xd(t) (Range: -4m to +4m)
+        plotChannel(scopeData.xd, -4.0, 4.0, '#ffffff', true);
+        plotChannel(scopeData.x, -4.0, 4.0, '#38bdf8', false);
+
+        // Plot Channel 2: Pitch Attitude theta(t) & theta_d(t) (Range: -30 deg to +30 deg)
+        plotChannel(scopeData.theta_d, -30.0, 30.0, '#f59e0b', true);
+        plotChannel(scopeData.theta, -30.0, 30.0, '#34d399', false);
+
+        // Plot Channel 3: Commanded Moment My(t) (Range: -1.0 Nm to +1.0 Nm)
+        plotChannel(scopeData.My, -1.0, 1.0, '#c084fc', false);
+      }
+
+      // =========================================================================
+      // UI Update & Telemetry Bindings
+      // =========================================================================
+      function updateTelemetryUI() {
+        document.getElementById('telemetryPos').textContent = `[${state.x.toFixed(2)}, ${state.z.toFixed(2)}]m`;
+        document.getElementById('telemetryPitch').textContent = `${(state.theta * 180 / Math.PI).toFixed(1)}°`;
+        document.getElementById('telemetryTarget').textContent = `[${state.xd.toFixed(2)}, ${state.zd.toFixed(2)}]m`;
+
+        document.getElementById('hudThrust').textContent = `${state.thrust_act.toFixed(1)} N`;
+        document.getElementById('hudMoment').textContent = `${state.moment_act.toFixed(2)} Nm`;
+        document.getElementById('hudTWR').textContent = `${(state.thrust_act / (physics.m * physics.g)).toFixed(2)}`;
+
+        // Timescale Separation Ratio
+        const omega_pos = Math.sqrt(pidGains.kp_pos);
+        const omega_att = Math.sqrt(pidGains.kp_att);
+        const ratio = omega_att / Math.max(0.1, omega_pos);
+        document.getElementById('ratioValue').textContent = `${ratio.toFixed(1)}×`;
+
+        // Motor Lag Stability Check
+        const lagProduct = physics.tau_m * pidGains.kp_att;
+        const isLagStable = pidGains.kd_att > lagProduct;
+        const banner = document.getElementById('lagCheckBanner');
+        const checkVal = document.getElementById('lagCheckVal');
+
+        checkVal.textContent = `${pidGains.kd_att.toFixed(1)} > ${lagProduct.toFixed(1)} ${isLagStable ? '✓' : '✗'}`;
+        if (isLagStable) {
+          banner.className = 'mt-1 px-2.5 py-1 rounded text-[11px] font-mono flex items-center justify-between bg-emerald-950/80 text-emerald-300 border border-emerald-700/50';
+        } else {
+          banner.className = 'mt-1 px-2.5 py-1 rounded text-[11px] font-mono flex items-center justify-between bg-rose-950 text-rose-300 border border-rose-700 animate-pulse font-bold';
+        }
+      }
+
+      // =========================================================================
+      // Event Handlers & Interactive Waypoint Dragging
+      // =========================================================================
+      let isDraggingWaypoint = false;
+
+      function handlePointerMove(e) {
+        if (!isDraggingWaypoint) return;
+        const rect = canvas.getBoundingClientRect();
+        const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+        const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+        const scale = Math.min(rect.width / 11.0, rect.height / 6.0);
+        const originX = rect.width / 2.0;
+        const originY = rect.height - 40;
+
+        const wx = (clientX - rect.left - originX) / scale;
+        const wz = (originY - (clientY - rect.top)) / scale;
+
+        state.xd = Math.max(-5.0, Math.min(5.0, wx));
+        state.zd = Math.max(0.4, Math.min(5.0, wz));
+      }
+
+      canvas.addEventListener('mousedown', (e) => {
+        isDraggingWaypoint = true;
+        handlePointerMove(e);
+        const hint = document.getElementById('canvasHint');
+        if (hint) hint.style.opacity = '0';
+      });
+      window.addEventListener('mousemove', handlePointerMove);
+      window.addEventListener('mouseup', () => { isDraggingWaypoint = false; });
+
+      // Touch events for mobile responsiveness
+      canvas.addEventListener('touchstart', (e) => {
+        isDraggingWaypoint = true;
+        handlePointerMove(e);
+      }, { passive: true });
+      window.addEventListener('touchmove', handlePointerMove, { passive: true });
+      window.addEventListener('touchend', () => { isDraggingWaypoint = false; });
+
+      // Preset Buttons
+      document.getElementById('presetPerfect').addEventListener('click', () => {
+        pidGains.kp_pos = 4.0;
+        pidGains.kd_pos = 2.8;
+        pidGains.ki_pos = 1.2;
+        pidGains.kp_att = 144.0;
+        pidGains.kd_att = 19.2;
+        syncSliders();
+      });
+
+      document.getElementById('presetSluggish').addEventListener('click', () => {
+        pidGains.kp_pos = 16.0;
+        pidGains.kd_pos = 4.0;
+        pidGains.ki_pos = 1.0;
+        pidGains.kp_att = 12.0;
+        pidGains.kd_att = 1.8; // Violates timescale separation and motor lag stability!
+        syncSliders();
+      });
+
+      document.getElementById('presetAggressive').addEventListener('click', () => {
+        pidGains.kp_pos = 22.0;
+        pidGains.kd_pos = 1.0;
+        pidGains.ki_pos = 0.5;
+        pidGains.kp_att = 120.0;
+        pidGains.kd_att = 14.0;
+        syncSliders();
+      });
+
+      // Quick step functions attached to window for inline onclick attributes
+      window.stepWaypoint = function(dx, dz) {
+        state.xd = Math.max(-5.0, Math.min(5.0, state.xd + dx));
+        state.zd = Math.max(0.4, Math.min(5.0, state.zd + dz));
+      };
+      window.centerWaypoint = function() {
+        state.xd = 0.0;
+        state.zd = 2.5;
+      };
+      window.injectWindGust = function(force) {
+        state.wind_x = force;
+        document.getElementById('slider_wind').value = force;
+        document.getElementById('val_wind').textContent = `${force.toFixed(1)} N`;
+        document.getElementById('windReadout').textContent = `${force.toFixed(1)} N`;
+      };
+
+      // Play / Pause & Reset
+      document.getElementById('btnPlayPause').addEventListener('click', () => {
+        state.isPaused = !state.isPaused;
+        document.getElementById('playPauseIcon').textContent = state.isPaused ? '▶' : '⏸';
+        document.getElementById('playPauseText').textContent = state.isPaused ? 'Resume' : 'Pause';
+      });
+
+      document.getElementById('btnReset').addEventListener('click', () => {
+        state.x = 0.0; state.vx = 0.0;
+        state.z = 2.5; state.vz = 0.0;
+        state.theta = 0.0; state.q = 0.0;
+        state.xd = 0.0; state.zd = 2.5;
+        state.thrust_act = physics.m * physics.g;
+        state.moment_act = 0.0;
+        state.int_pos_x = 0; state.int_pos_z = 0; state.int_att_theta = 0;
+        state.trail = [];
+        scopeData.time = []; scopeData.x = []; scopeData.xd = [];
+        scopeData.theta = []; scopeData.theta_d = []; scopeData.My = []; scopeData.T = [];
+      });
+
+      // Tab Switching
+      const tabBtnPID = document.getElementById('tabBtnPID');
+      const tabBtnLQR = document.getElementById('tabBtnLQR');
+      const panelPID = document.getElementById('panelPID');
+      const panelLQR = document.getElementById('panelLQR');
+
+      tabBtnPID.addEventListener('click', () => {
+        state.mode = 'PID';
+        tabBtnPID.classList.add('active');
+        tabBtnPID.classList.remove('text-slate-400');
+        tabBtnLQR.classList.remove('active');
+        tabBtnLQR.classList.add('text-slate-400');
+        panelPID.classList.remove('hidden');
+        panelLQR.classList.add('hidden');
+      });
+
+      tabBtnLQR.addEventListener('click', () => {
+        state.mode = 'LQR';
+        tabBtnLQR.classList.add('active');
+        tabBtnLQR.classList.remove('text-slate-400');
+        tabBtnPID.classList.remove('active');
+        tabBtnPID.classList.add('text-slate-400');
+        panelLQR.classList.remove('hidden');
+        panelPID.classList.add('hidden');
+        solveLQR();
+      });
+
+      // Synchronize Slider Values
+      function syncSliders() {
+        document.getElementById('slider_kp_pos').value = pidGains.kp_pos;
+        document.getElementById('val_kp_pos').textContent = pidGains.kp_pos.toFixed(2);
+        document.getElementById('slider_kd_pos').value = pidGains.kd_pos;
+        document.getElementById('val_kd_pos').textContent = pidGains.kd_pos.toFixed(2);
+        document.getElementById('slider_ki_pos').value = pidGains.ki_pos;
+        document.getElementById('val_ki_pos').textContent = pidGains.ki_pos.toFixed(2);
+
+        document.getElementById('slider_kp_att').value = pidGains.kp_att;
+        document.getElementById('val_kp_att').textContent = pidGains.kp_att.toFixed(1);
+        document.getElementById('slider_kd_att').value = pidGains.kd_att;
+        document.getElementById('val_kd_att').textContent = pidGains.kd_att.toFixed(1);
+      }
+
+      // Slider Event Bindings
+      function bindSlider(id, targetObj, key, valId, stepDecimals = 1, callback = null) {
+        const slider = document.getElementById(id);
+        const valSpan = document.getElementById(valId);
+        slider.addEventListener('input', (e) => {
+          const v = parseFloat(e.target.value);
+          targetObj[key] = v;
+          valSpan.textContent = v.toFixed(stepDecimals);
+          if (callback) callback();
+        });
+      }
+
+      bindSlider('slider_kp_pos', pidGains, 'kp_pos', 'val_kp_pos', 2);
+      bindSlider('slider_kd_pos', pidGains, 'kd_pos', 'val_kd_pos', 2);
+      bindSlider('slider_ki_pos', pidGains, 'ki_pos', 'val_ki_pos', 2);
+      bindSlider('slider_kp_att', pidGains, 'kp_att', 'val_kp_att', 1);
+      bindSlider('slider_kd_att', pidGains, 'kd_att', 'val_kd_att', 1);
+      bindSlider('slider_kp_z', pidGains, 'kp_z', 'val_kp_z', 1);
+      bindSlider('slider_kd_z', pidGains, 'kd_z', 'val_kd_z', 1);
+
+      // LQR Sliders
+      bindSlider('slider_qx', lqrWeights, 'qx', 'val_qx', 1, solveLQR);
+      bindSlider('slider_qv', lqrWeights, 'qv', 'val_qv', 1, solveLQR);
+      bindSlider('slider_qtheta', lqrWeights, 'qtheta', 'val_qtheta', 1, solveLQR);
+      bindSlider('slider_qq', lqrWeights, 'qq', 'val_qq', 2, solveLQR);
+      bindSlider('slider_ru', lqrWeights, 'ru', 'val_ru', 1, solveLQR);
+
+      // Disturbance Sliders
+      bindSlider('slider_wind', state, 'wind_x', 'val_wind', 1, () => {
+        document.getElementById('windReadout').textContent = `${state.wind_x.toFixed(1)} N`;
+      });
+      bindSlider('slider_mass', physics, 'm', 'val_mass', 2, solveLQR);
+      bindSlider('slider_taum', physics, 'tau_m', 'val_taum', 3);
+
+      // Initial LQR calculation
+      solveLQR();
+
+      // =========================================================================
+      // Main 60 FPS Animation & Simulation Loop
+      // =========================================================================
+      let lastTime = performance.now();
+      let frameCount = 0;
+      let lastFpsTime = lastTime;
+
+      function loop(currentTime) {
+        const dt = Math.min(0.033, (currentTime - lastTime) / 1000.0);
+        lastTime = currentTime;
+
+        // FPS calculation
+        frameCount++;
+        if (currentTime - lastFpsTime >= 1000) {
+          document.getElementById('telemetryFPS').textContent = `${frameCount} FPS`;
+          frameCount = 0;
+          lastFpsTime = currentTime;
+        }
+
+        if (!state.isPaused) {
+          stepPhysics(dt);
+        }
+
+        drawSimulation();
+        drawOscilloscope();
+        updateTelemetryUI();
+
+        requestAnimationFrame(loop);
+      }
+
+      requestAnimationFrame(loop);
+
+    })();
+  </script>
+</body>
+</html>

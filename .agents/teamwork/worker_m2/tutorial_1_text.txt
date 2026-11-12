@@ -1,0 +1,135 @@
+EEEE4138 Aerial Robotics
+EEEE4138 Aerial Robotics
+Reference Frames & 
+Orientation Tutorial
+Tutorial 1 : Reference Frames and Orientation
+---PAGE---
+EEEE4138 Aerial Robotics
+EEEE4138 Aerial Robotics
+Question 1: Rotation sequences
+How many three-angle axis sequences are available when
+consecutive rotations use different axes?
+List the proper Euler sequences and the Tait–Bryan sequences.
+Explain why consecutive rotations about the same axis
+are redundant in a three-angle parameterisation.
+---PAGE---
+EEEE4138 Aerial Robotics
+𝑧
+ψ 𝜙
+𝜃
+𝑦
+𝑥
+Question 2: ZYZ at θ = 0
+Intrinsic ZYZ sequence:
+1. Rotate φ about z.
+2. Rotate θ about the new y-axis.
+3. Rotate ψ about the new z-axis.
+Is θ = 0 a valid orientation? Justify your answer.
+Can φ and ψ then be recovered separately from the matrix?
+---PAGE---
+EEEE4138 Aerial Robotics
+EEEE4138 Aerial Robotics
+ZYZ rotation matrix
+Intrinsic ZYZ orientation, expressed in the original frame.
+R = Rz(φ) Ry(θ) Rz(ψ)
+⎡
+⎢
+⎣
+cφ −sφ 0
+sφ cφ 0
+0 0 1
+⎤
+⎥
+⎦
+×
+⎡
+⎢
+⎣
+cθ 0 sθ
+0 1 0
+−sθ 0 cθ
+⎤
+⎥
+⎦
+×
+⎡
+⎢
+⎣
+cψ −sψ 0
+sψ cψ 0
+0 0 1
+⎤
+⎥
+⎦
+⎡
+⎢
+⎣
+cφ cθ cψ − sφ sψ −cφ cθ sψ − sφ cψ cφ sθ
+sφ cθ cψ + cφ sψ −sφ cθ sψ + cφ cψ sφ sθ
+−sθ cψ sθ sψ cθ
+⎤
+⎥
+⎦
+cα = cos α, sα = sin α. R maps final-frame components to original-frame components.
+---PAGE---
+EEEE4138 Aerial Robotics
+EEEE4138 Aerial Robotics
+Question 3: Recovering ZYZ angles
+Use the ZYZ matrix on the preceding reference slide.
+Given its entries Rᵢⱼ, derive expressions for φ, θ and ψ.
+Use the branch 0 < θ < 180°.
+Use atan2(y, x) to identify the correct quadrant.
+State why the expressions fail when sin θ = 0.
+---PAGE---
+EEEE4138 Aerial Robotics
+EEEE4138 Aerial Robotics
+UAV Coordinate 
+Frames Rotations
+---PAGE---
+EEEE4138 Aerial Robotics
+EEEE4138 Aerial Robotics
+Vehicle-to-body coordinate transformation
+pᵇ = Rᵇᵥ pᵛ
+φ = roll, θ = pitch, ψ = yaw. Use a yaw–pitch–roll attitude.
+Rᵇᵥ = Rx(− φ ) Ry(−θ) Rz(−ψ)
+⎡
+⎢
+⎣
+cθ cψ cθ sψ −sθ
+s φ sθ cψ − c φ sψ s φ sθ sψ + c φ cψ s φ cθ
+c φ sθ cψ + s φ sψ c φ sθ sψ − s φ cψ c φ cθ
+⎤
+⎥
+⎦
+cα = cos α, sα = sin α. Rᵢⱼ denotes row i, column j.
+This matrix converts vehicle-frame components into body-frame
+components. It is the inverse of the body-to-vehicle rotation.
+---PAGE---
+EEEE4138 Aerial Robotics
+EEEE4138 Aerial Robotics
+Question 4: Recovering roll, pitch and yaw
+Use the vehicle-to-body matrix on the preceding slide.
+Derive expressions for φ, θ and ψ from its entries Rᵢⱼ.
+First use the principal pitch range −90° < θ < 90°.
+Use atan2(y, x) for roll and yaw.
+Then describe the second pitch branch and state when
+these recovery expressions become singular.
+---PAGE---
+EEEE4138 Aerial Robotics
+EEEE4138 Aerial Robotics
+Question 5: Pitch of +90°
+Set θ = +90° in the vehicle-to-body rotation matrix.
+Simplify the matrix using angle-difference identities.
+What can you determine about roll φ and yaw ψ?
+Can you recover both angles uniquely?
+Give a relation between φ and ψ using the matrix entries.
+---PAGE---
+EEEE4138 Aerial Robotics
+EEEE4138 Aerial Robotics
+Question 6: Numerical rotation
+Use the vehicle-to-body rotation convention.
+(φ, θ, ψ) = (120°, 90°, −60°)
+Calculate the rotation matrix.
+Can the matrix uniquely recover the original three angles?
+Explain your answer.
+Give a different roll–pitch–yaw triple for the same matrix.

@@ -1,0 +1,299 @@
+======================================================================
+AUDIT FOR: topic_3_kinematics_dynamics.md (Total Lines: 709, Bytes: 49499)
+======================================================================
+
+--- 1. FENCED CODE BLOCKS ---
+Block L14-L43 [lang='mermaid'] (28 lines)
+Block L92-L108 [lang='mermaid'] (15 lines)
+Block L441-L505 [lang='mermaid'] (63 lines)
+
+--- 2. POTENTIAL ASCII ART / BOX-AND-ARROW DIAGRAMS ---
+Potential ASCII diagram at L473-L475:
+  L 473:     U_M --> RD_EQ
+  L 474:     RD_EQ --> INT_W
+  L 475:     INT_W --> W_STATE
+Potential ASCII diagram at L487-L490:
+  L 487:     V_STATE --> PK_EQ
+  L 488:     ETA_STATE -->|"Direction Cosine Matrix R_bⁿ"| PK_EQ
+  L 489:     PK_EQ --> INT_P
+  L 490:     INT_P --> P_STATE
+
+--- 3. MERMAID DIAGRAMS AUDIT ---
+Found 3 Mermaid blocks.
+Mermaid Block L14-L43 (28 lines):
+  [WARN L24] Contains <br> tag: E1["Rotational Dynamics (Euler Equations):<br/>ω̇_b = J⁻¹ [M_b - ω_b × (J · ω_b) - τ_gyro]"]
+  [WARN L24] Unquoted parentheses inside label brackets: E1["Rotational Dynamics (Euler Equations):<br/>ω̇_b = J⁻¹ [M_b - ω_b × (J · ω_b) - τ_gyro]"]
+  [WARN L25] Contains <br> tag: E2["Translational Dynamics (Newton's 2nd Law):<br/>v̇_b = F_b / m - ω_b × v_b"]
+Mermaid Block L92-L108 (15 lines):
+  [WARN L95] Contains <br> tag: U1["Translational Mechanics:<br/>F = m · a<br/>(Inertial Frame)"]
+  [WARN L96] Contains <br> tag: U2["Planar Rotation:<br/>M = I · α<br/>(Fixed Scalar Inertia)"]
+  [WARN L100] Contains <br> tag: A1["Body-Frame Moving Translation:<br/>v̇_b = F_b / m - ω_b × v_b<br/>(Transport Theorem Coriolis Coupling)"]
+  [WARN L101] Contains <br> tag: A2["Coupled 3D Rigid-Body Rotation:<br/>J · ω̇_b = M_b - ω_b × (J · ω_b) - τ_gyro<br/>(Gyroscopic Inertial Cross-Torques)"]
+Mermaid Block L441-L505 (63 lines):
+  [WARN L444] Contains <br> tag: U_F["External Body Forces: F_b = [F_x, F_y, F_z]ᵀ<br>(Gravity, Thrust -T, External Aero)"]
+  [WARN L445] Contains <br> tag: U_M["External Body Moments: M_b = [M_x, M_y, M_z]ᵀ<br>(Differential Rotor Torques)"]
+  [WARN L449] Contains <br> tag: RD_EQ["Calculate Angular Acceleration:<br>ω̇_b = J⁻¹ [M_b - ω_b × (J ω_b) - τ_gyro]"]
+  [WARN L449] Unquoted parentheses inside label brackets: RD_EQ["Calculate Angular Acceleration:<br>ω̇_b = J⁻¹ [M_b - ω_b × (J ω_b) - τ_gyro]"]
+  [WARN L450] Contains <br> tag: INT_W["Vector Integrator 1/s<br>(IC: ω_b(0))"]
+  [WARN L451] Contains <br> tag: W_STATE["Body Angular Rates:<br>ω_b = [p, q, r]ᵀ"]
+  [WARN L455] Contains <br> tag: TD_EQ["Calculate Body Acceleration:<br>v̇_b = F_b / m - ω_b × v_b"]
+  [WARN L456] Contains <br> tag: INT_V["Vector Integrator 1/s<br>(IC: v_b(0))"]
+  [WARN L457] Contains <br> tag: V_STATE["Body Velocities:<br>v_b = [u, v, w]ᵀ"]
+  [WARN L461] Contains <br> tag: AK_EQ["Calculate Euler Rates:<br>η̇ = W_η(η) · ω_b"]
+  [WARN L462] Contains <br> tag: INT_ETA["Vector Integrator 1/s<br>(IC: η(0))"]
+  [WARN L463] Contains <br> tag: ETA_STATE["Attitude Angles:<br>η = [φ, θ, ψ]ᵀ"]
+  [WARN L467] Contains <br> tag: PK_EQ["Transform Velocity to NED:<br>ṗⁿ = R_bⁿ(η) · v_b"]
+  [WARN L468] Contains <br> tag: INT_P["Vector Integrator 1/s<br>(IC: pⁿ(0))"]
+  [WARN L469] Contains <br> tag: P_STATE["Inertial Position:<br>pⁿ = [p_N, p_E, p_D]ᵀ"]
+
+--- 4. KATEX MATH BLOCKS AUDIT ---
+Total multi-line / standalone $$ math blocks: 74
+
+--- 5. GENERATIVE UI WIDGET EMBEDS & REFERENCES ---
+Found 7 lines referencing widgets/iframes:
+  L   6: **Companion Interactive Simulation:** [`widget_3_rigid_body_dynamics.html`](../widgets/widget_3_rigid_body_dynamics.html)
+  L  57: | **Output** | Full State Derivative | $\dot{\mathbf{x}}_{12}$ | mixed | Vector $\mathbb{R}^{12}$ | Complete instantaneous derivative vector consumed by numerical simulation solvers (e.g. RK4). | To [Widget 3 Simulation Engine](../widgets/widget_3_rigid_body_dynamics.html) |
+  L  90: > 👉 [Launch Widget 3: 6-DoF Rigid-Body Dynamics Visualizer](../widgets/widget_3_rigid_body_dynamics.html)
+  L 330: This cross-axis gyroscopic induction is interactively demonstrated in [Widget 3: 6-DoF Dynamics & Gyroscopic Precession Explorer](../widgets/widget_3_rigid_body_dynamics.html).
+  L 680: ## 11. Interactive Simulation: Companion Widget 3
+  L 684: 👉 **Launch Widget 3:** [`widget_3_rigid_body_dynamics.html`](../widgets/widget_3_rigid_body_dynamics.html)
+  L 689: * In Widget 3, ensure **"Enable Gyroscopic Precession $\boldsymbol{\tau}_{\text{gyro}}$"** is switched **ON**.
+
+--- 6. DENSE TEXT WALL ANALYSIS ---
+
+
+======================================================================
+AUDIT FOR: topic_4_forces_moments.md (Total Lines: 1023, Bytes: 70531)
+======================================================================
+
+--- 1. FENCED CODE BLOCKS ---
+Block L24-L52 [lang='mermaid'] (27 lines)
+Block L197-L213 [lang='mermaid'] (15 lines)
+Block L292-L308 [lang='mermaid'] (15 lines)
+Block L382-L402 [lang='mermaid'] (19 lines)
+Block L540-L565 [lang='mermaid'] (24 lines)
+Block L570-L634 [lang='python'] (63 lines)
+  >>> CODE IMPLEMENTATION FOUND! lang=python
+  Preview:
+    import numpy as np
+    
+    def attitude_priority_allocation(
+        F_z_cmd: float,
+        M_cmd: np.ndarray,
+        A_moment_inv: np.ndarray,
+        T_min: float = 0.5,
+        T_max: float = 15.0,
+        num_rotors: int = 4
+    ) -> np.ndarray:
+    ... [53 more lines]
+Block L644-L655 [lang='mermaid'] (10 lines)
+Block L708-L719 [lang='mermaid'] (10 lines)
+Block L728-L767 [lang='mermaid'] (38 lines)
+
+--- 2. POTENTIAL ASCII ART / BOX-AND-ARROW DIAGRAMS ---
+Potential ASCII diagram at L205-L208:
+  L 205:         R1 ---|Arm length l| HUB((CoM Hub))
+  L 206:         R3 ---|Arm length l| HUB
+  L 207:         R4 ---|Arm length l| HUB
+  L 208:         R2 ---|Arm length l| HUB
+Potential ASCII diagram at L543-L545:
+  L 543:     --> DECOMPOSE["Decompose into:<br/>1. Nominal Collective Thrust: T_mean = -F_z / N<br/>2. Pure Zero-Mean Moment Differentials: Δt = A_mom⁻¹ · M"]
+  L 544:     --> SPREAD["Evaluate Moment Spread:<br/>ΔT_max = max(Δt), ΔT_min = min(Δt)<br/>Spread = ΔT_max - ΔT_min"]
+  L 545:     --> CHECK{"Spread > (T_max - T_min)?"}
+Potential ASCII diagram at L550-L552:
+  L 550:     SHIFT -->|Exceeds T_max| SHIFT_DOWN["Derate Collective Altitude:<br/>T_mean = T_max - ΔT_max"]
+  L 551:     SHIFT -->|Below T_min| SHIFT_UP["Boost Collective Thrust:<br/>T_mean = T_min - ΔT_min"]
+  L 552:     SHIFT -->|Within Limits| KEEP["Maintain Nominal T_mean"]
+Potential ASCII diagram at L554-L558:
+  L 554:     SCALE --> ASSEMBLE["Compute Final Feasible Thrusts:<br/>t_final = T_mean · 1_N + Δt"]
+  L 555:     SHIFT_DOWN --> ASSEMBLE
+  L 556:     SHIFT_UP --> ASSEMBLE
+  L 557:     KEEP --> ASSEMBLE
+  L 558:     ASSEMBLE --> OUT([Output Motor Commands t_final])
+Potential ASCII diagram at L740-L744:
+  L 740:         U_CMD --> A_INV
+  L 741:         A_INV --> DESAT
+  L 742:         DESAT -- "Any Motor Saturates?" -->|Yes| SCALE
+  L 743:         DESAT -- "Within Bounds" --> SQRT
+  L 744:         SCALE --> SQRT
+
+--- 3. MERMAID DIAGRAMS AUDIT ---
+Found 8 Mermaid blocks.
+Mermaid Block L24-L52 (27 lines):
+Mermaid Block L197-L213 (15 lines):
+  [WARN L200] Contains <br> tag: R1["[Rotor 1] Front / Nose (+x)<br/>Spin: CCW (σ₁ = +1)"]
+  [WARN L201] Contains <br> tag: R2["[Rotor 2] Right / Starboard (+y)<br/>Spin: CW (σ₂ = -1)"]
+  [WARN L202] Contains <br> tag: R3["[Rotor 3] Rear / Tail (-x)<br/>Spin: CCW (σ₃ = +1)"]
+  [WARN L203] Contains <br> tag: R4["[Rotor 4] Left / Port (-y)<br/>Spin: CW (σ₄ = -1)"]
+Mermaid Block L292-L308 (15 lines):
+  [WARN L295] Contains <br> tag: R1["[Rotor 1] Front-Left (+d, -d)<br/>Spin: CCW (σ₁ = +1)"]
+  [WARN L296] Contains <br> tag: R2["[Rotor 2] Front-Right (+d, +d)<br/>Spin: CW (σ₂ = -1)"]
+  [WARN L297] Contains <br> tag: R3["[Rotor 3] Rear-Right (-d, +d)<br/>Spin: CCW (σ₃ = +1)"]
+  [WARN L298] Contains <br> tag: R4["[Rotor 4] Rear-Left (-d, -d)<br/>Spin: CW (σ₄ = -1)"]
+Mermaid Block L382-L402 (19 lines):
+Mermaid Block L540-L565 (24 lines):
+  [WARN L543] Contains <br> tag: --> DECOMPOSE["Decompose into:<br/>1. Nominal Collective Thrust: T_mean = -F_z / N<br/>2. Pure Zero-Mean Moment Differentials: Δt = A_mom⁻¹ · M"]
+  [WARN L544] Contains <br> tag: --> SPREAD["Evaluate Moment Spread:<br/>ΔT_max = max(Δt), ΔT_min = min(Δt)<br/>Spread = ΔT_max - ΔT_min"]
+  [WARN L547] Contains <br> tag: CHECK -->|Yes: Extreme Demand| SCALE["Scale moments proportionally:<br/>s = (T_max - T_min) / Spread<br/>Δt = Δt · s, T_mean = (T_max + T_min) / 2"]
+  [WARN L550] Contains <br> tag: SHIFT -->|Exceeds T_max| SHIFT_DOWN["Derate Collective Altitude:<br/>T_mean = T_max - ΔT_max"]
+  [WARN L551] Contains <br> tag: SHIFT -->|Below T_min| SHIFT_UP["Boost Collective Thrust:<br/>T_mean = T_min - ΔT_min"]
+  [WARN L554] Contains <br> tag: SCALE --> ASSEMBLE["Compute Final Feasible Thrusts:<br/>t_final = T_mean · 1_N + Δt"]
+Mermaid Block L644-L655 (10 lines):
+  [WARN L647] Contains <br> tag: --> AEROFOIL["Aerofoil Lifting Body<br/>• Upper Surface: Accelerated flow ⟹ Low Pressure (Bernoulli)<br/>• Lower Surface: Retarded flow ⟹ High Pressure"]
+Mermaid Block L708-L719 (10 lines):
+  [WARN L711] Contains <br> tag: D1["Induced Drag D_i ∝ 1/v²:<br/>Dominates at low airspeed / hover (high blade angle of attack)"]
+  [WARN L712] Contains <br> tag: D2["Parasite Drag D_0 ∝ v²:<br/>Dominates at high forward airspeed (form drag + skin friction)"]
+  [WARN L713] Contains <br> tag: D3["Minimum Drag Airspeed V_md:<br/>Total drag is minimized where D_parasite == D_induced<br/>Gives maximum aerodynamic glide range"]
+Mermaid Block L728-L767 (38 lines):
+  [WARN L731] Contains <br> tag: U_CMD["Demanded Virtual Wrench<br/>u_cmd = [F_z, M_x, M_y, M_z]ᵀ"]
+  [WARN L735] Contains <br> tag: A_INV["Linear Mixing Matrix Inversion<br/>t_raw = A⁻¹ · u_cmd (or A⁺ · u_cmd)"]
+  [WARN L736] Contains <br> tag: DESAT{"Attitude-Priority<br/>Desaturation Logic"}
+  [WARN L737] Contains <br> tag: SCALE["Scale Collective Thrust F_z<br/>Preserve Differential Moments M_x, M_y, M_z"]
+  [WARN L738] Contains <br> tag: SQRT["Nonlinear Motor Speed Mapping<br/>Ω_cmd,i = √(T_i / k_T)"]
+  [WARN L748] Contains <br> tag: ESC_LAG["1st-Order ESC / Motor Lag Filter<br/>τ_m · Ω̇_i + Ω_i = Ω_cmd,i"]
+  [WARN L749] Contains <br> tag: ROTOR_DYN["Aerodynamic Rotor Physics<br/>T_i = k_T · Ω_i²<br/>Q_i = k_M · Ω_i²"]
+  [WARN L756] Contains <br> tag: SUM_WRENCH["Delivered Net Wrench<br/>F_z = -∑ T_i<br/>M_b = ∑ r_i × F_i + σ_i k_MT T_i e_z"]
+  [WARN L757] Contains <br> tag: EULER_ODE["Newton-Euler Dynamic Equations<br/>m v̇_b + m(ω_b × v_b) = F_b<br/>J ω̇_b + ω_b × (J ω_b) = M_b"]
+
+--- 4. KATEX MATH BLOCKS AUDIT ---
+Total multi-line / standalone $$ math blocks: 139
+
+--- 5. GENERATIVE UI WIDGET EMBEDS & REFERENCES ---
+Found 4 lines referencing widgets/iframes:
+  L  16: | **Companion Widget** | [Widget 4: Rotor Mixer & Control Allocation Sandbox](../widgets/widget_4_rotor_mixer_allocation.html) |
+  L 706: > 👉 [Launch Widget 4: Rotor Mixer & Allocation Sandbox](../widgets/widget_4_rotor_mixer_allocation.html)
+  L1022: * **Interactive Generative UI Widget:**
+  L1023: * [Widget 4: Rotor Mixer & Control Allocation Sandbox](../widgets/widget_4_rotor_mixer_allocation.html) — Hands-on, interactive browser simulation allowing real-time toggling of quadrotor $+$, $\times$, hexarotor, and octorotor geometries, virtual command sliders, clickable motor pod failures, live numerical pseudo-inverse matrix updates, and attitude-priority desaturation visualization.
+
+--- 6. DENSE TEXT WALL ANALYSIS ---
+  Dense paragraph at L139-L146 (8 lines, ~129 words):
+    Preview: 4. **Reaction Yaw Torque on the Airframe ($M_{z,i}$):**...
+  Dense paragraph at L694-L701 (8 lines, ~124 words):
+    Preview: 2. **Induced Drag ($C_{D,i}$):** The drag penalty of generating lift. High-pressure air be...
+  Dense paragraph at L803-L810 (8 lines, ~124 words):
+    Preview:   A Plus (+) quadrotor has arm length $l = 0.250\,\text{m}$, thrust coefficient $k_T = 2.0...
+  Dense paragraph at L850-L861 (12 lines, ~150 words):
+    Preview:   5. **Extreme Infeasible Demand ($F_z = -24.0\,\text{N}, M_y = +2.00\,\text{N}\cdot\text{...
+  Dense paragraph at L925-L936 (12 lines, ~164 words):
+    Preview:      * **Rotor 1 ($x_1 = +b = +0.2598, y_1 = -a = -0.150$):**...
+  Dense paragraph at L961-L974 (14 lines, ~148 words):
+    Preview:   2. **At $V_1 = 10.0\,\text{m/s}$:**...
+
+
+======================================================================
+AUDIT FOR: topic_5_flight_control.md (Total Lines: 675, Bytes: 53737)
+======================================================================
+
+--- 1. FENCED CODE BLOCKS ---
+Block L16-L73 [lang='mermaid'] (56 lines)
+Block L207-L221 [lang='mermaid'] (13 lines)
+Block L287-L300 [lang='mermaid'] (12 lines)
+Block L387-L406 [lang='mermaid'] (18 lines)
+
+--- 2. POTENTIAL ASCII ART / BOX-AND-ARROW DIAGRAMS ---
+Potential ASCII diagram at L41-L43:
+  L  41:         tilt_calc --> att_err
+  L  42:         att_err --> moments_cmd
+  L  43:         rate_fb --> moments_cmd
+Potential ASCII diagram at L59-L65:
+  L  59:     traj --> pos_err
+  L  60:     thrust_calc --> mixer
+  L  61:     moments_cmd --> mixer
+  L  62:     states -.->|Position Feedback| pos_err
+  L  63:     states -.->|Velocity Feedback| vel_err
+  L  64:     states -.->|Attitude Feedback| att_err
+  L  65:     states -.->|Rate Feedback| rate_fb
+Potential ASCII diagram at L396-L399:
+  L 396:     ROOT --> CH_Z
+  L 397:     ROOT --> CH_PITCH
+  L 398:     ROOT --> CH_ROLL
+  L 399:     ROOT --> CH_YAW
+
+--- 3. MERMAID DIAGRAMS AUDIT ---
+Found 4 Mermaid blocks.
+Mermaid Block L16-L73 (56 lines):
+Mermaid Block L207-L221 (13 lines):
+Mermaid Block L287-L300 (12 lines):
+  [WARN L290] Contains <br> tag: ESC["1. Motor / ESC Actuators<br/>Bandwidth: 50 – 100 rad/s<br/>(Fastest physical response)"]
+  [WARN L292] Contains <br> tag: ATT["2. Inner Attitude / Rate Loop<br/>Bandwidth: 20 – 30 rad/s<br/>(Fast torque tracking)"]
+  [WARN L294] Contains <br> tag: POS["3. Outer Position & Trajectory<br/>Bandwidth: 1.5 – 3.0 rad/s<br/>(Slower translational tracking)"]
+Mermaid Block L387-L406 (18 lines):
+  [WARN L391] Contains <br> tag: CH_Z["1. Vertical / Heave Channel<br/>States: [z, w]ᵀ (Altitude, Vertical Velocity)<br/>Control Input: Collective Thrust δT"]
+  [WARN L392] Contains <br> tag: CH_PITCH["2. Longitudinal / Pitch Channel<br/>States: [x, u, θ, q]ᵀ (X Position, Speed, Pitch, Pitch Rate)<br/>Control Input: Pitch Moment M_y"]
+  [WARN L393] Contains <br> tag: CH_ROLL["3. Lateral / Roll Channel<br/>States: [y, v, ϕ, p]ᵀ (Y Position, Speed, Roll, Roll Rate)<br/>Control Input: Roll Moment M_x"]
+  [WARN L394] Contains <br> tag: CH_YAW["4. Yaw / Heading Channel<br/>States: [ψ, r]ᵀ (Heading Angle, Yaw Rate)<br/>Control Input: Yaw Moment M_z"]
+
+--- 4. KATEX MATH BLOCKS AUDIT ---
+Total multi-line / standalone $$ math blocks: 114
+
+--- 5. GENERATIVE UI WIDGET EMBEDS & REFERENCES ---
+Found 3 lines referencing widgets/iframes:
+  L   8: **Companion Interactive Simulation:** [Widget 5: Cascaded Flight Control Simulation](../widgets/widget_5_cascaded_flight_control.html)
+  L 205: > 👉 [Launch Widget 5: Cascaded Flight Control & LQR Visualizer](../widgets/widget_5_cascaded_flight_control.html)
+  L 673: 5. **Interactive Verification Companion $\longleftrightarrow$ [Widget 5: Cascaded Flight Control Simulation](../widgets/widget_5_cascaded_flight_control.html):**
+
+--- 6. DENSE TEXT WALL ANALYSIS ---
+  Dense paragraph at L132-L142 (11 lines, ~159 words):
+    Preview: 1. Translating Newton's second law along the inertial $z$-axis:...
+  Dense paragraph at L346-L365 (20 lines, ~189 words):
+    Preview: 1. Write the closed-loop Laplace domain relation:...
+  Dense paragraph at L408-L415 (8 lines, ~201 words):
+    Preview: 1. **Vertical Channel (2 States):**...
+  Dense paragraph at L424-L444 (21 lines, ~388 words):
+    Preview: 1. Compute the Krylov matrix powers:...
+  Dense paragraph at L527-L540 (14 lines, ~136 words):
+    Preview: 1. **Gain Synthesis:**...
+  Dense paragraph at L575-L594 (20 lines, ~176 words):
+    Preview: 1. **Outer Loop Virtual Demand:**...
+  Dense paragraph at L604-L615 (12 lines, ~123 words):
+    Preview: 1. **Desired Characteristic Polynomial:**...
+  Dense paragraph at L629-L639 (11 lines, ~199 words):
+    Preview: 1. **Weight Matrices Construction:**...
+
+
+======================================================================
+AUDIT FOR: topic_5_flight_ctrl_2.md (Total Lines: 552, Bytes: 26248)
+======================================================================
+
+--- 1. FENCED CODE BLOCKS ---
+Block L18-L42 [lang='mermaid'] (23 lines)
+Block L137-L179 [lang='mermaid'] (41 lines)
+Block L457-L460 [lang=''] (2 lines)
+
+--- 2. POTENTIAL ASCII ART / BOX-AND-ARROW DIAGRAMS ---
+Potential ASCII diagram at L21-L23:
+  L  21:         POS_REF["Position Ref (x_d, v_d)"] --> POS_ERR["Target Error e_x"]
+  L  22:         POS_ERR --> ACCEL_U["Acceleration u_x"]
+  L  23:         ACCEL_U --> TILT_THETA["Desired Tilt Angle θ_d"]
+Potential ASCII diagram at L27-L29:
+  L  27:         TILT_THETA --> ATT_ERR["Attitude Error e_θ"]
+  L  28:         ATT_ERR --> ANG_ACCEL["Angular Accel α"]
+  L  29:         ANG_ACCEL --> PITCH_M["Pitch Moment M_y"]
+Potential ASCII diagram at L33-L36:
+  L  33:         THRUST_REF["Thrust Ref T"] --> MIXER["Mixer Matrix Inversion"]
+  L  34:         PITCH_M --> MIXER
+  L  35:         MIXER --> MOTOR_SPEEDS["Rotor Speeds Ω_i"]
+  L  36:         MOTOR_SPEEDS --> PLANT_FORCES["Forces & Moments"]
+Potential ASCII diagram at L168-L170:
+  L 168:     kp -->|"+ k_px · eₓ"| sum_u
+  L 169:     kd -->|"+ k_dx · ėₓ"| sum_u
+  L 170:     ddxd -->|"+ ẍᵈ"| sum_u
+Potential ASCII diagram at L172-L175:
+  L 172:     sum_u -->|"uₓ (Virtual Accel)"| inner
+  L 173:     inner -->|"ẍ"| int1
+  L 174:     int1 -->|"ẋ"| int2
+  L 175:     int2 -->|"x"| PosOutput["Position x"]
+
+--- 3. MERMAID DIAGRAMS AUDIT ---
+Found 2 Mermaid blocks.
+Mermaid Block L18-L42 (23 lines):
+Mermaid Block L137-L179 (41 lines):
+
+--- 4. KATEX MATH BLOCKS AUDIT ---
+Total multi-line / standalone $$ math blocks: 77
+
+--- 5. GENERATIVE UI WIDGET EMBEDS & REFERENCES ---
+Found 0 lines referencing widgets/iframes:
+
+--- 6. DENSE TEXT WALL ANALYSIS ---
+

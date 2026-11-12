@@ -15,30 +15,43 @@ Because the rotors are rigidly fixed to the airframe pointing upwards:
 * To accelerate horizontally ($+x$ or $+y$), the airframe must **tilt** so that a component of the collective rotor thrust vectors sideways.
 * This motivates a **cascaded control architecture** separating translation from rotation.
 
+```mermaid
+flowchart TD
+    subgraph OUTER["Outer Loop (Position: Slow ~2-4 rad/s)"]
+        POS_REF["Position Ref (x_d, v_d)"] --> POS_ERR["Target Error e_x"]
+        POS_ERR --> ACCEL_U["Acceleration u_x"]
+        ACCEL_U --> TILT_THETA["Desired Tilt Angle θ_d"]
+    end
+
+    subgraph INNER["Inner Loop (Attitude: Fast ~20-30 rad/s)"]
+        TILT_THETA --> ATT_ERR["Attitude Error e_θ"]
+        ATT_ERR --> ANG_ACCEL["Angular Accel α"]
+        ANG_ACCEL --> PITCH_M["Pitch Moment M_y"]
+    end
+
+    subgraph ALLOC["Rotor Allocation & Motors"]
+        THRUST_REF["Thrust Ref T"] --> MIXER["Mixer Matrix Inversion"]
+        PITCH_M --> MIXER
+        MIXER --> MOTOR_SPEEDS["Rotor Speeds Ω_i"]
+        MOTOR_SPEEDS --> PLANT_FORCES["Forces & Moments"]
+    end
+
+    style OUTER fill:#0f172a,stroke:#38bdf8,stroke-width:1.5px,color:#f8fafc
+    style INNER fill:#0f172a,stroke:#f59e0b,stroke-width:1.5px,color:#f8fafc
+    style ALLOC fill:#0f172a,stroke:#34d399,stroke-width:1.5px,color:#f8fafc
 ```
-                  ┌─────────────────────────────────────────────────────────┐
-                  │                 OUTER LOOP (Position)                   │
-Position Ref ────►│ Target Error eₓ ──► Acceleration uₓ ──► Desired Tilt θᵈ │
-(xᵈ, ẋᵈ)          └──────────────────────────┬──────────────────────────────┘
-                                             │
-                                             ▼
-                  ┌─────────────────────────────────────────────────────────┐
-                  │                 INNER LOOP (Attitude)                   │
-                  │ Attitude Error eθ ──► Angular Accel α ──► Pitch Torq Mᵧ │
-                  └──────────────────────────┬──────────────────────────────┘
-                                             │
-                                             ▼
-                  ┌─────────────────────────────────────────────────────────┐
-                  │              ROTOR ALLOCATION & MOTORS                  │
-Thrust Ref T ────►│ [T, Mₓ, Mᵧ, M_z]ᵀ ──► Rotor Speeds ωᵢ ──► Forces/Torques│
-                  └─────────────────────────────────────────────────────────┘
-```
+
+<div align="center" style="margin: 20px 0;">
+  <iframe src="artifacts/widgets/widget_5_cascaded_flight_control.html" width="100%" height="520" frameborder="0" style="border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);"></iframe>
+  <p><em>Interactive Visualizer: <a href="artifacts/widgets/widget_5_cascaded_flight_control.html" target="_blank">Open in standalone tab ↗</a></em></p>
+</div>
 
 * **Outer Loop (Position Loop — Slower):** Compares actual position against the reference trajectory, generates a required linear acceleration ($u_x, u_y$), and converts it into a **desired attitude angle** ($\theta^d, \phi^d$).
 * **Inner Loop (Attitude Loop — Faster):** Commands differential rotor thrusts to produce moments ($M_x, M_y, M_z$), driving the physical attitude ($\theta, \phi$) to track the desired tilt angles.
 * **Direct Feedthrough:** Total thrust command $T$ bypasses the attitude loop and feeds straight into control allocation to regulate altitude.
 
-> **Time-Scale Separation Principle:**  
+> [!NOTE]
+> ### Time-Scale Separation Principle
 > The outer loop assumes the aircraft tilts *almost instantaneously* on demand ($\theta \approx \theta^d$). Therefore, the attitude loop must have a much higher natural frequency than the position loop ($\omega_{n,\text{att}} \gg \omega_{n,\text{pos}}$, typically by a factor of $5\times$ to $10\times$).
 
 ---
@@ -105,10 +118,11 @@ $$\boxed{\ddot{x} \approx -g\theta}$$
 $$\ddot{z} = g - \frac{mg + \delta T}{m} \cos\theta \approx g - \left(g + \frac{\delta T}{m}\right)(1) = -\frac{\delta T}{m}$$
 $$\boxed{\ddot{z} \approx -\frac{\delta T}{m}}$$
 
-> **Fundamental Decoupling Near Hover:**  
-> 1. Horizontal acceleration ($\ddot{x}$) is governed purely by **pitch tilt angle** ($\theta$).  
-> 2. Vertical acceleration ($\ddot{z}$) is governed purely by **thrust variation** ($\delta T$).  
-> 3. Pitch angular acceleration ($\ddot{\theta}$) is governed purely by **pitch moment** ($M_y$).
+> [!NOTE]
+> ### Fundamental Decoupling Near Hover
+> 1. **Horizontal Acceleration ($\ddot{x}$):** Governed purely by **pitch tilt angle** ($\theta$) through gravity vectoring ($\ddot{x} \approx -g\theta$).  
+> 2. **Vertical Acceleration ($\ddot{z}$):** Governed purely by **thrust variation** ($\delta T$) through collective rotor thrust ($\ddot{z} \approx -\delta T/m$).  
+> 3. **Pitch Angular Acceleration ($\ddot{\theta}$):** Governed purely by **pitch moment** ($M_y$) through differential rotor thrust ($J_y \ddot{\theta} = M_y$).
 
 ---
 
@@ -147,7 +161,7 @@ flowchart LR
     end
 
     subgraph Plant ["Inner Loop & Double Integrator Plant"]
-        inner["Tilt Mapping: θᵈ = -uₓ/g  -->  ẍ ≈ -gθ = uₓ"]
+        inner["Tilt Mapping: θᵈ = -uₓ/g to ẍ ≈ -gθ = uₓ"]
         int1["Integrator 1/s"]
         int2["Integrator 1/s"]
     end
@@ -245,12 +259,12 @@ Comparing with the canonical 2nd-order polynomial $s^2 + 2\zeta\omega_n s + \ome
 * Position loop bandwidth: $\omega_{n,\text{pos}} \approx 2\text{--}4\text{ rad/s}$
 * Attitude loop bandwidth: $\omega_{n,\text{att}} \approx 20\text{--}30\text{ rad/s}$
 
-### Motor Lag Stability Constraint
-Rotor response is not instantaneous; motor ESC dynamics are modeled as a 1st-order lag with time constant $\tau_m$ (typically $0.02\text{--}0.05\text{ s}$):
-$$\frac{T(s)}{T_{\text{cmd}}(s)} = \frac{1}{\tau_m s + 1}$$
-
-To avoid phase-lag-induced instability from motor delay, the derivative damping gain must satisfy:
-$$\boxed{k_{d\theta} > \tau_m k_{p\theta}}$$
+> [!IMPORTANT]
+> ### Motor Lag Stability Criterion (Routh-Hurwitz Condition)
+> Rotor response is not instantaneous; motor ESC dynamics are modeled as a 1st-order lag with time constant $\tau_m$ (typically $0.02\text{--}0.05\text{ s}$):
+> $$\frac{T(s)}{T_{\text{cmd}}(s)} = \frac{1}{\tau_m s + 1}$$
+> To prevent phase-lag-induced limit-cycle oscillations, the derivative damping gain must strictly satisfy:
+> $$\boxed{k_{d\theta} > \tau_m k_{p\theta}}$$
 
 ---
 
@@ -266,8 +280,20 @@ $$\ddot{z} = u_z \implies g - \frac{T_{\text{cmd}}}{m}\cos\phi\cos\theta = u_z$$
 Solving for total commanded thrust:
 $$\boxed{T_{\text{cmd}} = \frac{m(g - u_z)}{\cos\phi\cos\theta}}$$
 
-* **Thrust Penalty at Hover:** At $\theta = 20^\circ$ and $\phi = 0$:
-  $$T_{\text{cmd}} = \frac{mg}{\cos(20^\circ)} = \frac{mg}{0.9397} \approx 1.064\,mg \quad (+6.4\% \text{ thrust})$$
+### Bank Angle Sensitivity Table
+At hover ($u_z = 0$), compensating for tilt requires multiplying nominal hover thrust $mg$ by $\frac{1}{\cos\phi\cos\theta}$:
+
+| Bank Angle ($\theta$ or $\phi$) | $\cos(\text{angle})$ | Thrust Multiplier | Extra Thrust Required | Flight Regime Implication |
+|---|---|---|---|---|
+| $0^\circ$ (Level Hover) | $1.0000$ | $1.000$ | $+0.0\%$ | Equilibrium $T_0 = mg$ |
+| $15^\circ$ | $0.9659$ | $1.035$ | $+3.5\%$ | Cruising flight |
+| $30^\circ$ | $0.8660$ | $1.155$ | $+15.5\%$ | Standard maximum operational bound |
+| $45^\circ$ | $0.7071$ | $1.414$ | $+41.4\%$ | Aggressive maneuvering ($TWR > 1.5$) |
+| $60^\circ$ | $0.5000$ | $2.000$ | $+100.0\%$ | Steep banked turns ($2\times$ aircraft weight) |
+| $80^\circ$ | $0.1736$ | $5.759$ | $+476.0\%$ | Near-vertical knife edge (saturation limit) |
+| $90^\circ$ | $0.0000$ | $\to \infty$ | $\infty$ | Singularity (zero vertical lift component) |
+
+*Safety Clamping:* Flight controllers enforce $\cos\phi\cos\theta \ge \cos(35^\circ) \approx 0.819$ to prevent numerical singularities.
 
 ---
 
@@ -297,11 +323,11 @@ $$\begin{bmatrix} T \\ M_x \\ M_y \\ M_z \end{bmatrix} = \begin{bmatrix} 1 & 1 &
 * Once individual thrusts $T_i$ are solved by inverting the matrix, the required motor angular velocities are:
   $$\Omega_i = \sqrt{\frac{T_i}{k_T}}$$
 
-### Actuator Feasibility Limits
-* Individual thrust limits: $0 \le T_i \le T_{i,\max}$
-* Motor rate limits and lag delays
-* When motors saturate at $T_{i,\max}$, **attitude stability must be prioritized over altitude control** to prevent uncontrollable tumbling.
-* Integrators in the outer and inner loops must include **anti-windup protection**.
+> [!WARNING]
+> ### Actuator Feasibility Limits & Priority Allocation
+> * **Hardware Bounds:** Individual rotor thrusts are constrained by $0 \le T_i \le T_{i,\max}$ with motor time lag $\tau_m$.
+> * **Attitude Priority Rule:** When actuators saturate, **attitude moment tracking must strictly take priority over collective altitude thrust**. An altitude drop causes a gentle descent, whereas loss of attitude torque causes catastrophic unrecoverable tumbling.
+> * **Anti-Windup Clamping:** Integrators in both loops must halt accumulation (clamping) whenever commands saturate to prevent overshoot on setpoint arrival.
 
 ---
 
@@ -447,10 +473,30 @@ At hover, the 12 states break down into 4 decoupled channels:
 * **Roll-Lateral Channel:** $\delta M_x \implies \dot{p} \implies \dot{\phi} \implies \dot{v} \implies \dot{y}$
 * **Yaw Channel:** $\delta M_z \implies \dot{r} \implies \dot{\psi}$
 
+```mermaid
+flowchart LR
+    M["Control Moments<br>(δM_x, δM_y)"] --> R["Angular Rates<br>(p, q)"]
+    R --> A["Attitude Angles<br>(ϕ, θ)"]
+    A --> ACC["Linear Accel<br>(u_dot, v_dot)"]
+    ACC --> V["Velocities<br>(u, v)"]
+    V --> P["Positions<br>(x, y)"]
+
+    style M fill:#0f172a,stroke:#f43f5e,stroke-width:1.5px,color:#f8fafc
+    style R fill:#0f172a,stroke:#f59e0b,stroke-width:1.5px,color:#f8fafc
+    style A fill:#0f172a,stroke:#818cf8,stroke-width:1.5px,color:#f8fafc
+    style ACC fill:#0f172a,stroke:#38bdf8,stroke-width:1.5px,color:#f8fafc
+    style V fill:#0f172a,stroke:#34d399,stroke-width:1.5px,color:#f8fafc
+    style P fill:#0f172a,stroke:#10b981,stroke-width:1.5px,color:#f8fafc
 ```
-Control Moments ──► Angular Rates ──► Attitude Angles ──► Lateral/Longitudinal Accel ──► Velocities ──► Positions
-(δMₓ, δMᵧ)          (p, q)            (φ, θ)              (u̇, v̇)                          (u, v)        (x, y)
-```
+
+| Dynamic Layer | Physical Variables | Governing Dynamics | Control Role |
+|---|---|---|---|
+| **Control Moments** | $\delta M_x, \delta M_y$ | Actuator differential rotor thrust | Input actuation torques |
+| **Angular Rates** | $p, q$ | $J_x \dot{p} = \delta M_x, \quad J_y \dot{q} = \delta M_y$ | Rotational body rates |
+| **Attitude Angles** | $\phi, \theta$ | $\dot{\phi} \approx p, \quad \dot{\theta} \approx q$ | Spatial orientation / tilt |
+| **Translational Accel** | $\dot{u}, \dot{v}$ | $\dot{u} \approx -g\theta, \quad \dot{v} \approx +g\phi$ | Thrust projection |
+| **Linear Velocities** | $u, v$ | $\dot{x} = u, \quad \dot{y} = v$ | Velocity integration |
+| **Inertial Positions** | $x, y$ | Guidance tracking | Target position |
 
 ---
 

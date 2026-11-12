@@ -1,0 +1,1209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Widget 4: Rotor Mixer & Control Allocation Sandbox - EEEE4138</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Offline Fallback Styling -->
+  <style>
+    /* Offline fallback if Tailwind CDN is unavailable */
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: #020617;
+      color: #f8fafc;
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+    .slider-thumb::-webkit-slider-thumb {
+      appearance: none;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: #38bdf8;
+      cursor: pointer;
+      box-shadow: 0 0 8px rgba(56, 189, 248, 0.6);
+    }
+    .slider-thumb::-moz-range-thumb {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: #38bdf8;
+      cursor: pointer;
+      box-shadow: 0 0 8px rgba(56, 189, 248, 0.6);
+    }
+    .matrix-cell {
+      padding: 4px 6px;
+      text-align: right;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 0.75rem;
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col antialiased selection:bg-cyan-500 selection:text-slate-950">
+
+  <!-- Top Navigation & Header -->
+  <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur px-6 py-4 sticky top-0 z-50 flex flex-wrap items-center justify-between gap-4">
+    <div class="flex items-center gap-3">
+      <div class="w-9 h-9 rounded-lg bg-cyan-500/20 border border-cyan-500/40 flex items-center justify-center text-cyan-400 font-bold text-lg shadow-inner">
+        W4
+      </div>
+      <div>
+        <h1 class="text-lg font-bold text-slate-100 tracking-tight flex items-center gap-2">
+          Rotor Mixer & Control Allocation Sandbox
+          <span class="text-xs font-mono font-medium px-2 py-0.5 rounded bg-cyan-950 text-cyan-400 border border-cyan-800/60">EEEE4138 Topic 4</span>
+        </h1>
+        <p class="text-xs text-slate-400">Interactive Airframe Geometry, Moore-Penrose Pseudo-Inverse, Motor Failure & Attitude Desaturation</p>
+      </div>
+    </div>
+
+    <!-- Quick Mode Badges & Presets -->
+    <div class="flex flex-wrap items-center gap-2">
+      <div class="flex items-center rounded-lg bg-slate-950 border border-slate-800 p-1">
+        <button id="btn-config-plus" onclick="setAirframe('plus')" class="px-3 py-1 text-xs font-semibold rounded-md transition-all bg-cyan-600 text-white shadow">
+          Quad +
+        </button>
+        <button id="btn-config-cross" onclick="setAirframe('cross')" class="px-3 py-1 text-xs font-semibold rounded-md transition-all text-slate-400 hover:text-slate-200">
+          Quad ×
+        </button>
+        <button id="btn-config-hex" onclick="setAirframe('hex')" class="px-3 py-1 text-xs font-semibold rounded-md transition-all text-slate-400 hover:text-slate-200">
+          Hex ×
+        </button>
+        <button id="btn-config-octo" onclick="setAirframe('octo')" class="px-3 py-1 text-xs font-semibold rounded-md transition-all text-slate-400 hover:text-slate-200">
+          Octo ×
+        </button>
+      </div>
+
+      <div class="flex items-center rounded-lg bg-slate-950 border border-slate-800 p-1">
+        <span class="text-xs text-slate-400 px-2 font-mono">Desat:</span>
+        <button id="btn-desat-priority" onclick="setDesatMode('priority')" class="px-2.5 py-1 text-xs font-medium rounded transition-all bg-emerald-600 text-white shadow">
+          Attitude-Priority
+        </button>
+        <button id="btn-desat-clamp" onclick="setDesatMode('clamp')" class="px-2.5 py-1 text-xs font-medium rounded transition-all text-slate-400 hover:text-slate-200">
+          Strict Clamping
+        </button>
+      </div>
+
+      <button onclick="resetAll()" class="px-3 py-1.5 text-xs font-medium rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition">
+        Reset
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Content Grid -->
+  <main class="flex-1 p-4 md:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 max-w-7xl mx-auto w-full">
+
+    <!-- Column 1: Interactive Canvas & Schematic (4 Cols) -->
+    <section class="lg:col-span-4 flex flex-col gap-4">
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 flex flex-col shadow-lg">
+        <div class="flex items-center justify-between pb-3 border-b border-slate-800 mb-3">
+          <h2 class="text-sm font-semibold text-slate-200 flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
+            Airframe Schematic & Failure Sandbox
+          </h2>
+          <span id="rank-badge" class="text-xs font-mono font-medium px-2 py-0.5 rounded bg-emerald-950 border border-emerald-700 text-emerald-400">
+            Rank 4: Controllable
+          </span>
+        </div>
+
+        <!-- Canvas Container -->
+        <div class="relative w-full aspect-square bg-slate-950 rounded-lg border border-slate-800/80 overflow-hidden flex items-center justify-center">
+          <canvas id="airframe-canvas" width="400" height="400" class="w-full h-full cursor-pointer"></canvas>
+          <div class="absolute bottom-2 left-2 text-[10px] font-mono text-slate-500 bg-slate-900/80 px-2 py-0.5 rounded border border-slate-800 pointer-events-none">
+            Click motor pod to toggle failure
+          </div>
+          <div id="canvas-alert" class="hidden absolute top-2 inset-x-2 bg-rose-950/90 border border-rose-500/80 text-rose-200 text-xs px-3 py-1.5 rounded text-center font-medium shadow-lg backdrop-blur">
+            CRITICAL: Rank Deficient! Under-actuated flight.
+          </div>
+        </div>
+
+        <!-- Motor Quick Toggle Buttons -->
+        <div class="mt-3">
+          <div class="text-xs text-slate-400 mb-1.5 flex justify-between items-center font-mono">
+            <span>Motor Health Status:</span>
+            <span class="text-[11px] text-cyan-400 cursor-pointer hover:underline" onclick="healAllMotors()">Restore All</span>
+          </div>
+          <div id="motor-buttons-container" class="grid grid-cols-4 gap-2">
+            <!-- Dynamically populated motor buttons -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Presets & Experiments Card -->
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-lg">
+        <h3 class="text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2 font-mono">Pedagogical Presets</h3>
+        <div class="grid grid-cols-2 gap-2 text-xs">
+          <button onclick="applyPreset('hover')" class="p-2 rounded bg-slate-950 hover:bg-slate-800 border border-slate-800 text-left transition">
+            <div class="font-medium text-slate-200">1. Level Hover</div>
+            <div class="text-[11px] text-slate-400">T = 16.0 N, M = 0</div>
+          </button>
+          <button onclick="applyPreset('pitch')" class="p-2 rounded bg-slate-950 hover:bg-slate-800 border border-slate-800 text-left transition">
+            <div class="font-medium text-slate-200">2. Pitch Flare</div>
+            <div class="text-[11px] text-slate-400">M_y = +0.50 Nm</div>
+          </button>
+          <button onclick="applyPreset('roll')" class="p-2 rounded bg-slate-950 hover:bg-slate-800 border border-slate-800 text-left transition">
+            <div class="font-medium text-slate-200">3. Aggressive Roll</div>
+            <div class="text-[11px] text-slate-400">M_x = +1.20 Nm</div>
+          </button>
+          <button onclick="applyPreset('sat_climb')" class="p-2 rounded bg-slate-950 hover:bg-slate-800 border border-slate-800 text-left transition">
+            <div class="font-medium text-slate-200">4. Saturation Clash</div>
+            <div class="text-[11px] text-rose-400">T = 28 N, M_y = 1.5 Nm</div>
+          </button>
+          <button onclick="applyPreset('hex_failure')" class="col-span-2 p-2 rounded bg-slate-950 hover:bg-slate-800 border border-slate-800 text-left transition">
+            <div class="font-medium text-amber-300">5. Hexarotor Motor #1 Failure Test</div>
+            <div class="text-[11px] text-slate-400">Demonstrates reallocated pseudo-inverse hover</div>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Column 2: Virtual Control Demands & Telemetry (4 Cols) -->
+    <section class="lg:col-span-4 flex flex-col gap-4">
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-lg flex-1">
+        <div class="flex items-center justify-between pb-3 border-b border-slate-800 mb-3">
+          <h2 class="text-sm font-semibold text-slate-200 flex items-center gap-2">
+            <svg class="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+            </svg>
+            Virtual Generalized Demands (u_cmd)
+          </h2>
+          <span class="text-xs text-slate-400 font-mono">From Topic 5</span>
+        </div>
+
+        <!-- Sliders -->
+        <div class="space-y-4">
+          <!-- Collective Thrust -->
+          <div>
+            <div class="flex justify-between items-center text-xs mb-1">
+              <span class="font-medium text-slate-300">Collective Thrust $T$ ($-F_z$):</span>
+              <span id="val-thrust" class="font-mono text-cyan-400 font-bold">16.00 N</span>
+            </div>
+            <input type="range" id="slider-thrust" min="0" max="32" step="0.2" value="16" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none slider-thumb cursor-pointer" oninput="updateControls()">
+            <div class="flex justify-between text-[10px] text-slate-500 font-mono mt-0.5">
+              <span>0 N (Idle)</span>
+              <span>16 N (Hover)</span>
+              <span>32 N (Max)</span>
+            </div>
+          </div>
+
+          <!-- Roll Moment -->
+          <div>
+            <div class="flex justify-between items-center text-xs mb-1">
+              <span class="font-medium text-slate-300">Roll Moment $M_x$ ($\tau_\phi$):</span>
+              <span id="val-roll" class="font-mono text-cyan-400 font-bold">0.000 Nm</span>
+            </div>
+            <input type="range" id="slider-roll" min="-2.0" max="2.0" step="0.05" value="0" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none slider-thumb cursor-pointer" oninput="updateControls()">
+            <div class="flex justify-between text-[10px] text-slate-500 font-mono mt-0.5">
+              <span>-2.0 Nm (Port)</span>
+              <span>0.0 Nm</span>
+              <span>+2.0 Nm (Starboard)</span>
+            </div>
+          </div>
+
+          <!-- Pitch Moment -->
+          <div>
+            <div class="flex justify-between items-center text-xs mb-1">
+              <span class="font-medium text-slate-300">Pitch Moment $M_y$ ($\tau_\theta$):</span>
+              <span id="val-pitch" class="font-mono text-cyan-400 font-bold">0.000 Nm</span>
+            </div>
+            <input type="range" id="slider-pitch" min="-2.0" max="2.0" step="0.05" value="0" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none slider-thumb cursor-pointer" oninput="updateControls()">
+            <div class="flex justify-between text-[10px] text-slate-500 font-mono mt-0.5">
+              <span>-2.0 Nm (Nose-Down)</span>
+              <span>0.0 Nm</span>
+              <span>+2.0 Nm (Nose-Up)</span>
+            </div>
+          </div>
+
+          <!-- Yaw Moment -->
+          <div>
+            <div class="flex justify-between items-center text-xs mb-1">
+              <span class="font-medium text-slate-300">Yaw Moment $M_z$ ($\tau_\psi$):</span>
+              <span id="val-yaw" class="font-mono text-cyan-400 font-bold">0.000 Nm</span>
+            </div>
+            <input type="range" id="slider-yaw" min="-1.0" max="1.0" step="0.02" value="0" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none slider-thumb cursor-pointer" oninput="updateControls()">
+            <div class="flex justify-between text-[10px] text-slate-500 font-mono mt-0.5">
+              <span>-1.0 Nm (CCW)</span>
+              <span>0.0 Nm</span>
+              <span>+1.0 Nm (CW)</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Demanded vs Delivered Wrench Comparison Table -->
+        <div class="mt-6 pt-4 border-t border-slate-800">
+          <h3 class="text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2 font-mono flex items-center justify-between">
+            <span>Demanded vs Delivered Wrench</span>
+            <span id="desat-status-badge" class="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 font-normal">Normal</span>
+          </h3>
+          <div class="overflow-x-auto">
+            <table class="w-full text-xs font-mono">
+              <thead>
+                <tr class="text-slate-500 border-b border-slate-800 text-left">
+                  <th class="pb-1">Channel</th>
+                  <th class="pb-1 text-right">Cmd</th>
+                  <th class="pb-1 text-right">Delivered</th>
+                  <th class="pb-1 text-right">Tracking</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-800/60">
+                <tr>
+                  <td class="py-1 text-slate-300">$F_z$ (Thrust)</td>
+                  <td id="td-fz-cmd" class="py-1 text-right text-slate-400">-16.0 N</td>
+                  <td id="td-fz-act" class="py-1 text-right text-cyan-400 font-semibold">-16.0 N</td>
+                  <td id="td-fz-diff" class="py-1 text-right text-emerald-400">100%</td>
+                </tr>
+                <tr>
+                  <td class="py-1 text-slate-300">$M_x$ (Roll)</td>
+                  <td id="td-mx-cmd" class="py-1 text-right text-slate-400">0.00 Nm</td>
+                  <td id="td-mx-act" class="py-1 text-right text-cyan-400 font-semibold">0.00 Nm</td>
+                  <td id="td-mx-diff" class="py-1 text-right text-emerald-400">100%</td>
+                </tr>
+                <tr>
+                  <td class="py-1 text-slate-300">$M_y$ (Pitch)</td>
+                  <td id="td-my-cmd" class="py-1 text-right text-slate-400">0.00 Nm</td>
+                  <td id="td-my-act" class="py-1 text-right text-cyan-400 font-semibold">0.00 Nm</td>
+                  <td id="td-my-diff" class="py-1 text-right text-emerald-400">100%</td>
+                </tr>
+                <tr>
+                  <td class="py-1 text-slate-300">$M_z$ (Yaw)</td>
+                  <td id="td-mz-cmd" class="py-1 text-right text-slate-400">0.00 Nm</td>
+                  <td id="td-mz-act" class="py-1 text-right text-cyan-400 font-semibold">0.00 Nm</td>
+                  <td id="td-mz-diff" class="py-1 text-right text-emerald-400">100%</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Attitude Priority Insight Box -->
+        <div id="insight-box" class="mt-4 p-2.5 rounded bg-slate-950/80 border border-slate-800 text-[11px] text-slate-400 leading-relaxed font-sans">
+          <strong class="text-cyan-400 font-mono">Pedagogical Insight:</strong>
+          In <span class="text-emerald-400 font-medium">Attitude-Priority Desaturation</span>, when motors hit bounds ($T_{\max}$ or $T_{\min}$), the mixer automatically scales collective thrust $F_z$ down to preserve the differential moments ($M_x, M_y, M_z$). In <span class="text-rose-400 font-medium">Strict Clamping</span>, moments collapse, inducing loss of attitude control!
+        </div>
+      </div>
+    </section>
+
+    <!-- Column 3: Rotor RPM Bar Gauges & Matrix Inspector (4 Cols) -->
+    <section class="lg:col-span-4 flex flex-col gap-4">
+
+      <!-- Vertical Actuator Gauges -->
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-lg">
+        <div class="flex items-center justify-between pb-2 border-b border-slate-800 mb-3">
+          <h2 class="text-sm font-semibold text-slate-200">Actuator Thrust & RPM Gauges</h2>
+          <span class="text-[11px] font-mono text-slate-400">Limits: 0.2 N – 8.0 N</span>
+        </div>
+
+        <div id="gauges-container" class="grid grid-flow-col auto-cols-fr gap-2 h-44 items-end bg-slate-950 rounded-lg p-2 border border-slate-800 relative">
+          <!-- Reference saturation line -->
+          <div class="absolute inset-x-2 top-4 border-b border-dashed border-rose-500/50 flex justify-end">
+            <span class="text-[9px] font-mono text-rose-400 bg-slate-950 px-1">T_max (8.0 N)</span>
+          </div>
+          <div class="absolute inset-x-2 top-1/2 border-b border-dashed border-cyan-500/30 flex justify-end">
+            <span class="text-[9px] font-mono text-cyan-400 bg-slate-950 px-1">Hover (4.0 N)</span>
+          </div>
+          <!-- Gauges injected dynamically -->
+        </div>
+
+        <div id="gauges-legend" class="flex justify-between items-center text-[10px] font-mono text-slate-400 mt-2 px-1">
+          <!-- Motor labels -->
+        </div>
+      </div>
+
+      <!-- Live Mathematical Matrix Inspector -->
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-lg flex-1 flex flex-col">
+        <div class="flex items-center justify-between pb-2 border-b border-slate-800 mb-2">
+          <div class="flex gap-2 text-xs font-mono">
+            <button id="tab-mat-inv" onclick="setMatrixTab('inv')" class="px-2 py-0.5 rounded font-semibold bg-cyan-950 text-cyan-400 border border-cyan-800">
+              Alloc Matrix A⁺
+            </button>
+            <button id="tab-mat-fwd" onclick="setMatrixTab('fwd')" class="px-2 py-0.5 rounded text-slate-400 hover:text-slate-200">
+              Mixer Matrix A
+            </button>
+          </div>
+          <span class="text-[10px] font-mono text-slate-500">Live Solved</span>
+        </div>
+
+        <div class="flex-1 bg-slate-950 rounded-lg border border-slate-800/80 p-2 overflow-x-auto flex items-center justify-center">
+          <div id="matrix-display" class="font-mono text-xs text-slate-300">
+            <!-- Rendered dynamic numerical table -->
+          </div>
+        </div>
+
+        <p class="text-[10px] text-slate-500 font-mono mt-2">
+          * A⁺ computed via Moore-Penrose pseudo-inverse $A^T (A A^T)^{-1}$ with active health masking.
+        </p>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- Interactive JavaScript Engine -->
+  <script>
+    /* =========================================================================
+       EEEE4138 Topic 4: Control Allocation & Mixer Mathematical Engine
+       ========================================================================= */
+
+    // Physical Constants and Drone Parameters
+    const K_T = 2.00e-5;        // Thrust coefficient [N/(rad/s)^2]
+    const K_M = 4.00e-7;        // Drag torque coefficient [Nm/(rad/s)^2]
+    const K_MT = K_M / K_T;     // Torque-to-thrust ratio [m] = 0.0200 m
+    const T_MIN = 0.20;         // Minimum idle thrust [N]
+    const T_MAX = 8.00;         // Maximum thrust limit per motor [N]
+    const ARM_LENGTH = 0.25;    // Radial distance from CoM to rotor [m]
+
+    // State Variables
+    let airframe = 'plus';      // 'plus', 'cross', 'hex', 'octo'
+    let desatMode = 'priority'; // 'priority', 'clamp'
+    let matrixTab = 'inv';      // 'inv', 'fwd'
+
+    // Virtual Demands u_cmd = [F_z, M_x, M_y, M_z]^T
+    let demandedWrench = {
+      F_z: -16.0,   // Net vertical force [N] (negative upwards)
+      M_x: 0.0,     // Roll moment [Nm]
+      M_y: 0.0,     // Pitch moment [Nm]
+      M_z: 0.0      // Yaw moment [Nm]
+    };
+
+    // Motor Health indicator: 1 = healthy, 0 = failed
+    let motorHealth = [1, 1, 1, 1];
+
+    // Rotor Configurations Definition
+    // Pos: [x, y] in body frame (x forward, y right)
+    // Spin: +1 for CW (reaction is CCW / +z), -1 for CCW (reaction is CW / -z)
+    const AIRFRAME_CONFIGS = {
+      plus: {
+        name: "Quadrotor +",
+        numMotors: 4,
+        rotors: [
+          { id: 1, name: "1 (Front)",  x: ARM_LENGTH,  y: 0,           spin: -1 }, // CCW
+          { id: 2, name: "2 (Right)",  x: 0,           y: ARM_LENGTH,  spin: +1 }, // CW
+          { id: 3, name: "3 (Rear)",   x: -ARM_LENGTH, y: 0,           spin: -1 }, // CCW
+          { id: 4, name: "4 (Left)",   x: 0,           y: -ARM_LENGTH, spin: +1 }  // CW
+        ]
+      },
+      cross: {
+        name: "Quadrotor ×",
+        numMotors: 4,
+        rotors: (() => {
+          const d = ARM_LENGTH / Math.SQRT2;
+          return [
+            { id: 1, name: "1 (FL)", x: d,  y: -d, spin: -1 }, // CCW
+            { id: 2, name: "2 (FR)", x: d,  y: d,  spin: +1 }, // CW
+            { id: 3, name: "3 (RR)", x: -d, y: d,  spin: -1 }, // CCW
+            { id: 4, name: "4 (RL)", x: -d, y: -d, spin: +1 }  // CW
+          ];
+        })()
+      },
+      hex: {
+        name: "Hexarotor ×",
+        numMotors: 6,
+        rotors: (() => {
+          // Angles: -30°, 30°, 90°, 150°, 210°, 270° from forward (+x)
+          const angles = [-30, 30, 90, 150, 210, 270].map(a => a * Math.PI / 180);
+          return angles.map((ang, i) => ({
+            id: i + 1,
+            name: `${i + 1}`,
+            x: ARM_LENGTH * Math.cos(ang),
+            y: ARM_LENGTH * Math.sin(ang),
+            spin: (i % 2 === 0) ? +1 : -1 // alternating spins
+          }));
+        })()
+      },
+      octo: {
+        name: "Octorotor ×",
+        numMotors: 8,
+        rotors: (() => {
+          // 8 rotors spaced 45 deg apart, starting at 22.5 deg
+          const angles = [22.5, 67.5, 112.5, 157.5, 202.5, 247.5, 292.5, 337.5].map(a => a * Math.PI / 180);
+          return angles.map((ang, i) => ({
+            id: i + 1,
+            name: `${i + 1}`,
+            x: ARM_LENGTH * Math.cos(ang),
+            y: ARM_LENGTH * Math.sin(ang),
+            spin: (i % 2 === 0) ? +1 : -1 // alternating spins
+          }));
+        })()
+      }
+    };
+
+    // Animation variables
+    let animAngle = 0;
+
+    /* =========================================================================
+       Linear Algebra & Allocation Solver
+       ========================================================================= */
+
+    // Construct forward mixer matrix A [4 x N]
+    function buildMixerMatrix(config, health) {
+      const N = config.numMotors;
+      const A = [
+        new Array(N).fill(0), // F_z row (-1 for each active rotor)
+        new Array(N).fill(0), // M_x row (-y_i)
+        new Array(N).fill(0), // M_y row (+x_i)
+        new Array(N).fill(0)  // M_z row (sigma_i * k_MT)
+      ];
+
+      for (let i = 0; i < N; i++) {
+        if (health[i] === 1) {
+          const r = config.rotors[i];
+          A[0][i] = -1.0;
+          A[1][i] = -r.y;
+          A[2][i] = r.x;
+          A[3][i] = r.spin * K_MT;
+        } else {
+          // Failed motor produces 0 thrust and moment
+          A[0][i] = 0.0;
+          A[1][i] = 0.0;
+          A[2][i] = 0.0;
+          A[3][i] = 0.0;
+        }
+      }
+      return A;
+    }
+
+    // Multiply matrices: C = A [m x k] * B [k x n]
+    function matMul(A, B) {
+      const m = A.length;
+      const k = A[0].length;
+      const n = B[0].length;
+      const C = Array.from({ length: m }, () => new Array(n).fill(0));
+      for (let i = 0; i < m; i++) {
+        for (let j = 0; j < n; j++) {
+          let sum = 0;
+          for (let p = 0; p < k; p++) {
+            sum += A[i][p] * B[p][j];
+          }
+          C[i][j] = sum;
+        }
+      }
+      return C;
+    }
+
+    // Transpose matrix: A^T
+    function matTranspose(A) {
+      const m = A.length;
+      const n = A[0].length;
+      const AT = Array.from({ length: n }, () => new Array(m).fill(0));
+      for (let i = 0; i < m; i++) {
+        for (let j = 0; j < n; j++) {
+          AT[j][i] = A[i][j];
+        }
+      }
+      return AT;
+    }
+
+    // Invert a 4x4 matrix using Gauss-Jordan elimination with partial pivoting
+    function invert4x4(M) {
+      const n = 4;
+      // Augmented matrix [M | I]
+      const aug = Array.from({ length: n }, (v, i) => {
+        const row = [...M[i], 0, 0, 0, 0];
+        row[n + i] = 1.0;
+        return row;
+      });
+
+      for (let i = 0; i < n; i++) {
+        // Find pivot
+        let maxRow = i;
+        let maxVal = Math.abs(aug[i][i]);
+        for (let k = i + 1; k < n; k++) {
+          if (Math.abs(aug[k][i]) > maxVal) {
+            maxVal = Math.abs(aug[k][i]);
+            maxRow = k;
+          }
+        }
+        if (maxVal < 1e-7) {
+          return null; // Singular matrix
+        }
+        // Swap rows
+        const tmp = aug[i];
+        aug[i] = aug[maxRow];
+        aug[maxRow] = tmp;
+
+        // Scale pivot row
+        const pivot = aug[i][i];
+        for (let j = 0; j < 2 * n; j++) {
+          aug[i][j] /= pivot;
+        }
+
+        // Eliminate column entries in other rows
+        for (let k = 0; k < n; k++) {
+          if (k !== i) {
+            const factor = aug[k][i];
+            for (let j = 0; j < 2 * n; j++) {
+              aug[k][j] -= factor * aug[i][j];
+            }
+          }
+        }
+      }
+
+      // Extract inverted matrix
+      const inv = Array.from({ length: n }, (v, i) => aug[i].slice(n));
+      return inv;
+    }
+
+    // Compute Moore-Penrose Pseudo-Inverse: A^+ = A^T * (A * A^T)^(-1) [N x 4]
+    function computePseudoInverse(A) {
+      const AT = matTranspose(A); // [N x 4]
+      const G = matMul(A, AT);     // [4 x 4] Gram matrix
+      const G_inv = invert4x4(G);  // [4 x 4]
+      if (!G_inv) return null;     // Rank deficient
+      return matMul(AT, G_inv);    // [N x 4]
+    }
+
+    // Solve control allocation and apply desaturation
+    function solveAllocation() {
+      const config = AIRFRAME_CONFIGS[airframe];
+      const N = config.numMotors;
+      const A = buildMixerMatrix(config, motorHealth);
+      const A_pinv = computePseudoInverse(A);
+
+      const u = [
+        [demandedWrench.F_z],
+        [demandedWrench.M_x],
+        [demandedWrench.M_y],
+        [demandedWrench.M_z]
+      ];
+
+      let isRankDeficient = (A_pinv === null);
+      let t_raw = new Array(N).fill(0);
+      let t_delivered = new Array(N).fill(0);
+      let isSaturated = false;
+      let thrustScaled = false;
+
+      if (!isRankDeficient) {
+        // Raw linear allocation: t_raw = A_pinv * u
+        for (let i = 0; i < N; i++) {
+          if (motorHealth[i] === 1) {
+            let sum = 0;
+            for (let j = 0; j < 4; j++) {
+              sum += A_pinv[i][j] * u[j][0];
+            }
+            t_raw[i] = sum;
+          } else {
+            t_raw[i] = 0;
+          }
+        }
+
+        // Check if any healthy motor violates bounds
+        for (let i = 0; i < N; i++) {
+          if (motorHealth[i] === 1) {
+            if (t_raw[i] > T_MAX || t_raw[i] < T_MIN) {
+              isSaturated = true;
+            }
+          }
+        }
+
+        // Apply selected desaturation mode
+        if (desatMode === 'clamp') {
+          // Strict clamping: independently clip every motor
+          for (let i = 0; i < N; i++) {
+            if (motorHealth[i] === 1) {
+              t_delivered[i] = Math.max(T_MIN, Math.min(T_MAX, t_raw[i]));
+            } else {
+              t_delivered[i] = 0;
+            }
+          }
+        } else {
+          // Attitude-Priority Desaturation:
+          // Separate collective thrust demand from differential moments
+          const activeCount = motorHealth.reduce((a, b) => a + b, 0);
+          if (activeCount > 0) {
+            let T_mean = -demandedWrench.F_z / activeCount;
+            // Differential component: delta_T = t_raw - T_mean
+            const deltaT = new Array(N).fill(0);
+            let maxDelta = -Infinity;
+            let minDelta = Infinity;
+
+            for (let i = 0; i < N; i++) {
+              if (motorHealth[i] === 1) {
+                deltaT[i] = t_raw[i] - T_mean;
+                if (deltaT[i] > maxDelta) maxDelta = deltaT[i];
+                if (deltaT[i] < minDelta) minDelta = deltaT[i];
+              }
+            }
+
+            const momentSpread = maxDelta - minDelta;
+            const availableRange = T_MAX - T_MIN;
+
+            if (momentSpread > availableRange) {
+              // Moment demands exceed motor range: scale moments proportionally
+              const scale = availableRange / momentSpread;
+              for (let i = 0; i < N; i++) {
+                if (motorHealth[i] === 1) deltaT[i] *= scale;
+              }
+              T_mean = (T_MAX + T_MIN) / 2.0;
+              thrustScaled = true;
+            } else {
+              // Shift collective thrust T_mean to preserve exact differential moments
+              if (T_mean + maxDelta > T_MAX) {
+                T_mean = T_MAX - maxDelta;
+                thrustScaled = true;
+              } else if (T_mean + minDelta < T_MIN) {
+                T_mean = T_MIN - minDelta;
+                thrustScaled = true;
+              }
+            }
+
+            for (let i = 0; i < N; i++) {
+              if (motorHealth[i] === 1) {
+                t_delivered[i] = Math.max(T_MIN, Math.min(T_MAX, T_mean + deltaT[i]));
+              } else {
+                t_delivered[i] = 0;
+              }
+            }
+          }
+        }
+      } else {
+        // Under-actuated / Rank Deficient: Simple best-effort allocation
+        for (let i = 0; i < N; i++) {
+          if (motorHealth[i] === 1) {
+            t_delivered[i] = -demandedWrench.F_z / Math.max(1, motorHealth.reduce((a,b)=>a+b, 0));
+            t_delivered[i] = Math.max(T_MIN, Math.min(T_MAX, t_delivered[i]));
+          } else {
+            t_delivered[i] = 0;
+          }
+        }
+      }
+
+      // Compute delivered wrench: u_del = A * t_delivered
+      const u_delivered = [0, 0, 0, 0];
+      for (let j = 0; j < 4; j++) {
+        let sum = 0;
+        for (let i = 0; i < N; i++) {
+          sum += A[j][i] * t_delivered[i];
+        }
+        u_delivered[j] = sum;
+      }
+
+      return {
+        A,
+        A_pinv,
+        isRankDeficient,
+        isSaturated,
+        thrustScaled,
+        t_raw,
+        t_delivered,
+        u_delivered
+      };
+    }
+
+    /* =========================================================================
+       UI & Canvas Rendering
+       ========================================================================= */
+
+    const canvas = document.getElementById('airframe-canvas');
+    const ctx = canvas.getContext('2d');
+
+    function renderAirframe(sol) {
+      const w = canvas.width;
+      const h = canvas.height;
+      const cx = w / 2;
+      const cy = h / 2;
+      const scale = 140 / ARM_LENGTH; // Scaling to canvas units
+
+      ctx.clearRect(0, 0, w, h);
+
+      // Grid background
+      ctx.strokeStyle = '#1e293b';
+      ctx.lineWidth = 1;
+      const step = 40;
+      for (let x = 0; x <= w; x += step) {
+        ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke();
+      }
+      for (let y = 0; y <= h; y += step) {
+        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+      }
+
+      // Center Coordinate Axes (+x Forward/Up, +y Right)
+      ctx.strokeStyle = '#38bdf8';
+      ctx.lineWidth = 1.5;
+      // +x axis (Upwards on screen)
+      ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx, cy - 60); ctx.stroke();
+      ctx.fillStyle = '#38bdf8';
+      ctx.fillText('+x (Nose)', cx - 22, cy - 66);
+      // +y axis (Rightwards on screen)
+      ctx.strokeStyle = '#10b981';
+      ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx + 60, cy); ctx.stroke();
+      ctx.fillStyle = '#10b981';
+      ctx.fillText('+y', cx + 64, cy + 4);
+
+      const config = AIRFRAME_CONFIGS[airframe];
+
+      // Draw structural carbon arms
+      ctx.strokeStyle = '#475569';
+      ctx.lineWidth = 4;
+      ctx.lineCap = 'round';
+      config.rotors.forEach(r => {
+        const rx = cx + r.y * scale;  // screen x corresponds to body +y (right)
+        const ry = cy - r.x * scale;  // screen y corresponds to body -x (up)
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(rx, ry);
+        ctx.stroke();
+      });
+
+      // Draw central avionics hub
+      ctx.fillStyle = '#0f172a';
+      ctx.strokeStyle = '#06b6d4';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(cx, cy, 22, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+
+      // Heading arrow on hub
+      ctx.fillStyle = '#06b6d4';
+      ctx.beginPath();
+      ctx.moveTo(cx, cy - 14);
+      ctx.lineTo(cx - 7, cy + 8);
+      ctx.lineTo(cx + 7, cy + 8);
+      ctx.closePath();
+      ctx.fill();
+
+      // Draw each motor pod
+      config.rotors.forEach((r, idx) => {
+        const rx = cx + r.y * scale;
+        const ry = cy - r.x * scale;
+        const isHealthy = motorHealth[idx] === 1;
+        const thrust = sol.t_delivered[idx];
+        const propRadius = 32;
+
+        // Propeller disc circle
+        ctx.beginPath();
+        ctx.arc(rx, ry, propRadius, 0, Math.PI * 2);
+        if (isHealthy) {
+          ctx.fillStyle = (r.spin === 1) ? 'rgba(56, 189, 248, 0.08)' : 'rgba(16, 185, 129, 0.08)';
+          ctx.strokeStyle = (r.spin === 1) ? 'rgba(56, 189, 248, 0.4)' : 'rgba(16, 185, 129, 0.4)';
+        } else {
+          ctx.fillStyle = 'rgba(239, 68, 68, 0.1)';
+          ctx.strokeStyle = 'rgba(239, 68, 68, 0.6)';
+        }
+        ctx.lineWidth = 1.5;
+        ctx.fill();
+        ctx.stroke();
+
+        // Animated rotating blades if healthy
+        if (isHealthy && thrust > 0) {
+          ctx.save();
+          ctx.translate(rx, ry);
+          const spinDir = r.spin; // +1 CW, -1 CCW
+          ctx.rotate(animAngle * spinDir * (thrust / 4.0));
+          ctx.strokeStyle = (r.spin === 1) ? '#38bdf8' : '#10b981';
+          ctx.lineWidth = 2.5;
+          ctx.beginPath();
+          ctx.moveTo(-propRadius + 4, 0);
+          ctx.lineTo(propRadius - 4, 0);
+          ctx.stroke();
+          ctx.restore();
+        }
+
+        // Motor Hub Circle
+        ctx.beginPath();
+        ctx.arc(rx, ry, 13, 0, Math.PI * 2);
+        if (isHealthy) {
+          ctx.fillStyle = '#1e293b';
+          ctx.strokeStyle = (thrust >= T_MAX - 0.01) ? '#ef4444' : '#38bdf8';
+        } else {
+          ctx.fillStyle = '#450a0a';
+          ctx.strokeStyle = '#ef4444';
+        }
+        ctx.lineWidth = 2;
+        ctx.fill();
+        ctx.stroke();
+
+        // Label or Failure X
+        ctx.font = '11px ui-monospace, SFMono-Regular, monospace';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        if (isHealthy) {
+          ctx.fillStyle = '#f8fafc';
+          ctx.fillText(r.id, rx, ry);
+        } else {
+          ctx.fillStyle = '#ef4444';
+          ctx.font = 'bold 14px sans-serif';
+          ctx.fillText('✕', rx, ry);
+        }
+
+        // Thrust readout badge below rotor
+        ctx.font = '10px ui-monospace, SFMono-Regular, monospace';
+        ctx.fillStyle = isHealthy ? (thrust >= T_MAX - 0.01 ? '#f87171' : '#94a3b8') : '#ef4444';
+        ctx.fillText(isHealthy ? `${thrust.toFixed(1)}N` : 'DEAD', rx, ry + 24);
+
+        // Spin direction icon
+        ctx.fillStyle = (r.spin === 1) ? '#38bdf8' : '#10b981';
+        ctx.fillText(r.spin === 1 ? 'CW' : 'CCW', rx, ry - 22);
+      });
+    }
+
+    // Canvas click detection to toggle motor failure
+    canvas.addEventListener('click', (e) => {
+      const rect = canvas.getBoundingClientRect();
+      const clickX = (e.clientX - rect.left) * (canvas.width / rect.width);
+      const clickY = (e.clientY - rect.top) * (canvas.height / rect.height);
+      const cx = canvas.width / 2;
+      const cy = canvas.height / 2;
+      const scale = 140 / ARM_LENGTH;
+
+      const config = AIRFRAME_CONFIGS[airframe];
+      config.rotors.forEach((r, idx) => {
+        const rx = cx + r.y * scale;
+        const ry = cy - r.x * scale;
+        const dist = Math.hypot(clickX - rx, clickY - ry);
+        if (dist <= 30) {
+          toggleMotor(idx);
+        }
+      });
+    });
+
+    /* =========================================================================
+       DOM Updating & Telemetry Display
+       ========================================================================= */
+
+    function updateUI() {
+      const sol = solveAllocation();
+
+      // Sliders & Values
+      document.getElementById('val-thrust').innerText = (-demandedWrench.F_z).toFixed(2) + " N";
+      document.getElementById('val-roll').innerText = demandedWrench.M_x.toFixed(3) + " Nm";
+      document.getElementById('val-pitch').innerText = demandedWrench.M_y.toFixed(3) + " Nm";
+      document.getElementById('val-yaw').innerText = demandedWrench.M_z.toFixed(3) + " Nm";
+
+      // Rank & Alert Status
+      const rankBadge = document.getElementById('rank-badge');
+      const canvasAlert = document.getElementById('canvas-alert');
+      if (sol.isRankDeficient) {
+        rankBadge.className = "text-xs font-mono font-medium px-2 py-0.5 rounded bg-rose-950 border border-rose-700 text-rose-400";
+        rankBadge.innerText = "Rank < 4: UNCONTROLLABLE";
+        canvasAlert.classList.remove('hidden');
+      } else {
+        const isDegraded = motorHealth.some(h => h === 0);
+        if (isDegraded) {
+          rankBadge.className = "text-xs font-mono font-medium px-2 py-0.5 rounded bg-amber-950 border border-amber-700 text-amber-400";
+          rankBadge.innerText = "Rank 4: Degraded (Pseudo-Inv Hover)";
+        } else {
+          rankBadge.className = "text-xs font-mono font-medium px-2 py-0.5 rounded bg-emerald-950 border border-emerald-700 text-emerald-400";
+          rankBadge.innerText = "Rank 4: Controllable";
+        }
+        canvasAlert.classList.add('hidden');
+      }
+
+      // Desaturation Badge
+      const desatBadge = document.getElementById('desat-status-badge');
+      if (sol.thrustScaled) {
+        desatBadge.className = "text-[10px] px-1.5 py-0.5 rounded bg-amber-950 text-amber-300 border border-amber-800 font-semibold";
+        desatBadge.innerText = "Thrust Scaled (Priority Preserved)";
+      } else if (sol.isSaturated) {
+        desatBadge.className = "text-[10px] px-1.5 py-0.5 rounded bg-rose-950 text-rose-300 border border-rose-800 font-semibold";
+        desatBadge.innerText = "Actuators Saturated!";
+      } else {
+        desatBadge.className = "text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 font-normal";
+        desatBadge.innerText = "Normal Range";
+      }
+
+      // Demanded vs Delivered Table
+      const fz_cmd = demandedWrench.F_z;
+      const fz_act = sol.u_delivered[0];
+      const mx_cmd = demandedWrench.M_x;
+      const mx_act = sol.u_delivered[1];
+      const my_cmd = demandedWrench.M_y;
+      const my_act = sol.u_delivered[2];
+      const mz_cmd = demandedWrench.M_z;
+      const mz_act = sol.u_delivered[3];
+
+      document.getElementById('td-fz-cmd').innerText = fz_cmd.toFixed(2) + " N";
+      document.getElementById('td-fz-act').innerText = fz_act.toFixed(2) + " N";
+      document.getElementById('td-fz-diff').innerText = Math.abs(fz_cmd) > 0.01 ? (Math.min(100, (fz_act / fz_cmd) * 100)).toFixed(0) + "%" : "-";
+
+      document.getElementById('td-mx-cmd').innerText = mx_cmd.toFixed(3) + " Nm";
+      document.getElementById('td-mx-act').innerText = mx_act.toFixed(3) + " Nm";
+      document.getElementById('td-mx-diff').innerText = Math.abs(mx_cmd - mx_act) < 0.005 ? "100%" : (Math.abs(mx_act) < Math.abs(mx_cmd) ? "Clipped" : "Degraded");
+      document.getElementById('td-mx-diff').className = Math.abs(mx_cmd - mx_act) < 0.005 ? "py-1 text-right text-emerald-400" : "py-1 text-right text-rose-400";
+
+      document.getElementById('td-my-cmd').innerText = my_cmd.toFixed(3) + " Nm";
+      document.getElementById('td-my-act').innerText = my_act.toFixed(3) + " Nm";
+      document.getElementById('td-my-diff').innerText = Math.abs(my_cmd - my_act) < 0.005 ? "100%" : (Math.abs(my_act) < Math.abs(my_cmd) ? "Clipped" : "Degraded");
+      document.getElementById('td-my-diff').className = Math.abs(my_cmd - my_act) < 0.005 ? "py-1 text-right text-emerald-400" : "py-1 text-right text-rose-400";
+
+      document.getElementById('td-mz-cmd').innerText = mz_cmd.toFixed(3) + " Nm";
+      document.getElementById('td-mz-act').innerText = mz_act.toFixed(3) + " Nm";
+      document.getElementById('td-mz-diff').innerText = Math.abs(mz_cmd - mz_act) < 0.005 ? "100%" : "Clipped";
+      document.getElementById('td-mz-diff').className = Math.abs(mz_cmd - mz_act) < 0.005 ? "py-1 text-right text-emerald-400" : "py-1 text-right text-rose-400";
+
+      // Render Vertical Gauges
+      renderGauges(sol);
+
+      // Render Matrix Table
+      renderMatrixTable(sol);
+
+      // Render Canvas
+      renderAirframe(sol);
+    }
+
+    function renderGauges(sol) {
+      const container = document.getElementById('gauges-container');
+      const legend = document.getElementById('gauges-legend');
+      const config = AIRFRAME_CONFIGS[airframe];
+      const N = config.numMotors;
+
+      // Ensure correct number of gauge elements exist
+      container.querySelectorAll('.gauge-bar-col').forEach(e => e.remove());
+      legend.innerHTML = '';
+
+      for (let i = 0; i < N; i++) {
+        const isHealthy = motorHealth[i] === 1;
+        const thrust = sol.t_delivered[i];
+        const heightPct = Math.min(100, Math.max(0, (thrust / T_MAX) * 100));
+
+        let barColor = "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]";
+        if (thrust >= T_MAX - 0.01) {
+          barColor = "bg-rose-500 shadow-[0_0_10px_rgba(239,68,68,0.7)]";
+        } else if (thrust > 5.5) {
+          barColor = "bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.5)]";
+        }
+
+        const col = document.createElement('div');
+        col.className = 'gauge-bar-col flex flex-col items-center h-full justify-end z-10';
+        col.innerHTML = `
+          <div class="text-[9px] font-mono text-slate-400 mb-1 ${thrust >= T_MAX - 0.01 ? 'text-rose-400 font-bold' : ''}">
+            ${isHealthy ? thrust.toFixed(1) : 'X'}
+          </div>
+          <div class="w-full bg-slate-900 rounded-t overflow-hidden flex flex-col justify-end" style="height: 100px;">
+            <div class="${isHealthy ? barColor : 'bg-slate-800'} w-full transition-all duration-75 rounded-t" style="height: ${isHealthy ? heightPct : 0}%;"></div>
+          </div>
+        `;
+        container.appendChild(col);
+
+        // Legend label
+        const lbl = document.createElement('span');
+        lbl.innerText = `M${i + 1}`;
+        lbl.className = isHealthy ? 'text-slate-400' : 'text-rose-500 font-bold';
+        legend.appendChild(lbl);
+      }
+    }
+
+    function renderMatrixTable(sol) {
+      const display = document.getElementById('matrix-display');
+      const config = AIRFRAME_CONFIGS[airframe];
+      const N = config.numMotors;
+
+      let html = '';
+      if (matrixTab === 'inv') {
+        if (!sol.A_pinv) {
+          html = `<div class="text-rose-400 text-center py-4">Matrix Singular (Gram Matrix Det ≈ 0)<br>Rank Deficient!</div>`;
+        } else {
+          html = `<table class="border-collapse"><thead><tr class="text-slate-500 border-b border-slate-800">`;
+          html += `<th class="px-2 py-0.5 text-left">Rotor</th>`;
+          html += `<th class="px-2 py-0.5 text-right">F_z</th>`;
+          html += `<th class="px-2 py-0.5 text-right">M_x</th>`;
+          html += `<th class="px-2 py-0.5 text-right">M_y</th>`;
+          html += `<th class="px-2 py-0.5 text-right">M_z</th></tr></thead><tbody>`;
+
+          for (let i = 0; i < N; i++) {
+            html += `<tr class="border-b border-slate-900 ${motorHealth[i] === 0 ? 'opacity-40 text-rose-400' : ''}">`;
+            html += `<td class="px-2 py-0.5 text-slate-400 font-semibold">T_${i + 1}</td>`;
+            for (let j = 0; j < 4; j++) {
+              const val = sol.A_pinv[i][j];
+              html += `<td class="matrix-cell">${val.toFixed(3)}</td>`;
+            }
+            html += `</tr>`;
+          }
+          html += `</tbody></table>`;
+        }
+      } else {
+        // Forward matrix A [4 x N]
+        const rows = ["F_z", "M_x", "M_y", "M_z"];
+        html = `<table class="border-collapse"><thead><tr class="text-slate-500 border-b border-slate-800">`;
+        html += `<th class="px-2 py-0.5 text-left">Wrench</th>`;
+        for (let i = 0; i < N; i++) {
+          html += `<th class="px-2 py-0.5 text-right">T_${i + 1}</th>`;
+        }
+        html += `</tr></thead><tbody>`;
+
+        for (let j = 0; j < 4; j++) {
+          html += `<tr class="border-b border-slate-900">`;
+          html += `<td class="px-2 py-0.5 text-slate-400 font-semibold">${rows[j]}</td>`;
+          for (let i = 0; i < N; i++) {
+            const val = sol.A[j][i];
+            html += `<td class="matrix-cell">${val.toFixed(3)}</td>`;
+          }
+          html += `</tr>`;
+        }
+        html += `</tbody></table>`;
+      }
+
+      display.innerHTML = html;
+    }
+
+    function renderMotorButtons() {
+      const container = document.getElementById('motor-buttons-container');
+      container.innerHTML = '';
+      const config = AIRFRAME_CONFIGS[airframe];
+      const N = config.numMotors;
+
+      container.className = `grid grid-cols-${Math.min(N, 6)} gap-1.5`;
+
+      for (let i = 0; i < N; i++) {
+        const isHealthy = motorHealth[i] === 1;
+        const btn = document.createElement('button');
+        btn.className = `p-1.5 rounded text-xs font-mono font-medium border transition-all ${
+          isHealthy
+            ? 'bg-slate-950 border-slate-700 text-emerald-400 hover:border-rose-500 hover:text-rose-400'
+            : 'bg-rose-950/80 border-rose-600 text-rose-300 font-bold'
+        }`;
+        btn.innerHTML = `M${i + 1}: ${isHealthy ? 'OK' : 'DEAD'}`;
+        btn.onclick = () => toggleMotor(i);
+        container.appendChild(btn);
+      }
+    }
+
+    /* =========================================================================
+       Event Handlers & Interactivity
+       ========================================================================= */
+
+    function updateControls() {
+      demandedWrench.F_z = -parseFloat(document.getElementById('slider-thrust').value);
+      demandedWrench.M_x = parseFloat(document.getElementById('slider-roll').value);
+      demandedWrench.M_y = parseFloat(document.getElementById('slider-pitch').value);
+      demandedWrench.M_z = parseFloat(document.getElementById('slider-yaw').value);
+      updateUI();
+    }
+
+    function setAirframe(type) {
+      airframe = type;
+      const config = AIRFRAME_CONFIGS[airframe];
+      motorHealth = new Array(config.numMotors).fill(1);
+
+      // Update button styles
+      ['plus', 'cross', 'hex', 'octo'].forEach(t => {
+        const btn = document.getElementById(`btn-config-${t}`);
+        if (t === type) {
+          btn.className = "px-3 py-1 text-xs font-semibold rounded-md transition-all bg-cyan-600 text-white shadow";
+        } else {
+          btn.className = "px-3 py-1 text-xs font-semibold rounded-md transition-all text-slate-400 hover:text-slate-200";
+        }
+      });
+
+      renderMotorButtons();
+      updateUI();
+    }
+
+    function setDesatMode(mode) {
+      desatMode = mode;
+      const btnPriority = document.getElementById('btn-desat-priority');
+      const btnClamp = document.getElementById('btn-desat-clamp');
+
+      if (mode === 'priority') {
+        btnPriority.className = "px-2.5 py-1 text-xs font-medium rounded transition-all bg-emerald-600 text-white shadow";
+        btnClamp.className = "px-2.5 py-1 text-xs font-medium rounded transition-all text-slate-400 hover:text-slate-200";
+      } else {
+        btnPriority.className = "px-2.5 py-1 text-xs font-medium rounded transition-all text-slate-400 hover:text-slate-200";
+        btnClamp.className = "px-2.5 py-1 text-xs font-medium rounded transition-all bg-rose-600 text-white shadow";
+      }
+      updateUI();
+    }
+
+    function setMatrixTab(tab) {
+      matrixTab = tab;
+      const tabInv = document.getElementById('tab-mat-inv');
+      const tabFwd = document.getElementById('tab-mat-fwd');
+
+      if (tab === 'inv') {
+        tabInv.className = "px-2 py-0.5 rounded font-semibold bg-cyan-950 text-cyan-400 border border-cyan-800";
+        tabFwd.className = "px-2 py-0.5 rounded text-slate-400 hover:text-slate-200";
+      } else {
+        tabFwd.className = "px-2 py-0.5 rounded font-semibold bg-cyan-950 text-cyan-400 border border-cyan-800";
+        tabInv.className = "px-2 py-0.5 rounded text-slate-400 hover:text-slate-200";
+      }
+      updateUI();
+    }
+
+    function toggleMotor(index) {
+      motorHealth[index] = motorHealth[index] === 1 ? 0 : 1;
+      renderMotorButtons();
+      updateUI();
+    }
+
+    function healAllMotors() {
+      const config = AIRFRAME_CONFIGS[airframe];
+      motorHealth = new Array(config.numMotors).fill(1);
+      renderMotorButtons();
+      updateUI();
+    }
+
+    function resetAll() {
+      demandedWrench.F_z = -16.0;
+      demandedWrench.M_x = 0.0;
+      demandedWrench.M_y = 0.0;
+      demandedWrench.M_z = 0.0;
+      document.getElementById('slider-thrust').value = 16.0;
+      document.getElementById('slider-roll').value = 0.0;
+      document.getElementById('slider-pitch').value = 0.0;
+      document.getElementById('slider-yaw').value = 0.0;
+      healAllMotors();
+      setDesatMode('priority');
+    }
+
+    function applyPreset(preset) {
+      switch (preset) {
+        case 'hover':
+          demandedWrench = { F_z: -16.0, M_x: 0.0, M_y: 0.0, M_z: 0.0 };
+          document.getElementById('slider-thrust').value = 16.0;
+          document.getElementById('slider-roll').value = 0.0;
+          document.getElementById('slider-pitch').value = 0.0;
+          document.getElementById('slider-yaw').value = 0.0;
+          healAllMotors();
+          break;
+        case 'pitch':
+          demandedWrench = { F_z: -16.0, M_x: 0.0, M_y: 0.50, M_z: 0.0 };
+          document.getElementById('slider-thrust').value = 16.0;
+          document.getElementById('slider-roll').value = 0.0;
+          document.getElementById('slider-pitch').value = 0.50;
+          document.getElementById('slider-yaw').value = 0.0;
+          break;
+        case 'roll':
+          demandedWrench = { F_z: -16.0, M_x: 1.20, M_y: 0.0, M_z: 0.0 };
+          document.getElementById('slider-thrust').value = 16.0;
+          document.getElementById('slider-roll').value = 1.20;
+          document.getElementById('slider-pitch').value = 0.0;
+          document.getElementById('slider-yaw').value = 0.0;
+          break;
+        case 'sat_climb':
+          demandedWrench = { F_z: -28.0, M_x: 0.0, M_y: 1.50, M_z: 0.0 };
+          document.getElementById('slider-thrust').value = 28.0;
+          document.getElementById('slider-roll').value = 0.0;
+          document.getElementById('slider-pitch').value = 1.50;
+          document.getElementById('slider-yaw').value = 0.0;
+          break;
+        case 'hex_failure':
+          setAirframe('hex');
+          demandedWrench = { F_z: -20.0, M_x: 0.0, M_y: 0.0, M_z: 0.0 };
+          document.getElementById('slider-thrust').value = 20.0;
+          document.getElementById('slider-roll').value = 0.0;
+          document.getElementById('slider-pitch').value = 0.0;
+          document.getElementById('slider-yaw').value = 0.0;
+          motorHealth = [0, 1, 1, 1, 1, 1]; // Motor 1 failed
+          renderMotorButtons();
+          break;
+      }
+      updateUI();
+    }
+
+    // Animation Loop
+    function animate() {
+      animAngle += 0.25;
+      const sol = solveAllocation();
+      renderAirframe(sol);
+      requestAnimationFrame(animate);
+    }
+
+    // Initialization
+    window.addEventListener('DOMContentLoaded', () => {
+      setAirframe('plus');
+      requestAnimationFrame(animate);
+    });
+  </script>
+</body>
+</html>

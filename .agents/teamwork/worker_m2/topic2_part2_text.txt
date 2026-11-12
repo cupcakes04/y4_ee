@@ -1,0 +1,309 @@
+EEEE4138:
+Aerial Robotics
+Topic 2 Reference Frames and Orientation
+Part 2
+Dr Shalini Darmaraju
+Department of Electrical and Electronic Engineering 
+Faculty of Engineering and Science
+Room DB05, (Block D - First Floor)
+Shalini.Darmaraju@nottingham.edu.my
+---PAGE---
+EEEE4138 Aerial Robotics
+EEEE4138 Aerial Robotics
+Quaternions
+---PAGE---
+EEEE4138 Aerial Robotics
+EEEE4138 Aerial Robotics
+Quaternions
+Advantages
+• Singularity-free.
+• Computationally 
+efficient.
+Disadvantages
+• Non-intuitive.
+---PAGE---
+EEEE4138 Aerial Robotics
+EEEE4138 Aerial Robotics
+Why quaternions?
+At pitch θ = ±90°, roll and yaw are coupled.
+cos θ = 0 when θ = 90 deg.
+This can occur during extreme manoeuvres.
+Unit quaternions avoid this Euler-angle singularity.
+Quaternions can simplify attitude calculations.
+They support algebraic rotation calculations. Computational cost 
+depends on the operation and implementation.
+Gimbal Lock: https://www.youtube.com/watch?v=zc8b2Jo7mno
+---PAGE---
+EEEE4138 Aerial Robotics
+EEEE4138 Aerial Robotics
+What are quaternions?
+Can also be thought of as a vector in four-dimensional space, R4
+q = [𝑞0 𝑞1 𝑞2 𝑞3]
+Also written as
+q = [𝑠 𝑣]
+where 𝑠 is the scalar 𝑞0 and 𝑣 is the vector [𝑞1 𝑞2 𝑞3]
+The product of non-scalar elements is non-commutative:
+𝑖2 = j2 = 𝑘2 = 𝑖j𝑘 = −1
+---PAGE---
+EEEE4138 Aerial Robotics
+EEEE4138 Aerial Robotics
+Quaternion meaning: axis and angle
+A rotation has an axis and an angle θ about that axis.
+A unit quaternion stores this using four numbers, scalar first.
+q = [cos(θ/2), a sin(θ/2)]
+a is a unit vector along the rotation axis.
+The four components have squared sum 1.
+q and −q describe the same orientation.
+---PAGE---
+EEEE4138 Aerial Robotics
+Quaternion operations
+Conjugate
+q∗ = 𝑞0 − 𝑖𝑞1 − j𝑞2 − 𝑘𝑞3
+Corollary
+𝑞∗ ∗ = 𝑞
+𝑝𝑞 ∗ = 𝑞∗𝑝∗
+Length (Norm)
+q  = 𝑞2 + 𝑞2 + 𝑞2 + 𝑞2,
+0 1 2 3 equals 1 if it’s a unit quaternion
+Normalization qq𝑢𝑛𝑖𝑡 = q
+Inverse q−1 = q∗
+q ２
+---PAGE---
+EEEE4138 Aerial Robotics
+EEEE4138 Aerial Robotics
+Example: normalisation and inverse
+Given q = [2, 0, 0, 2], calculate its norm.
+‖q‖ = √(2² + 0² + 0² + 2²) = √8
+Divide every component by √8:
+q_unit = [1/√2, 0, 0, 1/√2]
+For this unit quaternion, the inverse is its conjugate:
+q_unit⁻¹ = q_unit* = [1/√2, 0, 0, −1/√2]
+---PAGE---
+EEEE4138 Aerial Robotics
+EEEE4138 Aerial Robotics
+Example: 90° rotation about z
+Axis a = [0, 0, 1] and half-angle θ/2 = 45°.
+q = [cos45°, 0, 0, sin45°]
+q = [1/√2, 0, 0, 1/√2]
+Check: (1/√2)² + (1/√2)² = 1.
+Your turn: construct q for a +60° rotation about x.
+Use cos30° = √3/2 and sin30° = 1/2.
+---PAGE---
+EEEE4138 Aerial Robotics
+EEEE4138 Aerial Robotics
+Quaternion operations
+Rotation
+A quaternion can represent a rotation by angle 𝜃 around a unit 
+vector 𝑎 = [𝑎𝑥 𝑎𝑦 𝑎𝑧] :
+To rotate a point (vector) 𝑝′ = [𝑝𝑥 𝑝𝑦 𝑝𝑧] , convert it to a quaternion
+𝑝 = 0 + 𝑣
+Then, the rotated vector is:
+𝑟 = 𝑞 ⊗ 𝑝 ⊗ 𝑞∗
+---PAGE---
+EEEE4138 Aerial Robotics
+EEEE4138 Aerial Robotics
+Kinematics
+---PAGE---
+EEEE4138 Aerial Robotics
+State variables definitions
+Variable Description
+𝑝𝑛 Inertial north position of the AR along ii in ℱ
+𝑝𝑒 Inertial east position of the AR along ji in ℱ𝑖
+𝑝𝑑 Inertial down position (negative of altitude) 
+measured along ki in ℱ𝑖
+𝑢 Body frame velocity measured along ib in ℱ𝑏
+𝑣 Body frame velocity measured along jb in ℱ𝑏
+w Body frame velocity measured along kb in ℱ
+𝑖
+of the AR
+𝑏
+Variable Description
+𝝓 Roll angle defined with respect to ℱ𝑣2
+𝜃 Pitch angle defined with respect to ℱ𝑣1
+Ψ Heading (yaw) angle defined with respect to ℱ𝑣
+𝑝 Roll rate measured along ib in ℱ𝑏
+q Pitch rate measured along jb in ℱ𝑏
+𝑟 Yaw rate measured along kb in ℱ𝑏
+---PAGE---
+EEEE4138 Aerial Robotics
+EEEE4138 Aerial Robotics
+Translational velocities
+The components 𝑢, 𝑣, and w correspond to the inertial velocity of the vehicle 
+projected onto the ib, jb, and kb axes, respectively.
+The translational position of the AR is usually measured and expressed in an 
+inertial reference frame.
+Relating the translational velocity and position requires differentiation and a 
+rotational transformation;
+𝑑 𝑝𝑛
+𝑝𝑒
+𝑑𝑡  𝑝 𝑏= 𝑅𝑣𝑑
+𝑢
+𝑣 
+w
+= 𝑣𝑅𝑏 𝑇
+𝑢
+𝑣 
+w
+Replacing for the rotation matrix yield
+
+---PAGE---
+EEEE4138 Aerial Robotics
+EEEE4138 Aerial Robotics
+Exercise: body velocity to NED
+A level UAV points 30° east of north.
+Body velocity is [u, v, w] = [4, 0, 0] m/s.
+Find its NED velocity and displacement after 5 s.
+For level flight:
+North rate = u cosψ − v sinψ
+East rate = u sinψ + v cosψ; down rate = w
+Assume constant heading and velocity.
+---PAGE---
+EEEE4138 Aerial Robotics
+EEEE4138 Aerial Robotics
+Angular rates
+The components 𝑝, q, and 𝑟 correspond to the angular rates defined in the body 
+frame ℱ𝑏.
+The angular positions (Euler angles) 𝝓, 𝜃, and Ψ are defined in three 
+different frames:
+• Roll angle 𝝓 is a rotation from ℱ𝑣2 to ℱ𝑏 about the iv2=ib axis;
+• Pitch angle 𝜃 is a rotation from ℱ𝑣1 to ℱ𝑣2 about the jv1=jv2 axis; and
+• Yaw angle Ψ is a rotation from ℱ𝑣 to ℱ𝑣1 about the kv=kv1 axis.
+The body-frame angular rates can be expressed in terms of the derivatives of the 
+Euler angles, provided that the proper rotational transformations are carried out.
+---PAGE---
+EEEE4138 Aerial Robotics
+Angular rates
+• Roll angle 𝝓 is a rotation from ℱ𝑣2 to ℱ𝑏 about the iv2=ib axis;
+• Pitch angle 𝜃 is a rotation from ℱ𝑣1 to ℱ𝑣2 about the jv1=jv2 axis; and
+• Yaw angle Ψ  is a rotation from ℱ𝑣 to ℱ𝑣1 about the kv=kv1 axis.
+
+---PAGE---
+EEEE4138 Aerial Robotics
+Angular rates
+• Roll angle 𝝓 is a rotation from ℱ𝑣2 to ℱ𝑏 about the iv2=ib axis;
+• Pitch angle 𝜃 is a rotation from ℱ𝑣1 to ℱ𝑣2 about the jv1=jv2 axis; and
+• Yaw angle Ψ  is a rotation from ℱ𝑣 to ℱ𝑣1 about the kv=kv1 axis.
+𝑝
+𝑞
+𝑟
+𝑣2= + 𝑅𝑏 𝜙
+0
+𝜃˙
+0
+𝑣2+ 𝑅𝑏 𝑣1𝜙 𝑅𝑣2  𝜃
+0
+0
+Ψ˙
+𝜙˙ 
+0
+0
+𝑝 𝜙˙
+𝑞 = 0
+𝑟 0
+𝜃
++
+1
+0
+0
+𝐶𝜙
+0
+𝑆𝜙
+0
+𝜃˙ +
+1
+0
+0
+𝐶𝜙
+0
+𝑆𝜙
+𝐶𝜃
+0
+0
+1
+−𝑆
+0
+0 −𝑆𝜙 𝐶𝜙 0 0 −𝑆𝜙 𝐶𝜙 𝑆𝜃 0 𝐶𝜃
+0
+0
+Ψ˙
+𝑝
+𝑞
+𝑟
+=
+1 0 −𝑆𝜃 𝜙˙
+0 𝐶𝜙 𝑆𝜙 𝐶𝜃 𝜃˙
+0 −𝑆𝜙 𝐶𝜙 𝐶𝜃 Ψ˙
+Inverting this gives the Euler-
+angle rate mapping:
+𝜙˙
+𝜃˙
+Ψ˙
+ 
+=
+1 𝑆𝜙 𝑇𝜃
+0 𝐶𝜙
+0 𝑆𝜙/𝐶𝜃
+𝐶𝜙 𝑇𝜃 𝑝
+−𝑆𝜙 𝑞
+𝐶𝜙/𝐶𝜃 𝑟
+---PAGE---
+EEEE4138 Aerial Robotics
+EEEE4138 Aerial Robotics
+Homogeneous 
+Transformation
+---PAGE---
+EEEE4138 Aerial Robotics
+EEEE4138 Aerial Robotics
+Homogeneous Transformation…
+Homogeneous transformations combine rotations 
+and displacements into a single transformation 
+matrix;
+𝐻 = 𝑅 𝐷0 1
+𝐻 =
+𝑛𝑥 𝑜𝑥 𝑠𝑥 𝑑𝑥
+𝑛𝑦 𝑜𝑦 𝑠𝑦 𝑑𝑦
+𝑛𝑧 𝑜𝑧 𝑠𝑧 𝑑𝑧
+0 0 0 1
+---PAGE---
+EEEE4138 Aerial Robotics
+EEEE4138 Aerial Robotics
+Homogeneous Vectors…
+For points, append 1 as shown below. For directions, 
+append 0 so translation has no effect.
+𝑃 = 𝑝1 1𝑃0 = 𝐻0 𝑃1
+𝑃 =
+𝑝𝑥
+𝑝𝑦
+𝑝𝑧 
+1
+𝑃0 =
+𝑥 𝑥 𝑥𝑛 𝑜 𝑠 𝑑𝑥
+𝑛𝑦 𝑜𝑦 𝑠𝑦 𝑑𝑦
+𝑛𝑧 𝑜𝑧 𝑠𝑧 𝑑𝑧
+0 0 0 1
+𝑥𝑝1
+𝑦𝑝1
+𝑝1𝑧
+1
+---PAGE---
+EEEE4138 Aerial Robotics
+EEEE4138 Aerial Robotics
+Exercise: locating a camera
+A level UAV faces east. Its NED position is [10, 20, −5] m.
+The camera is 0.30 m forward and 0.10 m body-down.
+Find the camera position in NED coordinates.
+1. Rotate the body offset [0.30, 0, 0.10] into NED.
+2. Add the UAV position.
+Hint: body forward points east; positive down is below.
+---PAGE---
+EEEE4138 Aerial Robotics
+EEEE4138 Aerial Robotics
+Inverse Transformation…
+Homogeneous transformations can be reversed by 
+inverting H. The following shortcut can be used to 
+do that:
+𝐻 = 𝑅 𝐷0 1
+𝐻−1 = 𝑅𝑇
+0
+−𝑅𝑇𝐷 
+1

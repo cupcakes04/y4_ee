@@ -1,0 +1,1115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Topic 2: 3D Coordinate Frames & Gimbal Lock Simulator — EEEE4138</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Offline Fallback Styles -->
+  <style>
+    /* Safe fallback styling if Tailwind CDN is offline */
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: #020617;
+      color: #f8fafc;
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+    input[type=range] {
+      accent-color: #38bdf8;
+    }
+    .hud-panel {
+      background: rgba(15, 23, 42, 0.75);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(51, 65, 85, 0.5);
+    }
+    @keyframes pulse-red {
+      0%, 100% { opacity: 1; border-color: rgba(239, 68, 68, 1); box-shadow: 0 0 15px rgba(239, 68, 68, 0.5); }
+      50% { opacity: 0.6; border-color: rgba(239, 68, 68, 0.4); box-shadow: 0 0 5px rgba(239, 68, 68, 0.2); }
+    }
+    .gimbal-lock-pulse {
+      animation: pulse-red 1s infinite;
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans selection:bg-cyan-500 selection:text-white">
+
+  <!-- TOP HEADER / NAVIGATION -->
+  <header class="border-b border-slate-800 bg-slate-900/90 px-4 py-3 backdrop-blur sticky top-0 z-50 flex flex-wrap items-center justify-between gap-3 shadow-md">
+    <div class="flex items-center gap-3">
+      <div class="h-9 w-9 rounded-lg bg-gradient-to-tr from-cyan-600 to-blue-500 flex items-center justify-center font-bold text-lg shadow-lg shadow-cyan-500/20">
+        3D
+      </div>
+      <div>
+        <h1 class="text-base md:text-lg font-bold tracking-tight text-white flex items-center gap-2">
+          3D Coordinate Frames & Gimbal Lock Simulator
+          <span class="text-xs px-2 py-0.5 rounded-full bg-cyan-950 text-cyan-400 border border-cyan-800 font-mono">Topic 2</span>
+        </h1>
+        <p class="text-xs text-slate-400 hidden sm:block">
+          EEEE4138 Aerial Robotics &bull; Interactive Tait-Bryan ZYX Rotations, Direction Cosine Matrix & Unit Quaternions
+        </p>
+      </div>
+    </div>
+
+    <!-- Quick Status Badges -->
+    <div class="flex items-center gap-2 text-xs font-mono">
+      <div id="statusDCM" class="px-2.5 py-1 rounded bg-slate-800 border border-slate-700 text-emerald-400 flex items-center gap-1.5">
+        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+        det(R) = +1.0000
+      </div>
+      <div id="statusQuat" class="px-2.5 py-1 rounded bg-slate-800 border border-slate-700 text-cyan-400 flex items-center gap-1.5">
+        <span class="w-2 h-2 rounded-full bg-cyan-400"></span>
+        ||q|| = 1.0000
+      </div>
+      <div id="statusSingularity" class="px-2.5 py-1 rounded bg-slate-800 border border-slate-700 text-emerald-400 font-semibold">
+        Regime: Nominal
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN SIMULATOR LAYOUT -->
+  <main class="flex-1 p-3 md:p-4 grid grid-cols-1 lg:grid-cols-12 gap-4 max-w-[1920px] mx-auto w-full">
+
+    <!-- LEFT COLUMN: CONTROLS & PRESETS (lg:col-span-4 xl:col-span-3) -->
+    <div class="lg:col-span-4 xl:col-span-3 flex flex-col gap-4">
+
+      <!-- EULER ATTITUDE SLIDERS -->
+      <section class="hud-panel rounded-xl p-4 shadow-xl border border-slate-800 flex flex-col gap-3">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+          <h2 class="text-sm font-semibold text-cyan-400 uppercase tracking-wider flex items-center gap-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
+            Euler Attitude Controls (ZYX)
+          </h2>
+          <span class="text-xs font-mono text-slate-400">Intrinsic Sequence</span>
+        </div>
+
+        <!-- YAW SLIDER (ψ) -->
+        <div class="space-y-1">
+          <div class="flex justify-between items-center text-xs">
+            <label for="sliderYaw" class="font-medium text-cyan-300 flex items-center gap-1">
+              <span class="w-2.5 h-2.5 rounded-full bg-cyan-400 inline-block"></span>
+              Yaw $\psi$ (Heading about $Z_v$)
+            </label>
+            <div class="flex items-center gap-1">
+              <input type="number" id="numYaw" min="-180" max="180" step="1" value="0" class="w-16 bg-slate-900 border border-slate-700 rounded px-1.5 py-0.5 text-right font-mono text-xs text-cyan-300 focus:outline-none focus:border-cyan-500">
+              <span class="text-slate-400 font-mono">°</span>
+            </div>
+          </div>
+          <input type="range" id="sliderYaw" min="-180" max="180" step="1" value="0" class="w-full h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer">
+          <div class="flex justify-between text-[10px] text-slate-500 font-mono">
+            <span>-180°</span>
+            <span>0°</span>
+            <span>+180°</span>
+          </div>
+        </div>
+
+        <!-- PITCH SLIDER (θ) -->
+        <div class="space-y-1">
+          <div class="flex justify-between items-center text-xs">
+            <label for="sliderPitch" class="font-medium text-emerald-300 flex items-center gap-1">
+              <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 inline-block"></span>
+              Pitch $\theta$ (Elevation about $Y_{v1}$)
+            </label>
+            <div class="flex items-center gap-1">
+              <input type="number" id="numPitch" min="-90" max="90" step="0.5" value="0" class="w-16 bg-slate-900 border border-slate-700 rounded px-1.5 py-0.5 text-right font-mono text-xs text-emerald-300 focus:outline-none focus:border-emerald-500">
+              <span class="text-slate-400 font-mono">°</span>
+            </div>
+          </div>
+          <input type="range" id="sliderPitch" min="-90" max="90" step="0.5" value="0" class="w-full h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer">
+          <div class="flex justify-between text-[10px] text-slate-500 font-mono">
+            <span>-90° (Down)</span>
+            <span>0° (Level)</span>
+            <span>+90° (Up)</span>
+          </div>
+        </div>
+
+        <!-- ROLL SLIDER (ϕ) -->
+        <div class="space-y-1">
+          <div class="flex justify-between items-center text-xs">
+            <label for="sliderRoll" class="font-medium text-amber-300 flex items-center gap-1">
+              <span class="w-2.5 h-2.5 rounded-full bg-amber-400 inline-block"></span>
+              Roll $\phi$ (Bank about $X_{v2} = X_b$)
+            </label>
+            <div class="flex items-center gap-1">
+              <input type="number" id="numRoll" min="-180" max="180" step="1" value="0" class="w-16 bg-slate-900 border border-slate-700 rounded px-1.5 py-0.5 text-right font-mono text-xs text-amber-300 focus:outline-none focus:border-amber-500">
+              <span class="text-slate-400 font-mono">°</span>
+            </div>
+          </div>
+          <input type="range" id="sliderRoll" min="-180" max="180" step="1" value="0" class="w-full h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer">
+          <div class="flex justify-between text-[10px] text-slate-500 font-mono">
+            <span>-180°</span>
+            <span>0°</span>
+            <span>+180°</span>
+          </div>
+        </div>
+
+        <!-- SNAP & PRESET BUTTONS -->
+        <div class="pt-2 border-t border-slate-800 flex flex-col gap-2">
+          <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Flight Presets & Test Drills</span>
+          <div class="grid grid-cols-2 gap-1.5">
+            <button id="btnReset" class="px-2.5 py-1.5 rounded bg-slate-800 hover:bg-slate-700 text-xs font-medium text-slate-200 border border-slate-700 transition flex items-center justify-center gap-1">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+              Level Hover (0,0,0)
+            </button>
+            <button id="btnLockPos" class="px-2.5 py-1.5 rounded bg-rose-950 hover:bg-rose-900 text-xs font-medium text-rose-300 border border-rose-800 transition flex items-center justify-center gap-1 shadow-sm shadow-rose-900/40">
+              ⚡ Snap Lock (+90°)
+            </button>
+            <button id="btnLockNeg" class="px-2.5 py-1.5 rounded bg-rose-950/80 hover:bg-rose-900 text-xs font-medium text-rose-300 border border-rose-800/80 transition flex items-center justify-center gap-1">
+              ⚡ Snap Lock (-90°)
+            </button>
+            <button id="btnTutorial1Q6" class="px-2.5 py-1.5 rounded bg-blue-950 hover:bg-blue-900 text-xs font-medium text-blue-300 border border-blue-800 transition flex items-center justify-center gap-1">
+              📝 Tutorial 1 Q6 Drill
+            </button>
+            <button id="btnBankedTurn" class="px-2.5 py-1.5 rounded bg-slate-800 hover:bg-slate-700 text-xs font-medium text-slate-200 border border-slate-700 transition flex items-center justify-center gap-1">
+              ✈ Banked Turn (30,-10,45)
+            </button>
+            <button id="btnFastForward" class="px-2.5 py-1.5 rounded bg-slate-800 hover:bg-slate-700 text-xs font-medium text-slate-200 border border-slate-700 transition flex items-center justify-center gap-1">
+              🚀 Forward Tilt (0,-20,0)
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- VISUALIZATION TOGGLES -->
+      <section class="hud-panel rounded-xl p-4 shadow-xl border border-slate-800 flex flex-col gap-2.5">
+        <h2 class="text-sm font-semibold text-cyan-400 uppercase tracking-wider flex items-center gap-2 border-b border-slate-800 pb-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+          Render Layers & Camera
+        </h2>
+        <div class="grid grid-cols-2 gap-2 text-xs">
+          <label class="flex items-center gap-2 cursor-pointer select-none">
+            <input type="checkbox" id="chkGimbals" checked class="rounded bg-slate-800 border-slate-700 text-cyan-500 focus:ring-0">
+            <span>Gimbal Rings (3D)</span>
+          </label>
+          <label class="flex items-center gap-2 cursor-pointer select-none">
+            <input type="checkbox" id="chkAirframe" checked class="rounded bg-slate-800 border-slate-700 text-cyan-500 focus:ring-0">
+            <span>Quadrotor Mesh</span>
+          </label>
+          <label class="flex items-center gap-2 cursor-pointer select-none">
+            <input type="checkbox" id="chkBodyAxes" checked class="rounded bg-slate-800 border-slate-700 text-cyan-500 focus:ring-0">
+            <span class="text-emerald-300">Body FRD Axes</span>
+          </label>
+          <label class="flex items-center gap-2 cursor-pointer select-none">
+            <input type="checkbox" id="chkInertialAxes" checked class="rounded bg-slate-800 border-slate-700 text-cyan-500 focus:ring-0">
+            <span class="text-slate-300">Inertial NED Axes</span>
+          </label>
+          <label class="flex items-center gap-2 cursor-pointer select-none">
+            <input type="checkbox" id="chkIntermediate" class="rounded bg-slate-800 border-slate-700 text-cyan-500 focus:ring-0">
+            <span class="text-slate-400">Intermediate Frames</span>
+          </label>
+          <label class="flex items-center gap-2 cursor-pointer select-none">
+            <input type="checkbox" id="chkAutoOrbit" class="rounded bg-slate-800 border-slate-700 text-cyan-500 focus:ring-0">
+            <span class="text-cyan-400">Auto-Orbit Camera</span>
+          </label>
+        </div>
+        <button id="btnResetCam" class="mt-1 px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-xs text-slate-300 border border-slate-700 transition flex items-center justify-center gap-1">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path></svg>
+          Reset 3D Viewpoint
+        </button>
+      </section>
+
+      <!-- LIVE TUTORIAL 1 VELOCITY TRANSFORM CALCULATOR -->
+      <section class="hud-panel rounded-xl p-4 shadow-xl border border-slate-800 flex flex-col gap-2.5">
+        <h2 class="text-sm font-semibold text-cyan-400 uppercase tracking-wider flex items-center gap-2 border-b border-slate-800 pb-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+          Body $\to$ NED Velocity Projector
+        </h2>
+        <div class="grid grid-cols-3 gap-2 text-xs">
+          <div>
+            <label class="text-[10px] text-slate-400 font-mono">u (Forward):</label>
+            <input type="number" id="inputU" value="4.0" step="0.5" class="w-full bg-slate-900 border border-slate-700 rounded px-1.5 py-0.5 font-mono text-cyan-300 text-right">
+          </div>
+          <div>
+            <label class="text-[10px] text-slate-400 font-mono">v (Right):</label>
+            <input type="number" id="inputV" value="0.0" step="0.5" class="w-full bg-slate-900 border border-slate-700 rounded px-1.5 py-0.5 font-mono text-cyan-300 text-right">
+          </div>
+          <div>
+            <label class="text-[10px] text-slate-400 font-mono">w (Down):</label>
+            <input type="number" id="inputW" value="0.0" step="0.5" class="w-full bg-slate-900 border border-slate-700 rounded px-1.5 py-0.5 font-mono text-cyan-300 text-right">
+          </div>
+        </div>
+        <div class="bg-slate-900/90 rounded p-2 border border-slate-800 font-mono text-xs space-y-1">
+          <div class="flex justify-between">
+            <span class="text-rose-400">ṗ_n (North):</span>
+            <span id="resPn" class="font-bold text-white">+3.464 m/s</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-emerald-400">ṗ_e (East):</span>
+            <span id="resPe" class="font-bold text-white">+2.000 m/s</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-blue-400">ṗ_d (Down):</span>
+            <span id="resPd" class="font-bold text-white">0.000 m/s</span>
+          </div>
+        </div>
+      </section>
+
+    </div>
+
+    <!-- CENTER COLUMN: 3D INTERACTIVE CANVAS VIEWPORT (lg:col-span-8 xl:col-span-6) -->
+    <div class="lg:col-span-8 xl:col-span-6 flex flex-col gap-3 min-h-[500px] lg:min-h-0">
+
+      <!-- GIMBAL LOCK PULSING ALERT BANNER -->
+      <div id="gimbalAlertBanner" class="hidden rounded-xl border p-3.5 bg-rose-950/70 text-rose-200 border-rose-500/80 gimbal-lock-pulse flex items-start gap-3 shadow-xl">
+        <div class="text-xl">⚠️</div>
+        <div class="text-xs space-y-1">
+          <div class="font-bold text-sm tracking-wide text-rose-100 flex items-center gap-2">
+            GIMBAL LOCK SINGULARITY ACTIVE ($|\theta| \ge 85^\circ$)
+            <span class="px-1.5 py-0.2 rounded bg-rose-800 text-[10px] font-mono">det(W_η⁻¹) ≈ 0</span>
+          </div>
+          <p>
+            Pitch is vertical ($\theta = \pm 90^\circ$). The <strong>Roll ($X_b$)</strong> and <strong>Yaw ($Z_v$)</strong> gimbal rings have become strictly <strong>collinear</strong> in space! One rotational degree of freedom is physically and mathematically lost.
+          </p>
+          <p class="font-mono text-[11px] text-rose-300">
+            &bull; $R_v^b$ collapses to dependence purely on difference $(\phi - \psi)$ &bull; Euler rates $[\dot{\phi}, \dot{\psi}] \to \infty$ &bull; Quaternion attitude propagation remains valid and smooth.
+          </p>
+        </div>
+      </div>
+
+      <!-- CANVAS CONTAINER -->
+      <div class="relative flex-1 bg-slate-900 rounded-2xl border border-slate-800 overflow-hidden shadow-2xl flex flex-col">
+
+        <!-- Overlay HUD (Top-Left) -->
+        <div class="absolute top-3 left-3 z-10 pointer-events-none flex flex-col gap-1.5 font-mono text-xs">
+          <div class="px-2.5 py-1 rounded-md bg-slate-950/80 backdrop-blur border border-slate-800 text-slate-300 flex items-center gap-2">
+            <span class="text-cyan-400 font-semibold">Tait-Bryan ZYX:</span>
+            <span>$\psi$</span> &rarr; <span>$\theta$</span> &rarr; <span>$\phi$</span>
+          </div>
+          <div class="px-2.5 py-1 rounded-md bg-slate-950/80 backdrop-blur border border-slate-800 text-slate-400 flex items-center gap-2">
+            <span class="text-rose-400 font-semibold">Red:</span> Forward/North &bull;
+            <span class="text-emerald-400 font-semibold">Green:</span> Starboard/East &bull;
+            <span class="text-blue-400 font-semibold">Blue:</span> Down
+          </div>
+        </div>
+
+        <!-- Overlay HUD (Top-Right Camera Info) -->
+        <div class="absolute top-3 right-3 z-10 pointer-events-none font-mono text-[11px] text-slate-400 px-2 py-1 rounded bg-slate-950/80 border border-slate-800 flex items-center gap-2">
+          <span>Camera: <span id="camAzimuth" class="text-slate-200">45°</span> az, <span id="camElevation" class="text-slate-200">25°</span> el</span>
+          <span class="text-slate-600">|</span>
+          <span class="text-cyan-400">Drag to Orbit &bull; Scroll to Zoom</span>
+        </div>
+
+        <!-- 3D CANVAS (Zero WebGL, pure HTML5 2D context perspective rendering) -->
+        <canvas id="canvas3D" class="w-full h-full flex-1 cursor-grab active:cursor-grabbing block"></canvas>
+
+        <!-- Live Legend Bottom Bar -->
+        <div class="bg-slate-950/90 border-t border-slate-800/80 px-4 py-2 flex flex-wrap items-center justify-between gap-3 text-xs font-mono text-slate-400">
+          <div class="flex items-center gap-4">
+            <span class="flex items-center gap-1.5"><span class="w-3 h-0.5 bg-cyan-400 inline-block"></span> Yaw Ring (ψ)</span>
+            <span class="flex items-center gap-1.5"><span class="w-3 h-0.5 bg-emerald-400 inline-block"></span> Pitch Ring (θ)</span>
+            <span class="flex items-center gap-1.5"><span class="w-3 h-0.5 bg-amber-400 inline-block"></span> Roll Ring (ϕ)</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="text-slate-500">Coordinate Convention:</span>
+            <span class="text-slate-300 font-semibold">NED Inertial &bull; FRD Body</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT COLUMN: TELEMETRY & MATH HUD (lg:col-span-12 xl:col-span-3) -->
+    <div class="lg:col-span-12 xl:col-span-3 flex flex-col gap-4">
+
+      <!-- DIRECTION COSINE MATRIX (DCM R_b^n) -->
+      <section class="hud-panel rounded-xl p-4 shadow-xl border border-slate-800 flex flex-col gap-3">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+          <h2 class="text-sm font-semibold text-cyan-400 uppercase tracking-wider flex items-center gap-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+            Direction Cosine Matrix $R_b^n$
+          </h2>
+          <span class="text-xs font-mono text-emerald-400">SO(3)</span>
+        </div>
+
+        <p class="text-[11px] text-slate-400">
+          Transforms body vectors into inertial NED coordinates ($\mathbf{p}^n = R_b^n \mathbf{p}^b$):
+        </p>
+
+        <!-- 3x3 Matrix Grid -->
+        <div class="grid grid-cols-3 gap-1.5 font-mono text-xs text-center bg-slate-900/90 p-2 rounded-lg border border-slate-800 shadow-inner">
+          <div id="m00" class="p-1 rounded bg-slate-800/80 border border-slate-700/60 text-cyan-200">1.0000</div>
+          <div id="m01" class="p-1 rounded bg-slate-800/80 border border-slate-700/60 text-slate-300">0.0000</div>
+          <div id="m02" class="p-1 rounded bg-slate-800/80 border border-slate-700/60 text-slate-300">0.0000</div>
+
+          <div id="m10" class="p-1 rounded bg-slate-800/80 border border-slate-700/60 text-slate-300">0.0000</div>
+          <div id="m11" class="p-1 rounded bg-slate-800/80 border border-slate-700/60 text-emerald-200">1.0000</div>
+          <div id="m12" class="p-1 rounded bg-slate-800/80 border border-slate-700/60 text-slate-300">0.0000</div>
+
+          <div id="m20" class="p-1 rounded bg-slate-800/80 border border-slate-700/60 text-slate-300">0.0000</div>
+          <div id="m21" class="p-1 rounded bg-slate-800/80 border border-slate-700/60 text-slate-300">0.0000</div>
+          <div id="m22" class="p-1 rounded bg-slate-800/80 border border-slate-700/60 text-amber-200">1.0000</div>
+        </div>
+
+        <div class="flex items-center justify-between text-xs font-mono text-slate-400">
+          <span>Determinant $\det(R_b^n)$:</span>
+          <span id="valDet" class="text-emerald-400 font-bold">+1.0000</span>
+        </div>
+        <div class="flex items-center justify-between text-xs font-mono text-slate-400">
+          <span>Orthogonality $(R^T R = I)$:</span>
+          <span class="text-emerald-400 font-semibold">Strictly Preserved</span>
+        </div>
+      </section>
+
+      <!-- UNIT QUATERNION HUD -->
+      <section class="hud-panel rounded-xl p-4 shadow-xl border border-slate-800 flex flex-col gap-3">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+          <h2 class="text-sm font-semibold text-cyan-400 uppercase tracking-wider flex items-center gap-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
+            Unit Quaternion $\mathbf{q} \in \mathbb{S}^3$
+          </h2>
+          <span class="text-xs font-mono text-cyan-400">Singularity-Free</span>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2 text-xs font-mono">
+          <div class="bg-slate-900/90 p-2 rounded border border-slate-800 flex justify-between">
+            <span class="text-slate-400">q₀ (Scalar):</span>
+            <span id="quatQ0" class="font-bold text-white">1.0000</span>
+          </div>
+          <div class="bg-slate-900/90 p-2 rounded border border-slate-800 flex justify-between">
+            <span class="text-rose-400">q₁ (i / Roll):</span>
+            <span id="quatQ1" class="font-bold text-white">0.0000</span>
+          </div>
+          <div class="bg-slate-900/90 p-2 rounded border border-slate-800 flex justify-between">
+            <span class="text-emerald-400">q₂ (j / Pitch):</span>
+            <span id="quatQ2" class="font-bold text-white">0.0000</span>
+          </div>
+          <div class="bg-slate-900/90 p-2 rounded border border-slate-800 flex justify-between">
+            <span class="text-blue-400">q₃ (k / Yaw):</span>
+            <span id="quatQ3" class="font-bold text-white">0.0000</span>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-between text-xs font-mono text-slate-400 pt-1">
+          <span>Norm $\|\mathbf{q}\| = \sqrt{\sum q_i^2}$:</span>
+          <span id="quatNorm" class="text-cyan-400 font-bold">1.0000</span>
+        </div>
+      </section>
+
+      <!-- SINGULARITY CONDITION & TUTORIAL 1 RECOVERY -->
+      <section class="hud-panel rounded-xl p-4 shadow-xl border border-slate-800 flex flex-col gap-3">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+          <h2 class="text-sm font-semibold text-cyan-400 uppercase tracking-wider flex items-center gap-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+            Euler Rate Kinematic Meter
+          </h2>
+          <span class="text-xs font-mono text-amber-400">$W_\eta(\boldsymbol{\eta})$</span>
+        </div>
+
+        <div class="space-y-1.5">
+          <div class="flex justify-between text-xs font-mono">
+            <span class="text-slate-400">Condition $\det(W_\eta^{-1}) = \cos\theta$:</span>
+            <span id="valCosTheta" class="font-bold text-emerald-400">1.0000</span>
+          </div>
+          <!-- Visual condition bar -->
+          <div class="w-full h-2 rounded-full bg-slate-800 overflow-hidden">
+            <div id="barCondition" class="h-full bg-emerald-400 transition-all duration-150" style="width: 100%;"></div>
+          </div>
+        </div>
+
+        <!-- Tutorial 1 recovery drill analysis -->
+        <div class="bg-slate-900/90 rounded-lg p-2.5 border border-slate-800 font-mono text-[11px] space-y-1.5">
+          <div class="text-slate-400 font-sans font-semibold text-xs border-b border-slate-800 pb-1">
+            Tutorial 1 Angle Recovery Analyzer:
+          </div>
+          <div class="flex justify-between">
+            <span class="text-slate-400">Recovered Pitch:</span>
+            <span id="recPitch" class="text-emerald-300">0.0°</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-slate-400">Recovered Roll:</span>
+            <span id="recRoll" class="text-amber-300">0.0°</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-slate-400">Recovered Yaw:</span>
+            <span id="recYaw" class="text-cyan-300">0.0°</span>
+          </div>
+          <div id="recDiffRow" class="hidden flex justify-between text-rose-300 border-t border-rose-900/60 pt-1">
+            <span>Observable (ϕ - ψ):</span>
+            <span id="recDiffVal" class="font-bold">0.0°</span>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <!-- JAVASCRIPT SIMULATION ENGINE (Pure Vanilla JS, 3D math, zero dependencies) -->
+  <script>
+    // --- STATE VARIABLES ---
+    const state = {
+      // Euler Angles (degrees)
+      yaw: 0,
+      pitch: 0,
+      roll: 0,
+      // Camera Orbit Controls
+      camera: {
+        azimuth: 45,     // degrees
+        elevation: 25,   // degrees
+        distance: 7.5,   // distance units
+        isDragging: false,
+        lastMouseX: 0,
+        lastMouseY: 0,
+        autoOrbit: false
+      },
+      // Velocity Inputs (m/s)
+      vel: { u: 4.0, v: 0.0, w: 0.0 },
+      // Visibility Toggles
+      showGimbals: true,
+      showAirframe: true,
+      showBodyAxes: true,
+      showInertialAxes: true,
+      showIntermediate: false
+    };
+
+    // --- DOM REFERENCES ---
+    const canvas = document.getElementById('canvas3D');
+    const ctx = canvas.getContext('2d');
+
+    const sliderYaw = document.getElementById('sliderYaw');
+    const sliderPitch = document.getElementById('sliderPitch');
+    const sliderRoll = document.getElementById('sliderRoll');
+    const numYaw = document.getElementById('numYaw');
+    const numPitch = document.getElementById('numPitch');
+    const numRoll = document.getElementById('numRoll');
+
+    const btnReset = document.getElementById('btnReset');
+    const btnLockPos = document.getElementById('btnLockPos');
+    const btnLockNeg = document.getElementById('btnLockNeg');
+    const btnTutorial1Q6 = document.getElementById('btnTutorial1Q6');
+    const btnBankedTurn = document.getElementById('btnBankedTurn');
+    const btnFastForward = document.getElementById('btnFastForward');
+    const btnResetCam = document.getElementById('btnResetCam');
+
+    const chkGimbals = document.getElementById('chkGimbals');
+    const chkAirframe = document.getElementById('chkAirframe');
+    const chkBodyAxes = document.getElementById('chkBodyAxes');
+    const chkInertialAxes = document.getElementById('chkInertialAxes');
+    const chkIntermediate = document.getElementById('chkIntermediate');
+    const chkAutoOrbit = document.getElementById('chkAutoOrbit');
+
+    const inputU = document.getElementById('inputU');
+    const inputV = document.getElementById('inputV');
+    const inputW = document.getElementById('inputW');
+
+    const resPn = document.getElementById('resPn');
+    const resPe = document.getElementById('resPe');
+    const resPd = document.getElementById('resPd');
+
+    const gimbalAlertBanner = document.getElementById('gimbalAlertBanner');
+    const statusSingularity = document.getElementById('statusSingularity');
+    const valCosTheta = document.getElementById('valCosTheta');
+    const barCondition = document.getElementById('barCondition');
+
+    const quatQ0 = document.getElementById('quatQ0');
+    const quatQ1 = document.getElementById('quatQ1');
+    const quatQ2 = document.getElementById('quatQ2');
+    const quatQ3 = document.getElementById('quatQ3');
+    const quatNorm = document.getElementById('quatNorm');
+
+    const recPitch = document.getElementById('recPitch');
+    const recRoll = document.getElementById('recRoll');
+    const recYaw = document.getElementById('recYaw');
+    const recDiffRow = document.getElementById('recDiffRow');
+    const recDiffVal = document.getElementById('recDiffVal');
+
+    const camAzimuth = document.getElementById('camAzimuth');
+    const camElevation = document.getElementById('camElevation');
+
+    // Matrix DOM cells
+    const mCells = [
+      [document.getElementById('m00'), document.getElementById('m01'), document.getElementById('m02')],
+      [document.getElementById('m10'), document.getElementById('m11'), document.getElementById('m12')],
+      [document.getElementById('m20'), document.getElementById('m21'), document.getElementById('m22')]
+    ];
+
+    // --- MATHEMATICAL FUNCTIONS ---
+    const DEG2RAD = Math.PI / 180;
+    const RAD2DEG = 180 / Math.PI;
+
+    // 3D Vector operations
+    function vec3(x, y, z) { return { x, y, z }; }
+    function vecAdd(a, b) { return { x: a.x + b.x, y: a.y + b.y, z: a.z + b.z }; }
+    function vecSub(a, b) { return { x: a.x - b.x, y: a.y - b.y, z: a.z - b.z }; }
+    function vecScale(v, s) { return { x: v.x * s, y: v.y * s, z: v.z * s }; }
+    function vecDot(a, b) { return a.x * b.x + a.y * b.y + a.z * b.z; }
+    function vecCross(a, b) {
+      return {
+        x: a.y * b.z - a.z * b.y,
+        y: a.z * b.x - a.x * b.z,
+        z: a.x * b.y - a.y * b.x
+      };
+    }
+    function vecNorm(v) { return Math.sqrt(v.x * v.x + v.y * v.y + v.z * v.z); }
+
+    // 3x3 Matrix Multiplication
+    function mat3Multiply(A, B) {
+      const C = [[0,0,0],[0,0,0],[0,0,0]];
+      for (let i = 0; i < 3; i++) {
+        for (let j = 0; j < 3; j++) {
+          C[i][j] = A[i][0]*B[0][j] + A[i][1]*B[1][j] + A[i][2]*B[2][j];
+        }
+      }
+      return C;
+    }
+
+    // Multiply 3x3 Matrix by 3D Vector
+    function mat3Vec(M, v) {
+      return {
+        x: M[0][0]*v.x + M[0][1]*v.y + M[0][2]*v.z,
+        y: M[1][0]*v.x + M[1][1]*v.y + M[1][2]*v.z,
+        z: M[2][0]*v.x + M[2][1]*v.y + M[2][2]*v.z
+      };
+    }
+
+    // Direction Cosine Matrix R_b^n (Body to NED) via Tait-Bryan ZYX sequence
+    function computeDCM(yawDeg, pitchDeg, rollDeg) {
+      const psi = yawDeg * DEG2RAD;
+      const theta = pitchDeg * DEG2RAD;
+      const phi = rollDeg * DEG2RAD;
+
+      const cPsi = Math.cos(psi), sPsi = Math.sin(psi);
+      const cTheta = Math.cos(theta), sTheta = Math.sin(theta);
+      const cPhi = Math.cos(phi), sPhi = Math.sin(phi);
+
+      return [
+        [
+          cTheta * cPsi,
+          sPhi * sTheta * cPsi - cPhi * sPsi,
+          cPhi * sTheta * cPsi + sPhi * sPsi
+        ],
+        [
+          cTheta * sPsi,
+          sPhi * sTheta * sPsi + cPhi * cPsi,
+          cPhi * sTheta * sPsi - sPhi * cPsi
+        ],
+        [
+          -sTheta,
+          sPhi * cTheta,
+          cPhi * cTheta
+        ]
+      ];
+    }
+
+    // Euler to Unit Quaternion
+    function computeQuaternion(yawDeg, pitchDeg, rollDeg) {
+      const psi = (yawDeg * DEG2RAD) / 2;
+      const theta = (pitchDeg * DEG2RAD) / 2;
+      const phi = (rollDeg * DEG2RAD) / 2;
+
+      const cPsi = Math.cos(psi), sPsi = Math.sin(psi);
+      const cTheta = Math.cos(theta), sTheta = Math.sin(theta);
+      const cPhi = Math.cos(phi), sPhi = Math.sin(phi);
+
+      const q0 = cPhi * cTheta * cPsi + sPhi * sTheta * sPsi;
+      const q1 = sPhi * cTheta * cPsi - cPhi * sTheta * sPsi;
+      const q2 = cPhi * sTheta * cPsi + sPhi * cTheta * sPsi;
+      const q3 = cPhi * cTheta * sPsi - sPhi * sTheta * cPsi;
+
+      return { q0, q1, q2, q3 };
+    }
+
+    // --- 3D PERSPECTIVE RENDERING PIPELINE ---
+    // World coordinates convention:
+    // +X: North (Forward)
+    // +Y: East (Right)
+    // +Z: Down (Earth)
+    function project3D(point, width, height) {
+      // Camera spherical coordinates to Cartesian position
+      const az = state.camera.azimuth * DEG2RAD;
+      const el = state.camera.elevation * DEG2RAD;
+      const dist = state.camera.distance;
+
+      // Camera position in world coordinates (looking at origin)
+      const camX = dist * Math.cos(el) * Math.cos(az);
+      const camY = dist * Math.cos(el) * Math.sin(az);
+      const camZ = -dist * Math.sin(el); // camera elevation is upwards, which is -Z in NED
+
+      // Camera basis vectors
+      // Forward view vector: from cam towards origin
+      const fwd = vecScale(vecSub(vec3(0,0,0), vec3(camX, camY, camZ)), 1/dist);
+      // World up vector in NED is -Z (towards sky)
+      const worldUp = vec3(0, 0, -1);
+      // Right vector: fwd x worldUp
+      let right = vecCross(fwd, worldUp);
+      const rNorm = vecNorm(right);
+      if (rNorm > 1e-4) right = vecScale(right, 1/rNorm);
+      else right = vec3(0, 1, 0);
+      // Camera up vector: right x fwd
+      const up = vecCross(right, fwd);
+
+      // Vector from camera to point
+      const rel = vecSub(point, vec3(camX, camY, camZ));
+
+      // Project onto camera axes
+      const depth = vecDot(rel, fwd);
+      const xCam = vecDot(rel, right);
+      const yCam = vecDot(rel, up);
+
+      if (depth <= 0.1) return null; // Behind camera clipping
+
+      // Perspective projection
+      const fov = 650; // Focal length in pixels
+      const xScreen = width / 2 + (xCam / depth) * fov;
+      const yScreen = height / 2 - (yCam / depth) * fov;
+
+      return { x: xScreen, y: yScreen, depth };
+    }
+
+    // Draw 3D Line with depth clipping
+    function drawLine3D(p1, p2, color, lineWidth = 2, dash = []) {
+      const s1 = project3D(p1, canvas.width, canvas.height);
+      const s2 = project3D(p2, canvas.width, canvas.height);
+      if (!s1 || !s2) return;
+
+      ctx.save();
+      ctx.strokeStyle = color;
+      ctx.lineWidth = lineWidth;
+      ctx.setLineDash(dash);
+      ctx.beginPath();
+      ctx.moveTo(s1.x, s1.y);
+      ctx.lineTo(s2.x, s2.y);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    // Draw 3D Text Label
+    function drawText3D(text, point, color, font = "11px monospace", align = "center") {
+      const s = project3D(point, canvas.width, canvas.height);
+      if (!s) return;
+
+      ctx.save();
+      ctx.font = font;
+      ctx.fillStyle = color;
+      ctx.textAlign = align;
+      ctx.textBaseline = "middle";
+      ctx.fillText(text, s.x, s.y);
+      ctx.restore();
+    }
+
+    // --- MAIN RENDER LOOP ---
+    function render() {
+      // Auto-Orbit camera if toggled
+      if (state.camera.autoOrbit && !state.camera.isDragging) {
+        state.camera.azimuth = (state.camera.azimuth + 0.3) % 360;
+        camAzimuth.textContent = `${Math.round(state.camera.azimuth)}°`;
+      }
+
+      // Handle Canvas DPI scaling
+      const rect = canvas.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      if (canvas.width !== rect.width * dpr || canvas.height !== rect.height * dpr) {
+        canvas.width = rect.width * dpr;
+        canvas.height = rect.height * dpr;
+      }
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Direction Cosine Matrix R_b^n
+      const R = computeDCM(state.yaw, state.pitch, state.roll);
+
+      // Intermediate rotation matrices
+      const psi = state.yaw * DEG2RAD;
+      const theta = state.pitch * DEG2RAD;
+      const R_z = [
+        [Math.cos(psi), -Math.sin(psi), 0],
+        [Math.sin(psi), Math.cos(psi), 0],
+        [0, 0, 1]
+      ];
+      const R_y = [
+        [Math.cos(theta), 0, Math.sin(theta)],
+        [0, 1, 0],
+        [-Math.sin(theta), 0, Math.cos(theta)]
+      ];
+      const R_zy = mat3Multiply(R_z, R_y); // Vehicle-2 orientation
+
+      // 1. DRAW INERTIAL HORIZONTAL REFERENCE GRID (at z = +2.0 NED ground)
+      const gridSize = 3.0;
+      const gridStep = 1.0;
+      const groundZ = 2.0;
+      ctx.save();
+      for (let x = -gridSize; x <= gridSize; x += gridStep) {
+        drawLine3D(vec3(x, -gridSize, groundZ), vec3(x, gridSize, groundZ), "rgba(51, 65, 85, 0.25)", 1);
+      }
+      for (let y = -gridSize; y <= gridSize; y += gridStep) {
+        drawLine3D(vec3(-gridSize, y, groundZ), vec3(gridSize, y, groundZ), "rgba(51, 65, 85, 0.25)", 1);
+      }
+      ctx.restore();
+
+      // 2. DRAW FIXED INERTIAL NED AXES (Origin 0,0,0)
+      if (state.showInertialAxes) {
+        const axisLen = 2.2;
+        // North +X (Red)
+        drawLine3D(vec3(0,0,0), vec3(axisLen, 0, 0), "rgba(239, 68, 68, 0.75)", 2.5);
+        drawText3D("+X_n (North)", vec3(axisLen + 0.2, 0, 0), "#f87171");
+        // East +Y (Green)
+        drawLine3D(vec3(0,0,0), vec3(0, axisLen, 0), "rgba(34, 197, 94, 0.75)", 2.5);
+        drawText3D("+Y_n (East)", vec3(0, axisLen + 0.2, 0), "#4ade80");
+        // Down +Z (Blue)
+        drawLine3D(vec3(0,0,0), vec3(0, 0, axisLen), "rgba(59, 130, 246, 0.75)", 2.5);
+        drawText3D("+Z_n (Down)", vec3(0, 0, axisLen + 0.2), "#60a5fa");
+      }
+
+      // 3. DRAW INTERMEDIATE FRAMES (If enabled)
+      if (state.showIntermediate) {
+        const intLen = 1.6;
+        // Vehicle-1 axes (after yaw psi)
+        const v1_x = mat3Vec(R_z, vec3(intLen, 0, 0));
+        const v1_y = mat3Vec(R_z, vec3(0, intLen, 0));
+        drawLine3D(vec3(0,0,0), v1_x, "rgba(56, 189, 248, 0.5)", 1.5, [4, 4]);
+        drawLine3D(vec3(0,0,0), v1_y, "rgba(56, 189, 248, 0.5)", 1.5, [4, 4]);
+        drawText3D("X_v1", v1_x, "#38bdf8", "10px monospace");
+      }
+
+      // 4. DRAW 3 CONCENTRIC 3D GIMBAL RINGS
+      if (state.showGimbals) {
+        const numSegments = 64;
+        const isGimbalLock = Math.abs(state.pitch) >= 85;
+
+        // A. Outer Yaw Ring (Cyan): Fixed in horizontal plane, rotates around Zn
+        const rYaw = 2.0;
+        ctx.save();
+        for (let i = 0; i < numSegments; i++) {
+          const a1 = (i / numSegments) * Math.PI * 2;
+          const a2 = ((i + 1) / numSegments) * Math.PI * 2;
+          // In horizontal plane X_v, Y_v
+          const p1 = mat3Vec(R_z, vec3(rYaw * Math.cos(a1), rYaw * Math.sin(a1), 0));
+          const p2 = mat3Vec(R_z, vec3(rYaw * Math.cos(a2), rYaw * Math.sin(a2), 0));
+          const color = isGimbalLock ? "rgba(244, 63, 94, 0.9)" : "rgba(6, 182, 212, 0.65)";
+          drawLine3D(p1, p2, color, isGimbalLock ? 2.5 : 1.5);
+        }
+        ctx.restore();
+
+        // B. Middle Pitch Ring (Emerald): Pivots around Y_v1 axis
+        const rPitch = 1.7;
+        ctx.save();
+        for (let i = 0; i < numSegments; i++) {
+          const a1 = (i / numSegments) * Math.PI * 2;
+          const a2 = ((i + 1) / numSegments) * Math.PI * 2;
+          // Circle in X-Z plane, rotated by R_zy
+          const pt1Local = vec3(rPitch * Math.cos(a1), 0, rPitch * Math.sin(a1));
+          const pt2Local = vec3(rPitch * Math.cos(a2), 0, rPitch * Math.sin(a2));
+          const p1 = mat3Vec(R_zy, pt1Local);
+          const p2 = mat3Vec(R_zy, pt2Local);
+          drawLine3D(p1, p2, "rgba(16, 185, 129, 0.65)", 1.5);
+        }
+        ctx.restore();
+
+        // C. Inner Roll Ring (Amber): Pivots around X_b axis (attached to airframe)
+        const rRoll = 1.4;
+        ctx.save();
+        for (let i = 0; i < numSegments; i++) {
+          const a1 = (i / numSegments) * Math.PI * 2;
+          const a2 = ((i + 1) / numSegments) * Math.PI * 2;
+          // Circle in Y-Z plane, rotated by full body rotation R
+          const pt1Local = vec3(0, rRoll * Math.cos(a1), rRoll * Math.sin(a1));
+          const pt2Local = vec3(0, rRoll * Math.cos(a2), rRoll * Math.sin(a2));
+          const p1 = mat3Vec(R, pt1Local);
+          const p2 = mat3Vec(R, pt2Local);
+          const color = isGimbalLock ? "rgba(244, 63, 94, 0.9)" : "rgba(245, 158, 11, 0.65)";
+          drawLine3D(p1, p2, color, isGimbalLock ? 2.5 : 1.5);
+        }
+        ctx.restore();
+
+        // Draw Gimbal Bearings / Pivots
+        const pivotY = mat3Vec(R_z, vec3(0, rYaw, 0));
+        const pivotX = mat3Vec(R_zy, vec3(rPitch, 0, 0));
+        drawLine3D(pivotY, vecScale(pivotY, -1), "rgba(6, 182, 212, 0.4)", 1, [2, 2]);
+        drawLine3D(pivotX, vecScale(pivotX, -1), "rgba(16, 185, 129, 0.4)", 1, [2, 2]);
+      }
+
+      // 5. DRAW QUADROTOR AIRFRAME MODEL (X-Configuration)
+      if (state.showAirframe) {
+        const armL = 0.95;
+        const d = armL / Math.SQRT2; // 45 degree arms
+
+        // 4 Motor Positions in Body Frame (FRD)
+        // 1: Front-Left (+x, -y), 2: Front-Right (+x, +y), 3: Rear-Right (-x, +y), 4: Rear-Left (-x, -y)
+        const motorsBody = [
+          vec3(d, -d, 0), // Rotor 1 (CCW)
+          vec3(d, d, 0),  // Rotor 2 (CW)
+          vec3(-d, d, 0), // Rotor 3 (CCW)
+          vec3(-d, -d, 0) // Rotor 4 (CW)
+        ];
+
+        // Transform to Inertial NED
+        const motorsNED = motorsBody.map(m => mat3Vec(R, m));
+        const centerNED = vec3(0, 0, 0);
+
+        // Draw Carbon Fiber Arms
+        drawLine3D(centerNED, motorsNED[0], "#94a3b8", 3);
+        drawLine3D(centerNED, motorsNED[1], "#94a3b8", 3);
+        drawLine3D(centerNED, motorsNED[2], "#64748b", 3);
+        drawLine3D(centerNED, motorsNED[3], "#64748b", 3);
+
+        // Center Fuselage Hub
+        const hubTop = mat3Vec(R, vec3(0, 0, -0.08));
+        const hubBot = mat3Vec(R, vec3(0, 0, 0.08));
+        drawLine3D(hubTop, hubBot, "#38bdf8", 8);
+
+        // Forward Nose Orientation Arrow on Fuselage
+        const noseTip = mat3Vec(R, vec3(0.35, 0, 0));
+        const noseLeft = mat3Vec(R, vec3(0.18, -0.09, 0));
+        const noseRight = mat3Vec(R, vec3(0.18, 0.09, 0));
+        drawLine3D(noseLeft, noseTip, "#ef4444", 2.5);
+        drawLine3D(noseRight, noseTip, "#ef4444", 2.5);
+        drawLine3D(noseLeft, noseRight, "#ef4444", 2.5);
+
+        // Draw 4 Rotor Discs with Spin Directions
+        const propRadius = 0.32;
+        const discSegs = 24;
+        motorsNED.forEach((hub, idx) => {
+          // Draw Motor Pod
+          const podTop = vecAdd(hub, mat3Vec(R, vec3(0, 0, -0.05)));
+          const podBot = vecAdd(hub, mat3Vec(R, vec3(0, 0, 0.05)));
+          drawLine3D(podTop, podBot, "#e2e8f0", 4);
+
+          // Draw Rotor Disc Ring in Body X-Y plane
+          const isCCW = (idx === 0 || idx === 2);
+          const discColor = isCCW ? "rgba(34, 197, 94, 0.7)" : "rgba(56, 189, 248, 0.7)";
+
+          for (let s = 0; s < discSegs; s++) {
+            const t1 = (s / discSegs) * Math.PI * 2;
+            const t2 = ((s + 1) / discSegs) * Math.PI * 2;
+            const p1Local = vecAdd(motorsBody[idx], vec3(propRadius * Math.cos(t1), propRadius * Math.sin(t1), -0.05));
+            const p2Local = vecAdd(motorsBody[idx], vec3(propRadius * Math.cos(t2), propRadius * Math.sin(t2), -0.05));
+            drawLine3D(mat3Vec(R, p1Local), mat3Vec(R, p2Local), discColor, 1.5);
+          }
+          drawText3D(`M${idx+1} (${isCCW?'CCW':'CW'})`, vecAdd(hub, mat3Vec(R, vec3(0, 0, -0.15))), discColor, "9px monospace");
+        });
+      }
+
+      // 6. DRAW MOVING BODY FRD AXES (Anchored to Drone CoM)
+      if (state.showBodyAxes) {
+        const bodyLen = 1.7;
+        const bX = mat3Vec(R, vec3(bodyLen, 0, 0));
+        const bY = mat3Vec(R, vec3(0, bodyLen, 0));
+        const bZ = mat3Vec(R, vec3(0, 0, bodyLen));
+
+        // +X_b Nose/Forward (Bright Red)
+        drawLine3D(vec3(0,0,0), bX, "#f43f5e", 3.5);
+        drawText3D("+X_b (Nose)", bX, "#fb7185", "bold 11px monospace");
+
+        // +Y_b Starboard/Right (Bright Green)
+        drawLine3D(vec3(0,0,0), bY, "#10b981", 3.5);
+        drawText3D("+Y_b (Starboard)", bY, "#34d399", "bold 11px monospace");
+
+        // +Z_b Belly/Down (Bright Blue)
+        drawLine3D(vec3(0,0,0), bZ, "#0ea5e9", 3.5);
+        drawText3D("+Z_b (Belly)", bZ, "#38bdf8", "bold 11px monospace");
+      }
+
+      // Schedule next frame
+      requestAnimationFrame(render);
+    }
+
+    // --- TELEMETRY & MATH HUD UPDATES ---
+    function updateHUD() {
+      const R = computeDCM(state.yaw, state.pitch, state.roll);
+      const Q = computeQuaternion(state.yaw, state.pitch, state.roll);
+
+      // 1. Update DCM table
+      for (let r = 0; r < 3; r++) {
+        for (let c = 0; c < 3; c++) {
+          const val = R[r][c];
+          mCells[r][c].textContent = (val >= 0 ? "+" : "") + val.toFixed(4);
+        }
+      }
+
+      // Determinant
+      const det = R[0][0]*(R[1][1]*R[2][2] - R[1][2]*R[2][1])
+                - R[0][1]*(R[1][0]*R[2][2] - R[1][2]*R[2][0])
+                + R[0][2]*(R[1][0]*R[2][1] - R[1][1]*R[2][0]);
+      document.getElementById('valDet').textContent = (det >= 0 ? "+" : "") + det.toFixed(4);
+
+      // 2. Update Quaternions
+      quatQ0.textContent = (Q.q0 >= 0 ? "+" : "") + Q.q0.toFixed(4);
+      quatQ1.textContent = (Q.q1 >= 0 ? "+" : "") + Q.q1.toFixed(4);
+      quatQ2.textContent = (Q.q2 >= 0 ? "+" : "") + Q.q2.toFixed(4);
+      quatQ3.textContent = (Q.q3 >= 0 ? "+" : "") + Q.q3.toFixed(4);
+      const qNorm = Math.sqrt(Q.q0*Q.q0 + Q.q1*Q.q1 + Q.q2*Q.q2 + Q.q3*Q.q3);
+      quatNorm.textContent = qNorm.toFixed(4);
+
+      // 3. Singularity Condition det(W_η⁻¹) = cos(theta)
+      const cosTheta = Math.cos(state.pitch * DEG2RAD);
+      valCosTheta.textContent = cosTheta.toFixed(4);
+      const absCos = Math.abs(cosTheta);
+      barCondition.style.width = `${Math.round(absCos * 100)}%`;
+
+      if (absCos < 0.15) {
+        barCondition.className = "h-full bg-rose-500 animate-pulse transition-all duration-150";
+        statusSingularity.className = "px-2.5 py-1 rounded bg-rose-950 border border-rose-700 text-rose-300 font-bold animate-pulse";
+        statusSingularity.textContent = "GIMBAL LOCK ACTIVE";
+        gimbalAlertBanner.classList.remove('hidden');
+      } else if (absCos < 0.5) {
+        barCondition.className = "h-full bg-amber-400 transition-all duration-150";
+        statusSingularity.className = "px-2.5 py-1 rounded bg-amber-950 border border-amber-700 text-amber-300 font-medium";
+        statusSingularity.textContent = "Regime: High Pitch";
+        gimbalAlertBanner.classList.add('hidden');
+      } else {
+        barCondition.className = "h-full bg-emerald-400 transition-all duration-150";
+        statusSingularity.className = "px-2.5 py-1 rounded bg-slate-800 border border-slate-700 text-emerald-400 font-semibold";
+        statusSingularity.textContent = "Regime: Nominal";
+        gimbalAlertBanner.classList.add('hidden');
+      }
+
+      // 4. Update Velocity Transformation (Tutorial 1 Drill)
+      const u = parseFloat(inputU.value) || 0;
+      const v = parseFloat(inputV.value) || 0;
+      const w = parseFloat(inputW.value) || 0;
+      const vBody = vec3(u, v, w);
+      const vNED = mat3Vec(R, vBody);
+
+      resPn.textContent = (vNED.x >= 0 ? "+" : "") + vNED.x.toFixed(3) + " m/s";
+      resPe.textContent = (vNED.y >= 0 ? "+" : "") + vNED.y.toFixed(3) + " m/s";
+      resPd.textContent = (vNED.z >= 0 ? "+" : "") + vNED.z.toFixed(3) + " m/s";
+
+      // 5. Tutorial 1 Angle Recovery Analysis
+      // R_v^b is R^T
+      const Rvb = [
+        [R[0][0], R[1][0], R[2][0]],
+        [R[0][1], R[1][1], R[2][1]],
+        [R[0][2], R[1][2], R[2][2]]
+      ];
+
+      if (absCos < 0.087) { // Within 5 degrees of +/- 90
+        recPitch.textContent = (state.pitch > 0 ? "+90.0°" : "-90.0°") + " (Singular!)";
+        recRoll.textContent = "Undefined (Coupled)";
+        recYaw.textContent = "Undefined (Coupled)";
+        recDiffRow.classList.remove('hidden');
+        // Observable is atan2(R21, R22)
+        const diffRad = Math.atan2(Rvb[1][0], Rvb[1][1]);
+        const diffDeg = diffRad * RAD2DEG;
+        recDiffVal.textContent = `${diffDeg >= 0 ? "+" : ""}${diffDeg.toFixed(1)}° (ϕ - ψ)`;
+      } else {
+        recDiffRow.classList.add('hidden');
+        const recoveredTheta = Math.atan2(-Rvb[0][2], Math.sqrt(Rvb[0][0]*Rvb[0][0] + Rvb[0][1]*Rvb[0][1])) * RAD2DEG;
+        const recoveredPhi = Math.atan2(Rvb[1][2], Rvb[2][2]) * RAD2DEG;
+        const recoveredPsi = Math.atan2(Rvb[0][1], Rvb[0][0]) * RAD2DEG;
+        recPitch.textContent = `${recoveredTheta >= 0 ? "+" : ""}${recoveredTheta.toFixed(1)}°`;
+        recRoll.textContent = `${recoveredPhi >= 0 ? "+" : ""}${recoveredPhi.toFixed(1)}°`;
+        recYaw.textContent = `${recoveredPsi >= 0 ? "+" : ""}${recoveredPsi.toFixed(1)}°`;
+      }
+    }
+
+    // --- EVENT LISTENERS & CONTROLS BINDING ---
+    function syncInputs(yaw, pitch, roll) {
+      state.yaw = parseFloat(yaw);
+      state.pitch = parseFloat(pitch);
+      state.roll = parseFloat(roll);
+
+      sliderYaw.value = state.yaw;
+      sliderPitch.value = state.pitch;
+      sliderRoll.value = state.roll;
+
+      numYaw.value = state.yaw;
+      numPitch.value = state.pitch;
+      numRoll.value = state.roll;
+
+      updateHUD();
+    }
+
+    sliderYaw.addEventListener('input', e => syncInputs(e.target.value, state.pitch, state.roll));
+    sliderPitch.addEventListener('input', e => syncInputs(state.yaw, e.target.value, state.roll));
+    sliderRoll.addEventListener('input', e => syncInputs(state.yaw, state.pitch, e.target.value));
+
+    numYaw.addEventListener('change', e => syncInputs(e.target.value, state.pitch, state.roll));
+    numPitch.addEventListener('change', e => syncInputs(state.yaw, e.target.value, state.roll));
+    numRoll.addEventListener('change', e => syncInputs(state.yaw, state.pitch, e.target.value));
+
+    // Preset buttons
+    btnReset.addEventListener('click', () => syncInputs(0, 0, 0));
+    btnLockPos.addEventListener('click', () => syncInputs(state.yaw, 90, state.roll));
+    btnLockNeg.addEventListener('click', () => syncInputs(state.yaw, -90, state.roll));
+    btnTutorial1Q6.addEventListener('click', () => syncInputs(-60, 90, 120)); // (phi=120, theta=90, psi=-60)
+    btnBankedTurn.addEventListener('click', () => syncInputs(45, -10, 30));
+    btnFastForward.addEventListener('click', () => syncInputs(0, -20, 0));
+
+    btnResetCam.addEventListener('click', () => {
+      state.camera.azimuth = 45;
+      state.camera.elevation = 25;
+      state.camera.distance = 7.5;
+      camAzimuth.textContent = "45°";
+      camElevation.textContent = "25°";
+    });
+
+    // Visibility checkboxes
+    chkGimbals.addEventListener('change', e => { state.showGimbals = e.target.checked; });
+    chkAirframe.addEventListener('change', e => { state.showAirframe = e.target.checked; });
+    chkBodyAxes.addEventListener('change', e => { state.showBodyAxes = e.target.checked; });
+    chkInertialAxes.addEventListener('change', e => { state.showInertialAxes = e.target.checked; });
+    chkIntermediate.addEventListener('change', e => { state.showIntermediate = e.target.checked; });
+    chkAutoOrbit.addEventListener('change', e => { state.camera.autoOrbit = e.target.checked; });
+
+    // Velocity input updates
+    [inputU, inputV, inputW].forEach(inp => inp.addEventListener('input', updateHUD));
+
+    // --- MOUSE & TOUCH ORBIT CONTROLS ---
+    canvas.addEventListener('mousedown', e => {
+      state.camera.isDragging = true;
+      state.camera.lastMouseX = e.clientX;
+      state.camera.lastMouseY = e.clientY;
+    });
+
+    window.addEventListener('mouseup', () => {
+      state.camera.isDragging = false;
+    });
+
+    window.addEventListener('mousemove', e => {
+      if (!state.camera.isDragging) return;
+      const dx = e.clientX - state.camera.lastMouseX;
+      const dy = e.clientY - state.camera.lastMouseY;
+
+      state.camera.azimuth = (state.camera.azimuth - dx * 0.5) % 360;
+      if (state.camera.azimuth < 0) state.camera.azimuth += 360;
+
+      state.camera.elevation = Math.max(-85, Math.min(85, state.camera.elevation + dy * 0.5));
+
+      state.camera.lastMouseX = e.clientX;
+      state.camera.lastMouseY = e.clientY;
+
+      camAzimuth.textContent = `${Math.round(state.camera.azimuth)}°`;
+      camElevation.textContent = `${Math.round(state.camera.elevation)}°`;
+    });
+
+    // Mouse wheel zoom
+    canvas.addEventListener('wheel', e => {
+      e.preventDefault();
+      const zoomFactor = e.deltaY * 0.005;
+      state.camera.distance = Math.max(3.5, Math.min(18.0, state.camera.distance + zoomFactor));
+    }, { passive: false });
+
+    // Touch controls for mobile/tablet devices
+    let touchStartX = 0, touchStartY = 0;
+    canvas.addEventListener('touchstart', e => {
+      if (e.touches.length === 1) {
+        touchStartX = e.touches[0].clientX;
+        touchStartY = e.touches[0].clientY;
+      }
+    });
+    canvas.addEventListener('touchmove', e => {
+      if (e.touches.length === 1) {
+        e.preventDefault();
+        const dx = e.touches[0].clientX - touchStartX;
+        const dy = e.touches[0].clientY - touchStartY;
+        state.camera.azimuth = (state.camera.azimuth - dx * 0.5) % 360;
+        state.camera.elevation = Math.max(-85, Math.min(85, state.camera.elevation + dy * 0.5));
+        touchStartX = e.touches[0].clientX;
+        touchStartY = e.touches[0].clientY;
+        camAzimuth.textContent = `${Math.round(state.camera.azimuth)}°`;
+        camElevation.textContent = `${Math.round(state.camera.elevation)}°`;
+      }
+    }, { passive: false });
+
+    // --- INITIALIZATION ---
+    window.addEventListener('resize', () => {
+      const rect = canvas.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+    });
+
+    // Initial state and start rendering loop
+    syncInputs(0, 0, 0);
+    render();
+  </script>
+</body>
+</html>

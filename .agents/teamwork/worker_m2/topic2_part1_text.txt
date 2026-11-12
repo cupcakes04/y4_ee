@@ -1,0 +1,474 @@
+EEEE4138:
+Aerial Robotics
+Topic 2 Reference Frames and Orientation
+Part 1
+Dr Shalini Darmaraju
+Department of Electrical and Electronic Engineering 
+Faculty of Engineering and Science
+Room DB05, (Block D - First Floor)
+Shalini.Darmaraju@nottingham.edu.my
+---PAGE---
+EEEE4138 Aerial Robotics
+EEEE4138 Aerial Robotics
+Obvious reference frames are:
+• Body reference frame (local)
+• Inertial reference frame (global) 
+Why is it called inertial?
+Are these reference frames stationary?
+• Inertial reference frame
+Yes, fixed to the environment
+• Body reference frame
+No, fixed to the object → moving, and 
+changing orientation
+---PAGE---
+EEEE4138 Aerial Robotics
+EEEE4138 Aerial Robotics
+Why different coordinate frames?
+• Newton’s equations of motion are derived relative to:
+a fixed inertial reference frame.
+• Motion is most easily described in:
+a body-fixed frame.
+• Aerodynamic forces and torques act on the aircraft body and are most easily 
+described in:
+a body-fixed reference frame.
+• On-board sensors like accelerometers and rate gyros measure information with 
+respect to:
+the body frame.
+• GPS measures position, ground speed, and course angle with respect to:
+the inertial frame.
+• Mission requirements, like loiter points and flight trajectories, are specified in:
+the inertial frame.
+• Map information is also given in:
+an inertial frame.
+---PAGE---
+EEEE4138 Aerial Robotics
+EEEE4138 Aerial Robotics
+Aerial robotics coordinate frames:
+• the inertial frame,
+• the vehicle frame,
+• the vehicle-1 frame, the vehicle-2 frame, the body frame,
+• the stability frame, and the wind frame.
+Notes:
+• The inertial and vehicle frames are related by a translation, while the 
+remaining frames are related by rotations.
+• The angles defining the relative orientations of the vehicle, vehicle1, vehicle-
+ 2, and body frames are the roll, pitch, and yaw angles that describe the 
+attitude of the aircraft. These angles are commonly known as Euler angles.
+• The rotation angles that define the relative orientation of the body, stability, 
+and wind coordinate frames are the angle-of-attack and side-slip angles.
+• Throughout the course we assume a flat, non-rotating earth.
+• The aerial robot is assumed to be a rigid body.
+---PAGE---
+EEEE4138 Aerial Robotics
+EEEE4138 Aerial Robotics
+The inertial frame ℱ𝑖
+Is an earth-fixed coordinate system with its 
+origin at the defined home location. x direction
+Unit vector ii is directed north,
+ji is directed east, and
+ki is directed toward the 
+center of the earth, or down.
+y direction
+Referred to as a North-East-Down (NED) 
+reference frame.
+z direction
+It is common for north to be referred to as the inertial x direction, 
+east to be referred to as the inertial y direction, and
+down to be referred to as the inertial z direction.
+---PAGE---
+EEEE4138 Aerial Robotics
+EEEE4138 Aerial Robotics
+The vehicle frame ℱ𝑣
+The origin of the vehicle frame is at 
+the center of mass of the AR.
+The axes of ℱ𝑣 are aligned with the 
+axis of the inertial frame ℱ𝑖
+iv–axis points to north    
+jv–axis points to east    
+kv–axis points into the earth
+---PAGE---
+EEEE4138 Aerial Robotics
+EEEE4138 Aerial Robotics
+The vehicle-1 frame ℱ𝑣1
+The origin of the vehicle-1 frame is 
+identical to the vehicle frame, i.e.
+CoM of the AR.
+ℱ𝑣1 is rotated in the positive right-
+handed direction about kv by the 
+heading (or yaw ) angle Ψ  .
+iv1–axis points out the nose of the AR 
+jv1–axis points out the right of the AR 
+kv1–axis points into the earth.
+---PAGE---
+EEEE4138 Aerial Robotics
+EEEE4138 Aerial Robotics
+The vehicle-2 frame ℱ𝑣2
+The origin of the vehicle-2 frame is 
+identical to the vehicle frame, i.e.
+CoM of the AR.
+ℱ𝑣2 is obtained by rotating ℱ𝑣1
+in a righthanded rotation about the
+jv1 axis by the pitch angle 𝜃.
+iv2–axis points out the nose of the AR 
+jv2–axis points out the right of the AR 
+kv2–axis points out the belly of the AR.
+---PAGE---
+EEEE4138 Aerial Robotics
+EEEE4138 Aerial Robotics
+The body frame ℱ𝑏
+The origin of the body frame is 
+identical to the vehicle frame, i.e. 
+CoM of the AR.
+ℱ𝑏 is obtained by rotating ℱ𝑣2
+in a righthanded rotation about the
+iv2 axis by the roll angle 𝜙.
+ib–axis points out the nose of the AR 
+jb–axis points out the right of the AR 
+kb–axis points out the belly of the AR.
+---PAGE---
+EEEE4138 Aerial Robotics
+EEEE4138 Aerial Robotics
+Transformation from the vehicle frame ℱ𝑣 to the body frame ℱ𝑏
+The origin of the two frames are identical, i.e. CoM of the AR.
+The rotation sequence ψ − 𝜃 − 𝜙 is commonly used for 
+aircraft and is just one of several Euler angle systems in use.
+The physical interpretation of Euler angles is clear and this 
+contributes to their widespread use.
+Euler angle representations, however, have a mathematical
+singularity that can cause computational instabilities. For the ψ  −
+𝜃 − 𝜙 Euler angle sequence, there is a singularity when the pitch
+angle 𝜃 is ±90 deg, in which case the yaw angle is not defined. 
+This singularity is commonly referred to as gimbal lock.
+---PAGE---
+EEEE4138 Aerial Robotics
+EEEE4138 Aerial Robotics
+Coordinate frames for fixed-wing ARs
+Aerodynamic forces are generated as the airframe 
+moves through the air surrounding it.
+The velocity of the aircraft relative to the surrounding 
+air is referred to as the airspeed vector 𝑉𝑎.
+The magnitude of the airspeed vector is simply referred 
+to as the airspeed, 𝑉𝑎.
+Angle of attack, 𝛼, describes the angle between the
+wing chord line and the incoming airflow.
+---PAGE---
+EEEE4138 Aerial Robotics
+EEEE4138 Aerial Robotics
+The stability frame ℱ𝑠
+The origin of the body frame is identical 
+to the vehicle frame, i.e. CoM of the AR.
+ℱ𝑠 is obtained by rotating ℱ𝑏 in a 
+lefthanded rotation about the jb axis by 
+the angle-of-attack 𝛼, such that is aligns 
+with the projection of 𝑉𝑎 onto the plane spanned by ib and kb.
+is–axis points along the projection of 
+the airspeed vector onto the ib-kb plane 
+of the body frame
+js–axis is identical to jb–axis
+ks–axis is constructed to make a right-
+handed coordinate system.
+---PAGE---
+EEEE4138 Aerial Robotics
+EEEE4138 Aerial Robotics
+The wind frame ℱw
+The origin of the body frame is identical 
+to the vehicle frame, i.e. CoM of the AR.
+ℱw is obtained by rotating ℱ𝑠 in a 
+righthanded rotation about the ks axis 
+by the side-slip angle 𝛽, such that the 
+unit vector iw aligns with the airspeed 
+vector 𝑉𝑎.
+iw–axis points along the airspeed vector 𝑉𝑎.
+jw–axis is constructed to make a right-
+handed coordinate system
+kw–axis is identical to ks–axis.
+---PAGE---
+EEEE4138 Aerial Robotics
+EEEE4138 Aerial Robotics
+Transformations
+---PAGE---
+EEEE4138 Aerial Robotics
+One vector, two reference frames
+In Frame 0
+p = pₓ⁰ i⁰ + py⁰ j⁰
+In Frame 1
+p = pₓ¹ i¹ + py¹ j¹
+The tilted unit axes, expressed in Frame 0
+i¹ = cosθ i⁰ + sinθ j⁰ j¹ = −sinθ i⁰ + cosθ j⁰
+Convert coordinates from Frame 1 to Frame 0
+[ ] [ ] [ ]
+pₓ⁰
+py⁰ = cosθsinθ −sinθcosθ pₓ¹py¹
+Same vector. Different coordinates.
+---PAGE---
+EEEE4138 Aerial Robotics
+EEEE4138 Aerial Robotics
+j1 · j0
+Rotation using Dot Product…
+𝜃
+𝑖0
+j 0
+𝑅0 = 𝑖01 1j0
+𝑖 · j1 0
+𝑂0, 𝑂1
+1
+𝑖1 =  j1 = 1
+𝑖0 =  j0 = 1
+1𝑖0 = cos 𝜃sin 𝜃
+1j0 = −𝑠𝑖𝑛 𝜃𝑐𝑜𝑠 𝜃
+𝑖1 · 𝑖0
+j1 · 𝑖0
+𝑎 · 𝑏 =  𝑎 𝑏 cos 𝜃 =The dot product with a unit axis gives the signed 
+component along that axis..
+1 sin 𝜃 cos 𝜃∴ 𝑅0= cos 𝜃 − sin 𝜃 = 𝑖1 · 𝑖0𝑖1 · j0 j1 · 𝑖0 j1 · j0
+---PAGE---
+EEEE4138 Aerial Robotics
+Inverse rotation
+Forward: convert Frame 1 coordinates into Frame 0
+p⁰ = R₁⁰ p¹
+Reverse: convert Frame 0 coordinates into Frame 1
+p¹ = R₀¹ p⁰       R₀¹ = (R₁⁰)⁻¹ = (R₁⁰)ᵀ
+For a rotation matrix, transpose = inverse
+R₁⁰ = [ ]
+cosθ −sinθ
+sinθ cosθ R₀¹ = [ ]
+cosθ sinθ
+−sinθ cosθ
+Transpose: swap rows and columns. Equivalent to using −θ.
+---PAGE---
+EEEE4138 Aerial Robotics
+Rotation-matrix properties
+1. Reverse a transformation
+R⁻¹ = Rᵀ       RᵀR = I
+Transforming there and back returns the original coordinates.
+2. Combine successive transformations
+p⁰ = R₁⁰ R₂¹ p²       R₂⁰ = R₁⁰ R₂¹
+Read right to left: Frame 2 to Frame 1, then Frame 1 to Frame 0.
+3. Preserve geometry
+det(R) = +1
+A proper rotation preserves lengths, angles and handedness.
+---PAGE---
+EEEE4138 Aerial Robotics
+EEEE4138 Aerial Robotics
+Therefore, the rotation matrix 𝑅1 that represents a right-handed0
+rotation of angle 𝜃 about the z-axis.
+0𝑅1 =
+i1 · i0 
+j1 · i0 
+k1 · i0
+i1 · k0 
+j1 · k0 
+k1 · k0
+= 1
+j1 · j0
+𝜃
+𝑖0
+j 0
+𝑖1 · j0
+i1 · j0 
+j1 · j0 
+k1 · j0
+𝑖1  =  j1𝑖0 =  j0 = 1
+𝑖1 · 𝑖0 = cos 𝜃 k0, k1
+𝑖1 · j0 = sin 𝜃
+j1 · 𝑖0 = −sin 𝜃
+𝑘1 · 𝑘0 = 1
+j1 · j0 = cos 𝜃
+𝑇ℎ𝑒 𝑟𝑒𝑠𝑡 = 0
+𝑖 · 𝑖
+j1 · 𝑖0
+1 0
+0
+cos 𝜃
+∴ 𝑅1 = −𝑠𝑖𝑛 𝜃
+0
+sin 𝜃 0
+cos 𝜃 0
+0 1
+---PAGE---
+EEEE4138 Aerial Robotics
+EEEE4138 Aerial Robotics
+Similarly…
+A right-handed rotation of angle 𝜃 about the y-axis.
+0𝑅1 = 𝑅𝑦,𝛩 =
+cos 𝜃 0 −𝑠𝑖𝑛 𝜃
+0 1 0
+sin 𝜃 0 cos 𝜃
+A right-handed rotation of angle 𝜃 about the x-axis.
+0
+1
+𝑅1 = 𝑅𝑥,𝛩 = 0
+0 0
+cos 𝜃 sin 𝜃
+0 −𝑠𝑖𝑛 𝜃 cos 𝜃
+---PAGE---
+EEEE4138 Aerial Robotics
+EEEE4138 Aerial Robotics
+Rotation order matters…
+𝑧 𝑦
+𝑥
+𝑅𝑦,𝜙 𝑅𝑧,𝛩
+𝑦𝜙
+𝑧
+𝑥𝑦
+𝜃
+𝑧
+𝑥
+𝑧 𝑧
+𝑥
+𝜃
+𝑦
+𝑦
+𝜙 𝑥
+𝑦
+𝑅𝑧,𝛩 𝑅𝑦,𝜙
+𝑧
+𝑥
+---PAGE---
+EEEE4138 Aerial Robotics
+EEEE4138 Aerial Robotics
+UAV Coordinates 
+Frames Rotations
+---PAGE---
+EEEE4138 Aerial Robotics
+EEEE4138 Aerial Robotics
+Transformation from inertial frame ℱ𝑖 to vehicle frame ℱ𝑣
+
+---PAGE---
+EEEE4138 Aerial Robotics
+EEEE4138 Aerial Robotics
+𝑣
+Transformation from vehicle frame ℱ𝑣 to vehicle-1 frame
+ℱ𝑣1
+p𝑣1 = 𝑅𝑣1 p𝑣
+𝑣where, 𝑅𝑣1 = −𝑆Ψ 
+𝐶Ψ 𝑆 Ψ 0
+𝐶 Ψ 0
+0 0 1
+
+---PAGE---
+EEEE4138 Aerial Robotics
+EEEE4138 Aerial Robotics
+𝑣1
+Transformation from vehicle-1 frame ℱ𝑣1 to vehicle-2 
+frame ℱ𝑣2
+p𝑣2 = 𝑅𝑣2 p𝑣1
+𝑣1where, 𝑅𝑣2 =
+𝐶𝜃 0 −𝑆𝜃
+0 1 0
+𝑆𝜃 0 𝐶𝜃
+
+---PAGE---
+EEEE4138 Aerial Robotics
+EEEE4138 Aerial Robotics
+Transformation from vehicle-2 frame ℱ𝑣2 to body frame
+ℱ𝑏
+𝑣2p𝑏 = 𝑅𝑏 p𝑣2
+𝑣2where, 𝑅𝑏
+1 0 0
+= 0 𝐶𝜙 𝑆𝜙
+0 −𝑆𝜙 𝐶𝜙
+
+---PAGE---
+EEEE4138 Aerial Robotics
+EEEE4138 Aerial Robotics
+Transformation from vehicle frame ℱ𝑣 to body frame ℱ𝑏
+𝑣p𝑏 = 𝑅𝑏 p𝑣
+where,
+𝑣 𝑣2𝑅𝑏 𝜙, 𝜃, ψ = 𝑅𝑏 𝜙 𝑅𝑣2 𝜃 𝑅𝑣1 ψ 
+=
+1 0 0
+0 𝐶𝜙
+0 −𝑆𝜙
+𝑆𝜙
+𝐶𝜙
+𝑣1 𝑣
+𝐶𝜃 0 −𝑆𝜃
+0 1 0 −𝑆 Ψ 
+𝑆𝜃 0
+𝐶 Ψ 𝑆 Ψ 0
+𝐶 Ψ 0
+0 1𝐶𝜃 0
+𝐶𝜃 𝑆 
+=
+𝐶𝜃 𝐶 
+𝑆𝜙 𝑆𝜃 𝐶 Ψ − 𝐶𝜙 𝑆 Ψ 
+𝐶𝜙 𝑆𝜃 𝐶 Ψ + 𝑆𝜙 𝑆 Ψ 
+𝑆𝜙 𝑆𝜃 𝑆 Ψ + 𝐶𝜙 𝐶 Ψ
+𝐶𝜙 𝑆𝜃 𝑆 Ψ − 𝑆𝜙 𝐶 Ψ
+−𝑆𝜃
+𝑆𝜙 𝐶𝜃
+𝐶𝜙 𝐶𝜃
+---PAGE---
+EEEE4138 Aerial Robotics
+EEEE4138 Aerial Robotics
+Transformation from body frame ℱ𝑏 to stability frame ℱ𝑠 
+p𝑠 = 𝑅𝑠 𝛼 p𝑏𝑏
+𝑏where, 𝑅𝑠 = 𝐶𝛼 0 𝑆𝛼0 1 0
+−𝑆𝛼 0 𝐶𝛼
+
+---PAGE---
+EEEE4138 Aerial Robotics
+EEEE4138 Aerial Robotics
+Transformation from stability frame ℱ𝑠 to wind frame ℱw
+𝑠pw = 𝑅w 𝛽 p𝑠
+𝑏where, 𝑅𝑠 𝛽 𝐶𝛽= −𝑆𝛽 𝑆𝛽 0𝐶𝛽 0
+0 0 1
+
+---PAGE---
+EEEE4138 Aerial Robotics
+EEEE4138 Aerial Robotics
+Transformation from body frame ℱ𝑏 to wind frame ℱw
+𝑏pw = 𝑅w 𝛼, 𝛽 p𝑏
+where,
+𝑏𝑅w 𝛼, 𝛽 𝑏= 𝑅w 𝛽 𝑅𝑠 𝛼
+=  −𝑆𝛽
+𝑠
+𝐶𝛽 𝑆𝛽 0
+𝐶𝛽 0
+0 0 1
+𝐶𝛼 0 𝑆𝛼
+0 1 0
+−𝑆𝛼 0 𝐶𝛼
+𝐶𝛽 𝐶𝛼
+= −𝑆𝛽 𝐶𝛼
+−𝑆𝛼
+𝑆𝛽 𝐶𝛽 𝑆𝛼
+𝐶𝛽 −𝑆𝛽 𝑆𝛼
+0 𝐶𝛼
+Inverting the expression yields the inverse rotation (from the wind
+frame to the body frame):
+w𝑅𝑏 𝛼, 𝛽 = 𝑅w 𝑇 𝛼, 𝛽 =𝑏
+𝐶𝛽 𝐶𝛼
+𝑆𝛽
+𝐶𝛽 𝑆𝛼
+−𝑆𝛽 𝐶𝛼 −𝑆𝛼
+𝐶𝛽 0
+−𝑆𝛽 𝑆𝛼 𝐶𝛼
+---PAGE---
+EEEE4138 Aerial Robotics
+Part 1 Quiz
+Choose one answer for each question.
+1. Which way does the positive body x-axis point?
+Use the forward–right–down body-axis convention.
+A. North
+B. Forward, towards the aircraft’s nose
+C. Vertically down towards Earth
+D. East
+2. In p⁰ = R₁⁰ p¹, what does R₁⁰ do?
+A. Squares the vector
+B. Converts Frame 0 coordinates into Frame 1
+C. Converts Frame 1 coordinates into Frame 0
+D. Moves the point to a new position
+---PAGE---
+EEEE4138 Aerial Robotics
+Part 1 Quiz 
+3. Frame 1 is turned 90° anticlockwise relative to Frame 0.
+Both frames share an origin. Find p⁰ when p¹ = [2, 0]ᵀ.
+p⁰ = R₁⁰ p¹ R₁⁰ = [ ]cosθ −sinθsinθ cosθ
+Use cos 90° = 0 and sin 90° = 1.
+4. Which matrix reverses a rotation transformation R?
+A. −R          B. Rᵀ          C. 2R          D. I
+5. Does rotation order always give the same result?
+Compare a turn about the current y-axis then the current z-axis
+with the same turns in reverse order. Explain briefly.

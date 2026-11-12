@@ -1,0 +1,939 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Widget 1: Multi-Rotor Configuration & Flight Envelope Visualizer</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Offline Fallback Styles -->
+  <style>
+    :root {
+      --bg-dark: #020617;
+      --card-dark: #0f172a;
+      --border-dark: #1e293b;
+      --accent-cyan: #06b6d4;
+      --accent-green: #10b981;
+      --accent-amber: #f59e0b;
+      --accent-red: #ef4444;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+    }
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+    }
+    .panel-card {
+      background-color: var(--card-dark);
+      border: 1px solid var(--border-dark);
+      border-radius: 0.5rem;
+    }
+    input[type=range] {
+      accent-color: var(--accent-cyan);
+    }
+    canvas {
+      display: block;
+      border-radius: 0.375rem;
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen p-3 md:p-6 flex flex-col justify-between">
+
+  <!-- Header -->
+  <header class="mb-4 border-b border-slate-800 pb-3 flex flex-wrap justify-between items-center gap-3">
+    <div>
+      <div class="flex items-center gap-2">
+        <span class="px-2 py-0.5 text-xs font-bold rounded bg-cyan-950 text-cyan-400 border border-cyan-800">TOPIC 1 WIDGET</span>
+        <h1 class="text-lg md:text-xl font-bold tracking-tight text-white">Multi-Rotor Sizing & Flight Envelope Explorer</h1>
+      </div>
+      <p class="text-xs text-slate-400 mt-1">Actuator Disc Momentum Theory, Mass Scaling & Real-Time Battery Endurance Simulator</p>
+    </div>
+    <!-- Quick Presets -->
+    <div class="flex items-center gap-2 flex-wrap">
+      <span class="text-xs text-slate-400 font-medium">Presets:</span>
+      <button id="preset-bench" class="px-2.5 py-1 text-xs font-semibold rounded bg-cyan-700 hover:bg-cyan-600 text-white transition shadow">Tutorial Benchmark</button>
+      <button id="preset-racer" class="px-2.5 py-1 text-xs font-semibold rounded bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-slate-700 transition">FPV Racer</button>
+      <button id="preset-heavy" class="px-2.5 py-1 text-xs font-semibold rounded bg-slate-800 hover:bg-slate-700 text-amber-300 border border-slate-700 transition">Heavy-Lift Hex</button>
+      <button id="preset-photo" class="px-2.5 py-1 text-xs font-semibold rounded bg-slate-800 hover:bg-slate-700 text-emerald-300 border border-slate-700 transition">Cinema Rig</button>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="grid grid-cols-1 lg:grid-cols-12 gap-4 flex-grow">
+
+    <!-- Controls Column (4 cols on lg) -->
+    <section class="lg:col-span-4 panel-card p-4 flex flex-col gap-4">
+      <div class="flex justify-between items-center border-b border-slate-800 pb-2">
+        <h2 class="text-sm font-semibold text-cyan-400 uppercase tracking-wider">Airframe & Powertrain</h2>
+        <span id="config-badge" class="text-xs px-2 py-0.5 rounded bg-slate-800 text-slate-300 font-mono">Quad-X</span>
+      </div>
+
+      <!-- Airframe Topology -->
+      <div>
+        <label class="block text-xs font-medium text-slate-300 mb-1">Rotor Topology</label>
+        <div class="grid grid-cols-4 gap-1">
+          <button data-topol="quad_plus" class="topol-btn px-2 py-1.5 text-xs font-medium rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 text-center transition">Quad +</button>
+          <button data-topol="quad_cross" class="topol-btn px-2 py-1.5 text-xs font-medium rounded bg-cyan-700 text-white border border-cyan-600 text-center transition">Quad ×</button>
+          <button data-topol="hex_cross" class="topol-btn px-2 py-1.5 text-xs font-medium rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 text-center transition">Hex ×</button>
+          <button data-topol="octo_cross" class="topol-btn px-2 py-1.5 text-xs font-medium rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 text-center transition">Octo ×</button>
+        </div>
+      </div>
+
+      <!-- Arm Length (Radius) Slider -->
+      <div>
+        <div class="flex justify-between text-xs mb-1">
+          <span class="text-slate-300">Arm Radius $L$ (Center to Motor)</span>
+          <span id="val-arm" class="font-mono text-cyan-400 font-bold">0.25 m</span>
+        </div>
+        <input id="slider-arm" type="range" min="0.10" max="0.80" step="0.01" value="0.25" class="w-full h-1.5 bg-slate-800 rounded-lg cursor-pointer">
+        <div class="flex justify-between text-[10px] text-slate-500 mt-0.5">
+          <span>0.10 m (Racer)</span>
+          <span>0.45 m</span>
+          <span>0.80 m (Heavy)</span>
+        </div>
+      </div>
+
+      <!-- Propeller Diameter Slider -->
+      <div>
+        <div class="flex justify-between text-xs mb-1">
+          <span class="text-slate-300">Propeller Diameter $D$</span>
+          <span id="val-prop" class="font-mono text-cyan-400 font-bold">10.0 in (0.254 m)</span>
+        </div>
+        <input id="slider-prop" type="range" min="5.0" max="22.0" step="0.5" value="10.0" class="w-full h-1.5 bg-slate-800 rounded-lg cursor-pointer">
+        <div class="flex justify-between text-[10px] text-slate-500 mt-0.5">
+          <span>5.0 in</span>
+          <span>12.0 in</span>
+          <span>22.0 in</span>
+        </div>
+      </div>
+
+      <!-- Battery Voltage (Cell Count) -->
+      <div>
+        <label class="block text-xs font-medium text-slate-300 mb-1">Battery Cell Count (LiPo)</label>
+        <div class="grid grid-cols-3 gap-2">
+          <button data-cells="3" class="cell-btn px-2 py-1 text-xs rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 text-center transition">3S (11.1V)</button>
+          <button data-cells="4" class="cell-btn px-2 py-1 text-xs rounded bg-cyan-700 text-white border border-cyan-600 text-center transition">4S (14.8V)</button>
+          <button data-cells="6" class="cell-btn px-2 py-1 text-xs rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 text-center transition">6S (22.2V)</button>
+        </div>
+      </div>
+
+      <!-- Battery Capacity Slider -->
+      <div>
+        <div class="flex justify-between text-xs mb-1">
+          <span class="text-slate-300">Battery Capacity</span>
+          <span id="val-cap" class="font-mono text-cyan-400 font-bold">4000 mAh</span>
+        </div>
+        <input id="slider-cap" type="range" min="1000" max="22000" step="200" value="4000" class="w-full h-1.5 bg-slate-800 rounded-lg cursor-pointer">
+        <div class="flex justify-between text-[10px] text-slate-500 mt-0.5">
+          <span>1000 mAh</span>
+          <span>10000 mAh</span>
+          <span>22000 mAh</span>
+        </div>
+        <p class="text-[10px] text-slate-400 mt-1">Est. Battery Mass: <span id="val-bat-mass" class="text-slate-200 font-mono">0.35 kg</span> (Energy density ~170 Wh/kg)</p>
+      </div>
+
+      <!-- Payload Mass Slider -->
+      <div>
+        <div class="flex justify-between text-xs mb-1">
+          <span class="text-slate-300">Mission Payload Mass</span>
+          <span id="val-payload" class="font-mono text-cyan-400 font-bold">0.30 kg</span>
+        </div>
+        <input id="slider-payload" type="range" min="0.0" max="5.0" step="0.05" value="0.30" class="w-full h-1.5 bg-slate-800 rounded-lg cursor-pointer">
+        <div class="flex justify-between text-[10px] text-slate-500 mt-0.5">
+          <span>0.0 kg (None)</span>
+          <span>2.5 kg</span>
+          <span>5.0 kg</span>
+        </div>
+      </div>
+
+      <!-- Clearance / Warning Banner -->
+      <div id="clearance-alert" class="hidden p-2 rounded bg-amber-950/80 border border-amber-600/80 text-amber-200 text-xs flex items-center gap-2">
+        <svg class="w-4 h-4 text-amber-400 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
+        <span id="clearance-msg">Propeller collision hazard! Increase arm radius $L$.</span>
+      </div>
+
+      <!-- Powertrain Parameters Accordion / Note -->
+      <div class="mt-auto pt-2 border-t border-slate-800/80 text-[11px] text-slate-400 space-y-1">
+        <div class="flex justify-between">
+          <span>Depth of Discharge (DoD):</span>
+          <span class="font-mono text-slate-300">80% (0.80)</span>
+        </div>
+        <div class="flex justify-between">
+          <span>Total Powertrain Efficiency:</span>
+          <span class="font-mono text-slate-300">η = 55%</span>
+        </div>
+        <div class="flex justify-between">
+          <span>Avionics & Camera Draw:</span>
+          <span class="font-mono text-slate-300">8.0 W</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Visual Simulation Column (8 cols on lg) -->
+    <section class="lg:col-span-8 flex flex-col gap-4">
+
+      <!-- Top Row: Dual Visual Canvases -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 flex-grow">
+        
+        <!-- Left: Top-Down Airframe Canvas -->
+        <div class="panel-card p-3 flex flex-col">
+          <div class="flex justify-between items-center mb-2">
+            <span class="text-xs font-semibold text-slate-300 uppercase tracking-wide flex items-center gap-1.5">
+              <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+              Airframe Top-Down Schematic
+            </span>
+            <span id="clearance-stat" class="text-[11px] font-mono text-emerald-400">Clearance: OK</span>
+          </div>
+          <div class="relative w-full flex-grow flex items-center justify-center bg-slate-950 rounded border border-slate-800 min-h-[260px]">
+            <canvas id="canvas-airframe" width="340" height="260" class="w-full h-full"></canvas>
+            <div class="absolute bottom-2 left-2 text-[10px] text-slate-500 font-mono bg-slate-900/80 px-1.5 py-0.5 rounded border border-slate-800">
+              <span class="text-emerald-400 font-bold">CW</span> (Green) / <span class="text-red-400 font-bold">CCW</span> (Red)
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Flight Envelope & Endurance Curve Canvas -->
+        <div class="panel-card p-3 flex flex-col">
+          <div class="flex justify-between items-center mb-2">
+            <span class="text-xs font-semibold text-slate-300 uppercase tracking-wide flex items-center gap-1.5">
+              <span class="w-2 h-2 rounded-full bg-cyan-400"></span>
+              Endurance vs Battery Capacity Curve
+            </span>
+            <span id="peak-stat" class="text-[11px] font-mono text-cyan-400">Peak: ~8500 mAh</span>
+          </div>
+          <div class="relative w-full flex-grow flex items-center justify-center bg-slate-950 rounded border border-slate-800 min-h-[260px]">
+            <canvas id="canvas-envelope" width="340" height="260" class="w-full h-full"></canvas>
+            <div class="absolute top-2 right-2 text-[10px] text-slate-400 font-mono bg-slate-900/80 px-2 py-1 rounded border border-slate-800">
+              <span class="inline-block w-2 h-2 rounded-full bg-cyan-400 mr-1"></span> Current Config
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Telemetry HUD Bar (Bottom) -->
+      <div class="panel-card p-3">
+        <div class="text-xs font-semibold text-cyan-400 uppercase tracking-wider mb-2 flex justify-between items-center border-b border-slate-800 pb-1.5">
+          <span>Real-Time Flight Telemetry & Aerodynamic HUD</span>
+          <span class="text-[11px] text-slate-400 font-normal">Rankine-Froude 1D Actuator Disc Model</span>
+        </div>
+
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
+          
+          <!-- All-Up Mass -->
+          <div class="bg-slate-900/90 p-2 rounded border border-slate-800/80">
+            <span class="block text-[10px] text-slate-400 uppercase font-medium">All-Up Mass</span>
+            <div id="hud-mass" class="text-sm md:text-base font-bold font-mono text-white mt-0.5">1.60 kg</div>
+            <span id="hud-mass-sub" class="text-[9px] text-slate-500 font-mono block">Dry: 0.95 | Bat: 0.35</span>
+          </div>
+
+          <!-- Disc Loading -->
+          <div class="bg-slate-900/90 p-2 rounded border border-slate-800/80">
+            <span class="block text-[10px] text-slate-400 uppercase font-medium">Disc Loading (DL)</span>
+            <div id="hud-dl" class="text-sm md:text-base font-bold font-mono text-cyan-400 mt-0.5">77.4 N/m²</div>
+            <span id="hud-area-sub" class="text-[9px] text-slate-500 font-mono block">Area: 0.203 m²</span>
+          </div>
+
+          <!-- Total Hover Power -->
+          <div class="bg-slate-900/90 p-2 rounded border border-slate-800/80">
+            <span class="block text-[10px] text-slate-400 uppercase font-medium">Hover Power</span>
+            <div id="hud-power" class="text-sm md:text-base font-bold font-mono text-amber-300 mt-0.5">168.4 W</div>
+            <span id="hud-current-sub" class="text-[9px] text-slate-500 font-mono block">Current: 11.38 A</span>
+          </div>
+
+          <!-- TWR Badge -->
+          <div class="bg-slate-900/90 p-2 rounded border border-slate-800/80 flex flex-col justify-between">
+            <span class="block text-[10px] text-slate-400 uppercase font-medium">Thrust/Weight (TWR)</span>
+            <div class="flex items-center gap-1.5 mt-0.5">
+              <span id="hud-twr" class="text-sm md:text-base font-bold font-mono text-emerald-400">2.04</span>
+              <span id="hud-twr-badge" class="text-[9px] px-1.5 py-0.2 rounded font-semibold bg-emerald-950 text-emerald-300 border border-emerald-800">SAFE</span>
+            </div>
+            <span id="hud-twr-sub" class="text-[9px] text-slate-500 font-mono block">T_max: 32.0 N</span>
+          </div>
+
+          <!-- Tilt Limit θ_max -->
+          <div class="bg-slate-900/90 p-2 rounded border border-slate-800/80">
+            <span class="block text-[10px] text-slate-400 uppercase font-medium">Max Tilt Limit θ_max</span>
+            <div id="hud-tilt" class="text-sm md:text-base font-bold font-mono text-cyan-300 mt-0.5">60.6°</div>
+            <span id="hud-accel-sub" class="text-[9px] text-slate-500 font-mono block">a_max: 1.78 g</span>
+          </div>
+
+          <!-- Hover Endurance -->
+          <div class="bg-cyan-950/40 p-2 rounded border border-cyan-700/60 flex flex-col justify-between">
+            <span class="block text-[10px] text-cyan-300 uppercase font-bold tracking-wide">Hover Endurance</span>
+            <div id="hud-time" class="text-base md:text-lg font-black font-mono text-cyan-300 mt-0.5">16m 52s</div>
+            <span id="hud-energy-sub" class="text-[9px] text-cyan-400/80 font-mono block">DoD 80% (3.20 Ah)</span>
+          </div>
+
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- Interactive JavaScript Engine -->
+  <script>
+    // State model
+    const state = {
+      topology: 'quad_cross', // quad_plus, quad_cross, hex_cross, octo_cross
+      armRadius: 0.25,        // meters
+      propDiameter: 10.0,     // inches
+      cellCount: 4,           // 3, 4, 6
+      batteryCapacity: 4000,  // mAh
+      payloadMass: 0.30,      // kg
+      
+      // Fixed physical & tutorial constants
+      fixedDryMass: 0.95,     // kg (frame + motors + electronics)
+      avionicsPower: 8.0,     // Watts
+      efficiency: 0.55,       // combined total powertrain efficiency
+      depthOfDischarge: 0.80, // 80% rule
+      airDensity: 1.225,      // kg/m^3 (sea level)
+      gravity: 9.81,          // m/s^2
+      batterySpecificEnergy: 170 // Wh/kg
+    };
+
+    // DOM Elements
+    const sliderArm = document.getElementById('slider-arm');
+    const valArm = document.getElementById('val-arm');
+    const sliderProp = document.getElementById('slider-prop');
+    const valProp = document.getElementById('val-prop');
+    const sliderCap = document.getElementById('slider-cap');
+    const valCap = document.getElementById('val-cap');
+    const valBatMass = document.getElementById('val-bat-mass');
+    const sliderPayload = document.getElementById('slider-payload');
+    const valPayload = document.getElementById('val-payload');
+    const configBadge = document.getElementById('config-badge');
+    const clearanceAlert = document.getElementById('clearance-alert');
+    const clearanceMsg = document.getElementById('clearance-msg');
+    const clearanceStat = document.getElementById('clearance-stat');
+    const peakStat = document.getElementById('peak-stat');
+
+    // HUD Elements
+    const hudMass = document.getElementById('hud-mass');
+    const hudMassSub = document.getElementById('hud-mass-sub');
+    const hudDl = document.getElementById('hud-dl');
+    const hudAreaSub = document.getElementById('hud-area-sub');
+    const hudPower = document.getElementById('hud-power');
+    const hudCurrentSub = document.getElementById('hud-current-sub');
+    const hudTwr = document.getElementById('hud-twr');
+    const hudTwrBadge = document.getElementById('hud-twr-badge');
+    const hudTwrSub = document.getElementById('hud-twr-sub');
+    const hudTilt = document.getElementById('hud-tilt');
+    const hudAccelSub = document.getElementById('hud-accel-sub');
+    const hudTime = document.getElementById('hud-time');
+    const hudEnergySub = document.getElementById('hud-energy-sub');
+
+    // Canvases
+    const canvasAirframe = document.getElementById('canvas-airframe');
+    const ctxAirframe = canvasAirframe.getContext('2d');
+    const canvasEnvelope = document.getElementById('canvas-envelope');
+    const ctxEnvelope = canvasEnvelope.getContext('2d');
+
+    // Animation state
+    let animAngle = 0;
+    let animTime = 0;
+
+    // Topology configurations
+    const TOPOLOGY_DEFS = {
+      quad_plus: {
+        name: 'Quad +',
+        rotors: 4,
+        angles: [0, Math.PI/2, Math.PI, 3*Math.PI/2],
+        spins: [1, -1, 1, -1] // 1: CW, -1: CCW
+      },
+      quad_cross: {
+        name: 'Quad ×',
+        rotors: 4,
+        angles: [Math.PI/4, 3*Math.PI/4, 5*Math.PI/4, 7*Math.PI/4],
+        spins: [-1, 1, -1, 1]
+      },
+      hex_cross: {
+        name: 'Hex ×',
+        rotors: 6,
+        angles: [0, Math.PI/3, 2*Math.PI/3, Math.PI, 4*Math.PI/3, 5*Math.PI/3],
+        spins: [1, -1, 1, -1, 1, -1]
+      },
+      octo_cross: {
+        name: 'Octo ×',
+        rotors: 8,
+        angles: [0, Math.PI/4, Math.PI/2, 3*Math.PI/4, Math.PI, 5*Math.PI/4, 3*Math.PI/2, 7*Math.PI/4],
+        spins: [1, -1, 1, -1, 1, -1, 1, -1]
+      }
+    };
+
+    // Calculate core physics metrics
+    function calculatePhysics(customCap = null) {
+      const cap = customCap !== null ? customCap : state.batteryCapacity;
+      const nominalVoltage = state.cellCount * 3.7; // Volts
+      const batEnergyWh = (cap / 1000) * nominalVoltage;
+      const batteryMass = batEnergyWh / state.batterySpecificEnergy; // kg
+      
+      const totalMass = state.fixedDryMass + state.payloadMass + batteryMass; // kg
+      const totalWeight = totalMass * state.gravity; // N
+
+      const topol = TOPOLOGY_DEFS[state.topology];
+      const N = topol.rotors;
+
+      const propDiamM = state.propDiameter * 0.0254; // meters
+      const propRadiusM = propDiamM / 2.0;
+      const singleDiscArea = Math.PI * propRadiusM * propRadiusM; // m^2
+      const totalDiscArea = N * singleDiscArea; // m^2
+
+      const discLoading = totalWeight / totalDiscArea; // N/m^2
+
+      // 1D Actuator Disc Momentum Theory:
+      // v_i = sqrt(W / (2 * rho * A))
+      const vi = Math.sqrt(totalWeight / (2 * state.airDensity * totalDiscArea)); // m/s
+      const idealPower = totalWeight * vi; // Watts
+
+      // Total Electrical Hover Power:
+      const elecPower = (idealPower / state.efficiency) + state.avionicsPower; // Watts
+      const hoverCurrent = elecPower / nominalVoltage; // Amperes
+
+      // Usable Battery Capacity & Hover Endurance:
+      const usableAh = (cap / 1000) * state.depthOfDischarge; // Ah
+      const hoverTimeHours = hoverCurrent > 0 ? (usableAh / hoverCurrent) : 0;
+      const hoverTimeMinutes = hoverTimeHours * 60; // minutes
+
+      // Max thrust estimation:
+      // Standard baseline ~8.0 N per motor for 10in prop on 4S, scaled by prop diameter^2 and voltage
+      const propScale = Math.pow(state.propDiameter / 10.0, 1.8);
+      const voltScale = nominalVoltage / 14.8;
+      const maxThrustPerMotor = 8.0 * propScale * voltScale; // N
+      const totalMaxThrust = N * maxThrustPerMotor; // N
+
+      const twr = totalMaxThrust / totalWeight;
+
+      // Max Tilt Angle: cos(theta_max) = 1 / TWR
+      let maxTiltDeg = 0;
+      let maxAccelMps2 = 0;
+      if (twr > 1.0) {
+        const cosTheta = Math.min(1.0, 1.0 / twr);
+        maxTiltDeg = (Math.acos(cosTheta) * 180) / Math.PI;
+        maxAccelMps2 = state.gravity * Math.tan(Math.acos(cosTheta));
+      }
+
+      // Propeller clearance check
+      // Distance between adjacent motor hubs = 2 * L * sin(pi / N)
+      const hubDist = 2 * state.armRadius * Math.sin(Math.PI / N);
+      const clearance = hubDist - propDiamM; // clearance in meters
+
+      return {
+        nominalVoltage,
+        batteryMass,
+        totalMass,
+        totalWeight,
+        propRadiusM,
+        propDiamM,
+        totalDiscArea,
+        discLoading,
+        vi,
+        idealPower,
+        elecPower,
+        hoverCurrent,
+        usableAh,
+        hoverTimeMinutes,
+        totalMaxThrust,
+        twr,
+        maxTiltDeg,
+        maxAccelMps2,
+        clearance,
+        N
+      };
+    }
+
+    // Update UI HUD
+    function updateHUD() {
+      const p = calculatePhysics();
+
+      valArm.textContent = `${state.armRadius.toFixed(2)} m`;
+      valProp.textContent = `${state.propDiameter.toFixed(1)} in (${p.propDiamM.toFixed(3)} m)`;
+      valCap.textContent = `${state.batteryCapacity} mAh`;
+      valBatMass.textContent = `${p.batteryMass.toFixed(2)} kg`;
+      valPayload.textContent = `${state.payloadMass.toFixed(2)} kg`;
+      configBadge.textContent = TOPOLOGY_DEFS[state.topology].name;
+
+      hudMass.textContent = `${p.totalMass.toFixed(2)} kg`;
+      hudMassSub.textContent = `Dry: ${state.fixedDryMass.toFixed(2)} | Bat: ${p.batteryMass.toFixed(2)} | Pay: ${state.payloadMass.toFixed(2)}`;
+
+      hudDl.textContent = `${p.discLoading.toFixed(1)} N/m²`;
+      hudAreaSub.textContent = `Area: ${p.totalDiscArea.toFixed(3)} m² (${(p.discLoading / state.gravity).toFixed(1)} kg/m²)`;
+
+      hudPower.textContent = `${p.elecPower.toFixed(1)} W`;
+      hudCurrentSub.textContent = `Current: ${p.hoverCurrent.toFixed(2)} A @ ${p.nominalVoltage.toFixed(1)}V`;
+
+      hudTwr.textContent = p.twr.toFixed(2);
+      hudTwrSub.textContent = `T_max: ${p.totalMaxThrust.toFixed(1)} N (mg: ${p.totalWeight.toFixed(1)} N)`;
+
+      // TWR Badge
+      if (p.twr < 1.2) {
+        hudTwrBadge.textContent = 'DANGER';
+        hudTwrBadge.className = 'text-[9px] px-1.5 py-0.2 rounded font-semibold bg-red-950 text-red-300 border border-red-800';
+        hudTwr.className = 'text-sm md:text-base font-bold font-mono text-red-400';
+      } else if (p.twr < 1.5) {
+        hudTwrBadge.textContent = 'MARGINAL';
+        hudTwrBadge.className = 'text-[9px] px-1.5 py-0.2 rounded font-semibold bg-amber-950 text-amber-300 border border-amber-800';
+        hudTwr.className = 'text-sm md:text-base font-bold font-mono text-amber-400';
+      } else if (p.twr < 3.0) {
+        hudTwrBadge.textContent = 'SAFE';
+        hudTwrBadge.className = 'text-[9px] px-1.5 py-0.2 rounded font-semibold bg-emerald-950 text-emerald-300 border border-emerald-800';
+        hudTwr.className = 'text-sm md:text-base font-bold font-mono text-emerald-400';
+      } else {
+        hudTwrBadge.textContent = 'AGILE';
+        hudTwrBadge.className = 'text-[9px] px-1.5 py-0.2 rounded font-semibold bg-cyan-950 text-cyan-300 border border-cyan-800';
+        hudTwr.className = 'text-sm md:text-base font-bold font-mono text-cyan-400';
+      }
+
+      hudTilt.textContent = `${p.maxTiltDeg.toFixed(1)}°`;
+      hudAccelSub.textContent = `a_max: ${(p.maxAccelMps2 / state.gravity).toFixed(2)} g (${p.maxAccelMps2.toFixed(1)} m/s²)`;
+
+      // Endurance format
+      const mins = Math.floor(p.hoverTimeMinutes);
+      const secs = Math.round((p.hoverTimeMinutes - mins) * 60);
+      hudTime.textContent = `${mins}m ${secs < 10 ? '0' : ''}${secs}s`;
+      hudEnergySub.textContent = `DoD 80% (${p.usableAh.toFixed(2)} Ah usable)`;
+
+      // Prop clearance warning
+      if (p.clearance <= 0) {
+        clearanceAlert.classList.remove('hidden');
+        clearanceMsg.textContent = `CRITICAL: Propeller collision! Overlap by ${Math.abs(p.clearance * 100).toFixed(1)} cm. Increase Arm Radius L or decrease Prop Diameter D.`;
+        clearanceStat.textContent = `COLLISION (${(p.clearance * 100).toFixed(1)} cm)`;
+        clearanceStat.className = 'text-[11px] font-mono text-red-400 font-bold';
+      } else if (p.clearance < 0.02) {
+        clearanceAlert.classList.remove('hidden');
+        clearanceMsg.textContent = `WARNING: Extremely tight propeller tip clearance (${(p.clearance * 100).toFixed(1)} cm). Aerodynamic blade tip interaction may occur.`;
+        clearanceStat.textContent = `TIGHT (${(p.clearance * 100).toFixed(1)} cm)`;
+        clearanceStat.className = 'text-[11px] font-mono text-amber-400 font-bold';
+      } else {
+        clearanceAlert.classList.add('hidden');
+        clearanceStat.textContent = `Clearance: ${(p.clearance * 100).toFixed(1)} cm (OK)`;
+        clearanceStat.className = 'text-[11px] font-mono text-emerald-400';
+      }
+    }
+
+    // Render Canvas 1: Top-down Airframe Schematic
+    function drawAirframe() {
+      const w = canvasAirframe.width;
+      const h = canvasAirframe.height;
+      const cx = w / 2;
+      const cy = h / 2;
+      ctxAirframe.clearRect(0, 0, w, h);
+
+      // Grid background
+      ctxAirframe.strokeStyle = '#1e293b';
+      ctxAirframe.lineWidth = 1;
+      const gridSize = 25;
+      for (let x = 0; x < w; x += gridSize) {
+        ctxAirframe.beginPath();
+        ctxAirframe.moveTo(x, 0);
+        ctxAirframe.lineTo(x, h);
+        ctxAirframe.stroke();
+      }
+      for (let y = 0; y < h; y += gridSize) {
+        ctxAirframe.beginPath();
+        ctxAirframe.moveTo(0, y);
+        ctxAirframe.lineTo(w, y);
+        ctxAirframe.stroke();
+      }
+
+      const p = calculatePhysics();
+      const topol = TOPOLOGY_DEFS[state.topology];
+
+      // Auto-scale to fit canvas nicely
+      const maxExtent = (state.armRadius + p.propRadiusM) * 1.25;
+      const scale = Math.min(cx, cy) / maxExtent;
+
+      // Draw forward direction arrow (+X North)
+      ctxAirframe.strokeStyle = 'rgba(6, 182, 212, 0.4)';
+      ctxAirframe.fillStyle = 'rgba(6, 182, 212, 0.4)';
+      ctxAirframe.lineWidth = 2;
+      ctxAirframe.beginPath();
+      ctxAirframe.moveTo(cx, cy - 25);
+      ctxAirframe.lineTo(cx, cy - 65);
+      ctxAirframe.stroke();
+      ctxAirframe.beginPath();
+      ctxAirframe.moveTo(cx, cy - 75);
+      ctxAirframe.lineTo(cx - 6, cy - 63);
+      ctxAirframe.lineTo(cx + 6, cy - 63);
+      ctxAirframe.closePath();
+      ctxAirframe.fill();
+      ctxAirframe.fillStyle = '#06b6d4';
+      ctxAirframe.font = '10px monospace';
+      ctxAirframe.fillText('FORWARD (+x)', cx + 8, cy - 62);
+
+      // Center Fuselage
+      ctxAirframe.fillStyle = '#1e293b';
+      ctxAirframe.strokeStyle = '#475569';
+      ctxAirframe.lineWidth = 2;
+      ctxAirframe.beginPath();
+      ctxAirframe.arc(cx, cy, 18, 0, 2 * Math.PI);
+      ctxAirframe.fill();
+      ctxAirframe.stroke();
+
+      // Center of mass symbol
+      ctxAirframe.fillStyle = '#06b6d4';
+      ctxAirframe.beginPath();
+      ctxAirframe.arc(cx, cy, 3, 0, 2 * Math.PI);
+      ctxAirframe.fill();
+
+      // Draw arms and propeller discs
+      topol.angles.forEach((angle, idx) => {
+        // Arm endpoint (motor hub)
+        // In screen coordinates: x = cx + r * cos, y = cy - r * sin (standard math angle relative to forward -y)
+        const mathAngle = angle - Math.PI / 2; // align 0 rad with forward (-y)
+        const mx = cx + state.armRadius * scale * Math.cos(mathAngle);
+        const my = cy + state.armRadius * scale * Math.sin(mathAngle);
+
+        // Arm rod
+        ctxAirframe.strokeStyle = '#334155';
+        ctxAirframe.lineWidth = 6;
+        ctxAirframe.beginPath();
+        ctxAirframe.moveTo(cx, cy);
+        ctxAirframe.lineTo(mx, my);
+        ctxAirframe.stroke();
+
+        ctxAirframe.strokeStyle = '#64748b';
+        ctxAirframe.lineWidth = 2;
+        ctxAirframe.beginPath();
+        ctxAirframe.moveTo(cx, cy);
+        ctxAirframe.lineTo(mx, my);
+        ctxAirframe.stroke();
+
+        // Motor pod
+        ctxAirframe.fillStyle = '#0f172a';
+        ctxAirframe.strokeStyle = '#94a3b8';
+        ctxAirframe.lineWidth = 2;
+        ctxAirframe.beginPath();
+        ctxAirframe.arc(mx, my, 8, 0, 2 * Math.PI);
+        ctxAirframe.fill();
+        ctxAirframe.stroke();
+
+        // Propeller disc
+        const propPixRadius = p.propRadiusM * scale;
+        const spin = topol.spins[idx]; // 1 CW, -1 CCW
+        const isConflict = p.clearance <= 0;
+
+        ctxAirframe.beginPath();
+        ctxAirframe.arc(mx, my, propPixRadius, 0, 2 * Math.PI);
+        if (isConflict) {
+          ctxAirframe.fillStyle = 'rgba(239, 68, 68, 0.25)';
+          ctxAirframe.strokeStyle = (Math.sin(animTime * 8) > 0) ? '#ef4444' : '#f59e0b';
+          ctxAirframe.lineWidth = 2;
+        } else {
+          ctxAirframe.fillStyle = spin === 1 ? 'rgba(16, 185, 129, 0.12)' : 'rgba(239, 68, 68, 0.12)';
+          ctxAirframe.strokeStyle = spin === 1 ? '#10b981' : '#f87171';
+          ctxAirframe.lineWidth = 1.5;
+        }
+        ctxAirframe.fill();
+        ctxAirframe.stroke();
+
+        // Animated rotating 2-blade propeller
+        const curBladeAngle = animAngle * spin;
+        const bx1 = mx + propPixRadius * Math.cos(curBladeAngle);
+        const by1 = my + propPixRadius * Math.sin(curBladeAngle);
+        const bx2 = mx - propPixRadius * Math.cos(curBladeAngle);
+        const by2 = my - propPixRadius * Math.sin(curBladeAngle);
+
+        ctxAirframe.strokeStyle = spin === 1 ? '#34d399' : '#fca5a5';
+        ctxAirframe.lineWidth = 3;
+        ctxAirframe.beginPath();
+        ctxAirframe.moveTo(bx1, by1);
+        ctxAirframe.lineTo(bx2, by2);
+        ctxAirframe.stroke();
+
+        // Motor index & spin label
+        ctxAirframe.fillStyle = '#f8fafc';
+        ctxAirframe.font = '10px monospace';
+        ctxAirframe.fillText(`M${idx+1} (${spin===1?'CW':'CCW'})`, mx - 18, my + propPixRadius + 14);
+      });
+
+      // Dimension line for Arm Radius L
+      if (topol.angles.length > 0) {
+        const mathAngle = topol.angles[0] - Math.PI / 2;
+        const mx = cx + state.armRadius * scale * Math.cos(mathAngle);
+        const my = cy + state.armRadius * scale * Math.sin(mathAngle);
+        
+        ctxAirframe.strokeStyle = '#06b6d4';
+        ctxAirframe.lineWidth = 1;
+        ctxAirframe.setLineDash([3, 3]);
+        ctxAirframe.beginPath();
+        ctxAirframe.moveTo(cx, cy + 15);
+        ctxAirframe.lineTo(mx, my + 15);
+        ctxAirframe.stroke();
+        ctxAirframe.setLineDash([]);
+        ctxAirframe.fillStyle = '#06b6d4';
+        ctxAirframe.font = '10px monospace';
+        ctxAirframe.fillText(`L = ${state.armRadius.toFixed(2)}m`, (cx + mx) / 2 - 18, (cy + my) / 2 + 28);
+      }
+    }
+
+    // Render Canvas 2: Endurance vs Battery Capacity Curve
+    function drawEnvelope() {
+      const w = canvasEnvelope.width;
+      const h = canvasEnvelope.height;
+      ctxEnvelope.clearRect(0, 0, w, h);
+
+      const pCurrent = calculatePhysics();
+
+      // Margins
+      const padL = 45;
+      const padR = 25;
+      const padT = 30;
+      const padB = 40;
+      const plotW = w - padL - padR;
+      const plotH = h - padT - padB;
+
+      // Curve data range: capacity from 1000 mAh to 22000 mAh
+      const capMin = 1000;
+      const capMax = 22000;
+      const steps = 70;
+      const points = [];
+      let maxEndurance = 0;
+      let peakCap = capMin;
+
+      for (let i = 0; i <= steps; i++) {
+        const testCap = capMin + (i / steps) * (capMax - capMin);
+        const res = calculatePhysics(testCap);
+        points.push({ cap: testCap, time: res.hoverTimeMinutes });
+        if (res.hoverTimeMinutes > maxEndurance) {
+          maxEndurance = res.hoverTimeMinutes;
+          peakCap = testCap;
+        }
+      }
+
+      peakStat.textContent = `Peak: ~${Math.round(peakCap)} mAh (${maxEndurance.toFixed(1)}m)`;
+
+      // Y-axis max scale (round up to nearest 5 or 10 min)
+      const yMax = Math.max(30, Math.ceil((maxEndurance * 1.25) / 5) * 5);
+
+      // Coordinate mapping helpers
+      function mapX(c) {
+        return padL + ((c - capMin) / (capMax - capMin)) * plotW;
+      }
+      function mapY(t) {
+        return padT + plotH - (t / yMax) * plotH;
+      }
+
+      // Draw Grid & Axes
+      ctxEnvelope.strokeStyle = '#1e293b';
+      ctxEnvelope.lineWidth = 1;
+      
+      // Horizontal grid lines (Time)
+      ctxEnvelope.fillStyle = '#64748b';
+      ctxEnvelope.font = '9px monospace';
+      const yTicks = 5;
+      for (let i = 0; i <= yTicks; i++) {
+        const tVal = (yMax / yTicks) * i;
+        const gy = mapY(tVal);
+        ctxEnvelope.beginPath();
+        ctxEnvelope.moveTo(padL, gy);
+        ctxEnvelope.lineTo(padL + plotW, gy);
+        ctxEnvelope.stroke();
+        ctxEnvelope.fillText(`${tVal.toFixed(0)}m`, padL - 26, gy + 3);
+      }
+
+      // Vertical grid lines (Capacity)
+      const xTicks = 4;
+      for (let i = 0; i <= xTicks; i++) {
+        const cVal = capMin + ((capMax - capMin) / xTicks) * i;
+        const gx = mapX(cVal);
+        ctxEnvelope.beginPath();
+        ctxEnvelope.moveTo(gx, padT);
+        ctxEnvelope.lineTo(gx, padT + plotH);
+        ctxEnvelope.stroke();
+        ctxEnvelope.fillText(`${(cVal/1000).toFixed(0)}k`, gx - 8, padT + plotH + 15);
+      }
+
+      // Axis labels
+      ctxEnvelope.fillStyle = '#94a3b8';
+      ctxEnvelope.font = '10px sans-serif';
+      ctxEnvelope.fillText('Battery Capacity (mAh)', padL + plotW / 2 - 50, h - 8);
+
+      ctxEnvelope.save();
+      ctxEnvelope.translate(14, padT + plotH / 2 + 25);
+      ctxEnvelope.rotate(-Math.PI / 2);
+      ctxEnvelope.fillText('Hover Time (min)', 0, 0);
+      ctxEnvelope.restore();
+
+      // Draw Diminishing Returns Peak Guide (Vertical dashed line)
+      const peakX = mapX(peakCap);
+      ctxEnvelope.strokeStyle = '#f59e0b';
+      ctxEnvelope.lineWidth = 1;
+      ctxEnvelope.setLineDash([4, 4]);
+      ctxEnvelope.beginPath();
+      ctxEnvelope.moveTo(peakX, padT);
+      ctxEnvelope.lineTo(peakX, padT + plotH);
+      ctxEnvelope.stroke();
+      ctxEnvelope.setLineDash([]);
+
+      ctxEnvelope.fillStyle = '#f59e0b';
+      ctxEnvelope.font = '9px monospace';
+      ctxEnvelope.fillText('PEAK', peakX - 10, padT - 5);
+
+      // Plot the theoretical endurance curve
+      ctxEnvelope.strokeStyle = '#06b6d4';
+      ctxEnvelope.lineWidth = 2.5;
+      ctxEnvelope.beginPath();
+      points.forEach((pt, idx) => {
+        const px = mapX(pt.cap);
+        const py = mapY(pt.time);
+        if (idx === 0) ctxEnvelope.moveTo(px, py);
+        else ctxEnvelope.lineTo(px, py);
+      });
+      ctxEnvelope.stroke();
+
+      // Shaded area under the curve
+      ctxEnvelope.lineTo(mapX(capMax), padT + plotH);
+      ctxEnvelope.lineTo(mapX(capMin), padT + plotH);
+      ctxEnvelope.closePath();
+      const grad = ctxEnvelope.createLinearGradient(0, padT, 0, padT + plotH);
+      grad.addColorStop(0, 'rgba(6, 182, 212, 0.25)');
+      grad.addColorStop(1, 'rgba(6, 182, 212, 0.0)');
+      ctxEnvelope.fillStyle = grad;
+      ctxEnvelope.fill();
+
+      // Plot Current Operating Point
+      const curX = mapX(state.batteryCapacity);
+      const curY = mapY(pCurrent.hoverTimeMinutes);
+
+      // Glowing animated halo
+      const pulse = 4 + 3 * Math.sin(animTime * 4);
+      ctxEnvelope.fillStyle = 'rgba(6, 182, 212, 0.3)';
+      ctxEnvelope.beginPath();
+      ctxEnvelope.arc(curX, curY, pulse + 6, 0, 2 * Math.PI);
+      ctxEnvelope.fill();
+
+      ctxEnvelope.fillStyle = '#06b6d4';
+      ctxEnvelope.strokeStyle = '#ffffff';
+      ctxEnvelope.lineWidth = 2;
+      ctxEnvelope.beginPath();
+      ctxEnvelope.arc(curX, curY, 5, 0, 2 * Math.PI);
+      ctxEnvelope.fill();
+      ctxEnvelope.stroke();
+
+      // Value Callout Banner
+      ctxEnvelope.fillStyle = '#f8fafc';
+      ctxEnvelope.font = 'bold 10px monospace';
+      const calloutText = `${pCurrent.hoverTimeMinutes.toFixed(1)} min`;
+      ctxEnvelope.fillText(calloutText, curX - 18, curY - 12);
+    }
+
+    // Animation Loop
+    function animate(timestamp) {
+      animTime = timestamp * 0.001;
+      animAngle += 0.25; // rotor spin rate
+      drawAirframe();
+      drawEnvelope();
+      requestAnimationFrame(animate);
+    }
+
+    // Event Listeners for Controls
+    sliderArm.addEventListener('input', (e) => {
+      state.armRadius = parseFloat(e.target.value);
+      updateHUD();
+    });
+
+    sliderProp.addEventListener('input', (e) => {
+      state.propDiameter = parseFloat(e.target.value);
+      updateHUD();
+    });
+
+    sliderCap.addEventListener('input', (e) => {
+      state.batteryCapacity = parseInt(e.target.value, 10);
+      updateHUD();
+    });
+
+    sliderPayload.addEventListener('input', (e) => {
+      state.payloadMass = parseFloat(e.target.value);
+      updateHUD();
+    });
+
+    // Cell count buttons
+    document.querySelectorAll('.cell-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.cell-btn').forEach(b => {
+          b.className = 'cell-btn px-2 py-1 text-xs rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 text-center transition';
+        });
+        btn.className = 'cell-btn px-2 py-1 text-xs rounded bg-cyan-700 text-white border border-cyan-600 text-center transition';
+        state.cellCount = parseInt(btn.dataset.cells, 10);
+        updateHUD();
+      });
+    });
+
+    // Topology buttons
+    document.querySelectorAll('.topol-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.topol-btn').forEach(b => {
+          b.className = 'topol-btn px-2 py-1.5 text-xs font-medium rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 text-center transition';
+        });
+        btn.className = 'topol-btn px-2 py-1.5 text-xs font-medium rounded bg-cyan-700 text-white border border-cyan-600 text-center transition';
+        state.topology = btn.dataset.topol;
+        updateHUD();
+      });
+    });
+
+    // Presets
+    document.getElementById('preset-bench').addEventListener('click', () => {
+      // Benchmark: Quad-X, L=0.25, D=10.0, 4S, 4000mAh, payload=0.30kg -> total mass 1.60kg
+      setPreset('quad_cross', 0.25, 10.0, 4, 4000, 0.30);
+    });
+
+    document.getElementById('preset-racer').addEventListener('click', () => {
+      // FPV Racer: Quad-X, L=0.15, D=5.0, 4S, 1300mAh, payload=0.0kg
+      setPreset('quad_cross', 0.15, 5.0, 4, 1300, 0.0);
+    });
+
+    document.getElementById('preset-heavy').addEventListener('click', () => {
+      // Heavy-Lift Hex: Hex-X, L=0.50, D=15.0, 6S, 12000mAh, payload=2.50kg
+      setPreset('hex_cross', 0.50, 15.0, 6, 12000, 2.50);
+    });
+
+    document.getElementById('preset-photo').addEventListener('click', () => {
+      // Cinema Rig: Octo-X, L=0.60, D=16.0, 6S, 16000mAh, payload=3.50kg
+      setPreset('octo_cross', 0.60, 16.0, 6, 16000, 3.50);
+    });
+
+    function setPreset(topology, arm, prop, cells, cap, payload) {
+      state.topology = topology;
+      state.armRadius = arm;
+      state.propDiameter = prop;
+      state.cellCount = cells;
+      state.batteryCapacity = cap;
+      state.payloadMass = payload;
+
+      sliderArm.value = arm;
+      sliderProp.value = prop;
+      sliderCap.value = cap;
+      sliderPayload.value = payload;
+
+      // Update topology buttons
+      document.querySelectorAll('.topol-btn').forEach(b => {
+        if (b.dataset.topol === topology) {
+          b.className = 'topol-btn px-2 py-1.5 text-xs font-medium rounded bg-cyan-700 text-white border border-cyan-600 text-center transition';
+        } else {
+          b.className = 'topol-btn px-2 py-1.5 text-xs font-medium rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 text-center transition';
+        }
+      });
+
+      // Update cell buttons
+      document.querySelectorAll('.cell-btn').forEach(b => {
+        if (parseInt(b.dataset.cells, 10) === cells) {
+          b.className = 'cell-btn px-2 py-1 text-xs rounded bg-cyan-700 text-white border border-cyan-600 text-center transition';
+        } else {
+          b.className = 'cell-btn px-2 py-1 text-xs rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 text-center transition';
+        }
+      });
+
+      updateHUD();
+    }
+
+    // Initialize
+    updateHUD();
+    requestAnimationFrame(animate);
+  </script>
+</body>
+</html>

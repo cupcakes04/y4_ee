@@ -1,0 +1,1226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Widget 3: 6-DoF Rigid-Body Dynamics & Gyroscopic Precession Explorer</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Offline CSS Fallback Styling -->
+  <style>
+    /* Baseline CSS fallback if Tailwind CDN is inaccessible */
+    *, ::before, ::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background-color: #020617;
+      color: #f8fafc;
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      overflow-x: hidden;
+    }
+    .panel {
+      background-color: rgba(15, 23, 42, 0.85);
+      border: 1px solid #1e293b;
+      border-radius: 0.75rem;
+      backdrop-filter: blur(8px);
+    }
+    input[type=range] {
+      accent-color: #06b6d4;
+    }
+    canvas {
+      display: block;
+      touch-action: none;
+    }
+    .badge-cyan { background-color: rgba(6, 182, 212, 0.15); color: #22d3ee; border: 1px solid rgba(6, 182, 212, 0.3); }
+    .badge-amber { background-color: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
+    .badge-rose { background-color: rgba(244, 63, 94, 0.15); color: #fb7185; border: 1px solid rgba(244, 63, 94, 0.3); }
+    .badge-emerald { background-color: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen p-3 md:p-6 flex flex-col items-center">
+
+  <!-- Header & Topic Metadata -->
+  <header class="w-full max-w-7xl mb-4 flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-slate-800 pb-3">
+    <div>
+      <div class="flex items-center gap-2 mb-1">
+        <span class="px-2 py-0.5 text-xs font-mono font-semibold rounded badge-cyan">EEEE4138 Module 3</span>
+        <span class="px-2 py-0.5 text-xs font-mono font-semibold rounded badge-emerald">RK4 Integrator @ 240 Hz</span>
+        <span class="px-2 py-0.5 text-xs font-mono font-semibold rounded badge-amber">Interactive 6-DoF Plant</span>
+      </div>
+      <h1 class="text-xl md:text-2xl font-bold tracking-tight text-white flex items-center gap-2">
+        <span>6-DoF Rigid-Body Dynamics & Precession Explorer</span>
+      </h1>
+      <p class="text-xs md:text-sm text-slate-400">
+        Euler Rotational Equations $\mathbf{M}_b = J\dot{\boldsymbol{\omega}}_b + \boldsymbol{\omega}_b \times (J\boldsymbol{\omega}_b) + \boldsymbol{\tau}_{\text{gyro}}$ & Coriolis Cross-Coupling
+      </p>
+    </div>
+    <div class="flex items-center gap-2">
+      <a href="../chapters/topic_3_kinematics_dynamics.md" class="px-3 py-1.5 text-xs font-medium rounded-lg bg-slate-800 hover:bg-slate-700 text-cyan-400 border border-slate-700 transition flex items-center gap-1.5 shadow-sm">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
+        <span>Topic 3 Textbook Chapter</span>
+      </a>
+      <button id="btnResetAll" class="px-3 py-1.5 text-xs font-medium rounded-lg bg-rose-950/50 hover:bg-rose-900/60 text-rose-300 border border-rose-800/60 transition shadow-sm">
+        Reset State
+      </button>
+    </div>
+  </header>
+
+  <!-- Pedagogical Experiment Banner -->
+  <div class="w-full max-w-7xl mb-4 bg-gradient-to-r from-cyan-950/40 via-slate-900 to-indigo-950/40 border border-cyan-800/40 rounded-xl p-3 md:p-4 text-xs md:text-sm shadow-lg">
+    <div class="flex items-start gap-3">
+      <div class="p-2 rounded-lg bg-cyan-900/40 text-cyan-400 border border-cyan-700/50 flex-shrink-0">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg>
+      </div>
+      <div class="flex-1">
+        <h3 class="font-bold text-cyan-300 mb-1 flex items-center gap-2">
+          <span>Guided Pedagogical Experiment: Direct Proof of Gyroscopic Precession</span>
+          <span class="text-[10px] font-mono px-1.5 py-0.2 rounded bg-cyan-900/60 text-cyan-200">Interactive Drill</span>
+        </h3>
+        <p class="text-slate-300 leading-relaxed mb-2">
+          1. Set <strong>Motor Rotor Speed ($\Omega_{\text{rotor}}$)</strong> to <strong>1000 rad/s</strong> and confirm <strong>Gyroscopic Precession</strong> is <span class="text-emerald-400 font-semibold">ON</span>.<br>
+          2. Click the <strong>"+Pitch Impulse (+0.5 N·m)"</strong> button below. <br>
+          3. <strong>Watch the oscilloscope on the right:</strong> Notice that although applied roll moment is strictly zero ($M_x = 0$), the quadrotor immediately develops a large roll rate <span class="text-rose-400 font-bold">$p(t)$ (red trace)</span>! <br>
+          4. <strong>The Math:</strong> Pitching rotating blades ($q > 0$) causes their spin angular momentum $H_z$ to precess, generating an orthogonal gyroscopic reaction moment: $\tau_{\text{gyro, roll}} = -q J_r \Omega_{\text{net}}$.
+        </p>
+        <div class="flex flex-wrap gap-2 text-xs">
+          <button id="btnRunPresetGyro" class="px-2.5 py-1 rounded bg-cyan-600 hover:bg-cyan-500 text-white font-medium transition shadow">
+            Auto-Run Gyro Precession Test
+          </button>
+          <button id="btnRunPresetSpin" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition">
+            Test High-Rate Nutation ($\boldsymbol{\omega} \times J\boldsymbol{\omega}$)
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Grid: Left Canvas (3D Visualizer) + Right Canvas (Oscilloscope) -->
+  <main class="w-full max-w-7xl grid grid-cols-1 lg:grid-cols-12 gap-4 mb-4">
+
+    <!-- Left Column: 3D Airframe & Vector Projection (7 cols) -->
+    <div class="lg:col-span-7 flex flex-col panel p-3 md:p-4">
+      <div class="flex items-center justify-between mb-2">
+        <div class="flex items-center gap-2">
+          <h2 class="text-sm font-bold text-white tracking-wide uppercase flex items-center gap-1.5">
+            <span class="w-2.5 h-2.5 rounded-full bg-cyan-400 inline-block animate-pulse"></span>
+            3D Airframe & Dynamic Vector Projection
+          </h2>
+        </div>
+        <div class="flex items-center gap-3 text-xs font-mono">
+          <span class="flex items-center gap-1 text-yellow-400">
+            <span class="w-2 h-2 rounded-full bg-yellow-400"></span>
+            Angular Velocity $\boldsymbol{\omega}$
+          </span>
+          <span class="flex items-center gap-1 text-cyan-400">
+            <span class="w-2 h-2 rounded-full bg-cyan-400"></span>
+            Momentum $\mathbf{H} = J\boldsymbol{\omega}$
+          </span>
+        </div>
+      </div>
+
+      <!-- Canvas Container with interactive overlay hint -->
+      <div class="relative w-full aspect-[4/3] bg-slate-950 rounded-lg overflow-hidden border border-slate-800/80 shadow-inner group">
+        <canvas id="canvas3D" class="w-full h-full cursor-grab active:cursor-grabbing"></canvas>
+        <div class="absolute bottom-2 left-2 text-[10px] font-mono text-slate-500 bg-slate-900/80 px-2 py-0.5 rounded pointer-events-none border border-slate-800">
+          Click & Drag to Orbit 3D Camera | Scroll to Zoom
+        </div>
+        <!-- Coordinate Frame Indicators in 3D canvas corner -->
+        <div class="absolute top-2 left-2 flex flex-col gap-1 text-[10px] font-mono bg-slate-900/80 px-2 py-1.5 rounded border border-slate-800">
+          <div class="text-red-400 flex items-center gap-1"><span class="font-bold">+X_b:</span> Forward (Nose)</div>
+          <div class="text-green-400 flex items-center gap-1"><span class="font-bold">+Y_b:</span> Starboard (Right)</div>
+          <div class="text-blue-400 flex items-center gap-1"><span class="font-bold">+Z_b:</span> Belly (Down)</div>
+        </div>
+      </div>
+
+      <!-- 3D Airframe Telemetry Summary Bar -->
+      <div class="grid grid-cols-3 gap-2 mt-3 text-center font-mono text-xs">
+        <div class="p-2 rounded bg-slate-900/60 border border-slate-800">
+          <div class="text-[10px] text-slate-400 uppercase">Roll ($\phi$)</div>
+          <div id="dispPhi" class="text-sm font-bold text-cyan-300">0.0°</div>
+          <div id="dispP" class="text-[10px] text-slate-400">p: 0.00 rad/s</div>
+        </div>
+        <div class="p-2 rounded bg-slate-900/60 border border-slate-800">
+          <div class="text-[10px] text-slate-400 uppercase">Pitch ($\theta$)</div>
+          <div id="dispTheta" class="text-sm font-bold text-emerald-300">0.0°</div>
+          <div id="dispQ" class="text-[10px] text-slate-400">q: 0.00 rad/s</div>
+        </div>
+        <div class="p-2 rounded bg-slate-900/60 border border-slate-800">
+          <div class="text-[10px] text-slate-400 uppercase">Yaw ($\psi$)</div>
+          <div id="dispPsi" class="text-sm font-bold text-indigo-300">0.0°</div>
+          <div id="dispR" class="text-[10px] text-slate-400">r: 0.00 rad/s</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Column: 3-Channel Scrolling Oscilloscope (5 cols) -->
+    <div class="lg:col-span-5 flex flex-col panel p-3 md:p-4">
+      <div class="flex items-center justify-between mb-2">
+        <h2 class="text-sm font-bold text-white tracking-wide uppercase flex items-center gap-1.5">
+          <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 inline-block"></span>
+          Real-Time Oscilloscope: $\boldsymbol{\omega}_b(t)$
+        </h2>
+        <button id="btnClearScope" class="px-2 py-0.5 text-[10px] font-mono rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition">
+          Clear Scope
+        </button>
+      </div>
+
+      <!-- Scope Canvas -->
+      <div class="relative w-full aspect-[4/3] bg-slate-950 rounded-lg overflow-hidden border border-slate-800/80 shadow-inner">
+        <canvas id="canvasScope" class="w-full h-full"></canvas>
+      </div>
+
+      <!-- Live Oscilloscope Channel Readouts -->
+      <div class="grid grid-cols-3 gap-2 mt-3 font-mono text-xs">
+        <div class="p-2 rounded bg-rose-950/20 border border-rose-900/40 text-center">
+          <div class="flex items-center justify-center gap-1 text-[10px] text-rose-400 font-bold">
+            <span class="w-2 h-2 rounded-full bg-rose-500"></span> Roll Rate $p$
+          </div>
+          <div id="scopeValP" class="text-sm font-bold text-rose-300 mt-0.5">0.000 rad/s</div>
+          <div id="scopeDegP" class="text-[10px] text-slate-400">0.0°/s</div>
+        </div>
+        <div class="p-2 rounded bg-emerald-950/20 border border-emerald-900/40 text-center">
+          <div class="flex items-center justify-center gap-1 text-[10px] text-emerald-400 font-bold">
+            <span class="w-2 h-2 rounded-full bg-emerald-500"></span> Pitch Rate $q$
+          </div>
+          <div id="scopeValQ" class="text-sm font-bold text-emerald-300 mt-0.5">0.000 rad/s</div>
+          <div id="scopeDegQ" class="text-[10px] text-slate-400">0.0°/s</div>
+        </div>
+        <div class="p-2 rounded bg-indigo-950/20 border border-indigo-900/40 text-center">
+          <div class="flex items-center justify-center gap-1 text-[10px] text-indigo-400 font-bold">
+            <span class="w-2 h-2 rounded-full bg-indigo-500"></span> Yaw Rate $r$
+          </div>
+          <div id="scopeValR" class="text-sm font-bold text-indigo-300 mt-0.5">0.000 rad/s</div>
+          <div id="scopeDegR" class="text-[10px] text-slate-400">0.0°/s</div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Interactive Control Panel & Physics Playground -->
+  <section class="w-full max-w-7xl panel p-4 md:p-6 mb-4">
+    <div class="border-b border-slate-800 pb-3 mb-4 flex flex-col md:flex-row md:items-center justify-between gap-3">
+      <div>
+        <h2 class="text-base font-bold text-white flex items-center gap-2">
+          <span>Flight Dynamics Injection & Actuator Control Deck</span>
+        </h2>
+        <p class="text-xs text-slate-400">
+          Apply momentary torque impulses or sustained body moments to investigate cross-term coupling and precession.
+        </p>
+      </div>
+
+      <!-- Play / Pause / Step Controls -->
+      <div class="flex items-center gap-2">
+        <button id="btnPlayPause" class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white transition flex items-center gap-1.5 shadow">
+          <span id="playIcon">⏸</span>
+          <span id="playText">Running</span>
+        </button>
+        <button id="btnStep" class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition">
+          Step (+4.1ms)
+        </button>
+        <button id="btnZeroRates" class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-800 hover:bg-slate-700 text-cyan-400 border border-slate-700 transition">
+          Zero Rates ($\boldsymbol{\omega}_b = 0$)
+        </button>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+      <!-- Column 1: Impulse Moments (Tutorial Drills) -->
+      <div class="flex flex-col gap-3">
+        <h3 class="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+          <span class="w-2 h-2 rounded bg-amber-400"></span> Moment Impulses (100 ms pulse)
+        </h3>
+        <p class="text-[11px] text-slate-400">Inject calibrated torque pulses to witness transient cross-axis coupling.</p>
+
+        <div class="grid grid-cols-2 gap-2">
+          <button id="btnImpulsePitchPos" class="px-3 py-2 rounded bg-slate-800 hover:bg-emerald-950/80 hover:text-emerald-300 hover:border-emerald-700/60 border border-slate-700 text-xs font-mono transition text-left">
+            +Pitch (+0.5 N·m)
+          </button>
+          <button id="btnImpulsePitchNeg" class="px-3 py-2 rounded bg-slate-800 hover:bg-emerald-950/80 hover:text-emerald-300 hover:border-emerald-700/60 border border-slate-700 text-xs font-mono transition text-left">
+            -Pitch (-0.5 N·m)
+          </button>
+          <button id="btnImpulseRollPos" class="px-3 py-2 rounded bg-slate-800 hover:bg-rose-950/80 hover:text-rose-300 hover:border-rose-700/60 border border-slate-700 text-xs font-mono transition text-left">
+            +Roll (+0.5 N·m)
+          </button>
+          <button id="btnImpulseRollNeg" class="px-3 py-2 rounded bg-slate-800 hover:bg-rose-950/80 hover:text-rose-300 hover:border-rose-700/60 border border-slate-700 text-xs font-mono transition text-left">
+            -Roll (-0.5 N·m)
+          </button>
+          <button id="btnImpulseYawPos" class="px-3 py-2 rounded bg-slate-800 hover:bg-indigo-950/80 hover:text-indigo-300 hover:border-indigo-700/60 border border-slate-700 text-xs font-mono transition text-left">
+            +Yaw (+0.2 N·m)
+          </button>
+          <button id="btnImpulseYawNeg" class="px-3 py-2 rounded bg-slate-800 hover:bg-indigo-950/80 hover:text-indigo-300 hover:border-indigo-700/60 border border-slate-700 text-xs font-mono transition text-left">
+            -Yaw (-0.2 N·m)
+          </button>
+        </div>
+
+        <!-- Inertia Preset Dropdown -->
+        <div class="mt-2">
+          <label class="block text-xs font-mono text-slate-400 mb-1">Airframe Inertia Matrix $J$:</label>
+          <select id="selectInertia" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs font-mono text-slate-200 focus:outline-none focus:border-cyan-500">
+            <option value="multirotor">Symmetric Multirotor (Jx=0.025, Jy=0.035, Jz=0.045)</option>
+            <option value="racer">Acrobatic Quad (Jx=0.015, Jy=0.015, Jz=0.028)</option>
+            <option value="fixedwing">Asymmetric Fixed-Wing (Jx=0.025, Jy=0.035, Jz=0.045, Jxz=0.003)</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Column 2: Sustained Control Moments -->
+      <div class="flex flex-col gap-3">
+        <div class="flex items-center justify-between">
+          <h3 class="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded bg-cyan-400"></span> Sustained Moments $\mathbf{M}_b$
+          </h3>
+          <button id="btnZeroTorques" class="text-[10px] font-mono text-cyan-400 hover:underline">
+            Reset to 0
+          </button>
+        </div>
+
+        <!-- Roll Slider -->
+        <div>
+          <div class="flex justify-between text-xs font-mono mb-1">
+            <span class="text-rose-400 font-semibold">Roll Moment $\tau_\phi$:</span>
+            <span id="valTauX" class="text-slate-200">0.00 N·m</span>
+          </div>
+          <input type="range" id="sliderTauX" min="-1.0" max="1.0" step="0.02" value="0.0" class="w-full h-1.5 bg-slate-800 rounded-lg cursor-pointer">
+        </div>
+
+        <!-- Pitch Slider -->
+        <div>
+          <div class="flex justify-between text-xs font-mono mb-1">
+            <span class="text-emerald-400 font-semibold">Pitch Moment $\tau_\theta$:</span>
+            <span id="valTauY" class="text-slate-200">0.00 N·m</span>
+          </div>
+          <input type="range" id="sliderTauY" min="-1.0" max="1.0" step="0.02" value="0.0" class="w-full h-1.5 bg-slate-800 rounded-lg cursor-pointer">
+        </div>
+
+        <!-- Yaw Slider -->
+        <div>
+          <div class="flex justify-between text-xs font-mono mb-1">
+            <span class="text-indigo-400 font-semibold">Yaw Moment $\tau_\psi$:</span>
+            <span id="valTauZ" class="text-slate-200">0.00 N·m</span>
+          </div>
+          <input type="range" id="sliderTauZ" min="-0.5" max="0.5" step="0.01" value="0.0" class="w-full h-1.5 bg-slate-800 rounded-lg cursor-pointer">
+        </div>
+
+        <!-- Rotor Speed Slider (Gyroscopic Precession Intensity) -->
+        <div class="pt-2 border-t border-slate-800/80">
+          <div class="flex justify-between text-xs font-mono mb-1">
+            <span class="text-amber-300 font-semibold">Rotor Spin $\Omega_{\text{rotor}}$:</span>
+            <span id="valRotorSpeed" class="text-slate-200">1000 rad/s</span>
+          </div>
+          <input type="range" id="sliderRotorSpeed" min="0" max="1200" step="50" value="1000" class="w-full h-1.5 bg-slate-800 rounded-lg cursor-pointer">
+          <div class="flex justify-between text-[10px] font-mono text-slate-500 mt-0.5">
+            <span>0 (Hover Net Zero)</span>
+            <span id="valNetMomentum">H_z = 0.050 N·m·s</span>
+            <span>1200 rad/s</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Column 3: Physics Toggles & Numerical Engine -->
+      <div class="flex flex-col gap-3">
+        <h3 class="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+          <span class="w-2 h-2 rounded bg-indigo-400"></span> Dynamics Model Toggles
+        </h3>
+        <p class="text-[11px] text-slate-400">Isolate individual physical terms to analyze their exact dynamical impact.</p>
+
+        <!-- Toggle: Nonlinear Cross Terms -->
+        <label class="flex items-center justify-between p-2.5 rounded-lg bg-slate-900/80 border border-slate-800 cursor-pointer hover:border-slate-700 transition">
+          <div>
+            <div class="text-xs font-semibold text-slate-200">Euler Cross-Terms $\boldsymbol{\omega}\times(J\boldsymbol{\omega})$</div>
+            <div class="text-[10px] text-slate-500 font-mono">$(J_z - J_y)qr, (J_x - J_z)pr, (J_y - J_x)pq$</div>
+          </div>
+          <input type="checkbox" id="checkCrossTerms" checked class="w-4 h-4 text-cyan-500 rounded bg-slate-800 border-slate-700 focus:ring-0">
+        </label>
+
+        <!-- Toggle: Gyroscopic Precession -->
+        <label class="flex items-center justify-between p-2.5 rounded-lg bg-slate-900/80 border border-slate-800 cursor-pointer hover:border-slate-700 transition">
+          <div>
+            <div class="text-xs font-semibold text-slate-200">Rotor Gyroscopic Precession $\boldsymbol{\tau}_{\text{gyro}}$</div>
+            <div class="text-[10px] text-slate-500 font-mono">$\boldsymbol{\tau}_{\text{gyro}} = \boldsymbol{\omega}_b \times [0, 0, J_r\Omega_{\text{net}}]^T$</div>
+          </div>
+          <input type="checkbox" id="checkGyro" checked class="w-4 h-4 text-cyan-500 rounded bg-slate-800 border-slate-700 focus:ring-0">
+        </label>
+
+        <!-- Aerodynamic Damping Slider -->
+        <div>
+          <div class="flex justify-between text-xs font-mono mb-1">
+            <span class="text-slate-300">Rotational Damping ($d_\omega$):</span>
+            <span id="valDamping" class="text-slate-200">0.015 N·m·s</span>
+          </div>
+          <input type="range" id="sliderDamping" min="0.0" max="0.06" step="0.005" value="0.015" class="w-full h-1.5 bg-slate-800 rounded-lg cursor-pointer">
+          <div class="flex justify-between text-[10px] font-mono text-slate-500 mt-0.5">
+            <span>0.0 (Conservative)</span>
+            <span>0.03 (Standard)</span>
+            <span>0.06 (Overdamped)</span>
+          </div>
+        </div>
+
+        <!-- Live Energy Readout -->
+        <div class="p-2.5 rounded-lg bg-slate-900/80 border border-slate-800 flex items-center justify-between font-mono text-xs">
+          <span class="text-slate-400">Kinetic Energy $E_{\text{rot}}$:</span>
+          <span id="dispEnergy" class="text-cyan-300 font-bold">0.000 J</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Technical Formulation Footer -->
+  <footer class="w-full max-w-7xl border-t border-slate-800/80 pt-3 pb-8 text-xs text-slate-500 flex flex-col md:flex-row items-center justify-between gap-2">
+    <div>
+      Autonomous UAV Dynamics Engine &bull; Runge-Kutta 4th Order Integrator ($\Delta t = 1/240\text{ s}$, 4 sub-steps per animation frame)
+    </div>
+    <div class="font-mono text-[11px] text-slate-400">
+      Sim Time: <span id="dispSimTime" class="text-slate-200">0.00 s</span> &bull; 60 FPS Software 3D Projection
+    </div>
+  </footer>
+
+  <!-- Simulation & Visualization Engine (Pure Vanilla JavaScript) -->
+  <script>
+    (function() {
+      // -------------------------------------------------------------
+      // 1. Simulation Constants & Dynamic State
+      // -------------------------------------------------------------
+      const SUB_STEPS = 4;
+      const DT = (1.0 / 60.0) / SUB_STEPS; // ~0.004167s (240 Hz)
+      
+      // Rigid Airframe Inertia Properties
+      const INERTIA_CONFIGS = {
+        multirotor: { Jx: 0.0250, Jy: 0.0350, Jz: 0.0450, Jxz: 0.0, Jr: 5e-5 },
+        racer:      { Jx: 0.0150, Jy: 0.0150, Jz: 0.0280, Jxz: 0.0, Jr: 3e-5 },
+        fixedwing:  { Jx: 0.0250, Jy: 0.0350, Jz: 0.0450, Jxz: 0.0030, Jr: 5e-5 }
+      };
+      
+      let currentInertiaKey = 'multirotor';
+      let Jx = INERTIA_CONFIGS.multirotor.Jx;
+      let Jy = INERTIA_CONFIGS.multirotor.Jy;
+      let Jz = INERTIA_CONFIGS.multirotor.Jz;
+      let Jxz = INERTIA_CONFIGS.multirotor.Jxz;
+      let Jr = INERTIA_CONFIGS.multirotor.Jr;
+
+      // State: Quaternion [qw, qx, qy, qz], Body Rates [p, q, r] (rad/s)
+      let q = [1.0, 0.0, 0.0, 0.0];
+      let p = 0.0, q_rate = 0.0, r = 0.0;
+
+      // Applied moments [Mx, My, Mz] (N*m)
+      let Mx_sustained = 0.0, My_sustained = 0.0, Mz_sustained = 0.0;
+      let Mx_impulse = 0.0, My_impulse = 0.0, Mz_impulse = 0.0;
+      let impulseTimer = 0.0; // seconds remaining for impulse
+
+      // Parameters
+      let rotorSpeed = 1000.0; // rad/s
+      let enableCrossTerms = true;
+      let enableGyro = true;
+      let dampingCoeff = 0.015; // N*m*s
+
+      // Sim Time & Status
+      let simTime = 0.0;
+      let isRunning = true;
+
+      // Rotor visual spin angles for 3D animation
+      let rotorAngles = [0.0, 0.0, 0.0, 0.0];
+
+      // Oscilloscope buffer (history)
+      const SCOPE_CAPACITY = 300; // 5 seconds at 60 FPS
+      const scopeData = []; // { t, p, q, r }
+
+      // -------------------------------------------------------------
+      // 2. DOM Elements Cache
+      // -------------------------------------------------------------
+      const canvas3D = document.getElementById('canvas3D');
+      const ctx3D = canvas3D.getContext('2d');
+      const canvasScope = document.getElementById('canvasScope');
+      const ctxScope = canvasScope.getContext('2d');
+
+      const dispPhi = document.getElementById('dispPhi');
+      const dispTheta = document.getElementById('dispTheta');
+      const dispPsi = document.getElementById('dispPsi');
+      const dispP = document.getElementById('dispP');
+      const dispQ = document.getElementById('dispQ');
+      const dispR = document.getElementById('dispR');
+
+      const scopeValP = document.getElementById('scopeValP');
+      const scopeValQ = document.getElementById('scopeValQ');
+      const scopeValR = document.getElementById('scopeValR');
+      const scopeDegP = document.getElementById('scopeDegP');
+      const scopeDegQ = document.getElementById('scopeDegQ');
+      const scopeDegR = document.getElementById('scopeDegR');
+
+      const dispEnergy = document.getElementById('dispEnergy');
+      const dispSimTime = document.getElementById('dispSimTime');
+      const valNetMomentum = document.getElementById('valNetMomentum');
+
+      const btnPlayPause = document.getElementById('btnPlayPause');
+      const playIcon = document.getElementById('playIcon');
+      const playText = document.getElementById('playText');
+      const btnStep = document.getElementById('btnStep');
+      const btnZeroRates = document.getElementById('btnZeroRates');
+      const btnResetAll = document.getElementById('btnResetAll');
+      const btnClearScope = document.getElementById('btnClearScope');
+
+      const selectInertia = document.getElementById('selectInertia');
+      const checkCrossTerms = document.getElementById('checkCrossTerms');
+      const checkGyro = document.getElementById('checkGyro');
+
+      const sliderTauX = document.getElementById('sliderTauX');
+      const sliderTauY = document.getElementById('sliderTauY');
+      const sliderTauZ = document.getElementById('sliderTauZ');
+      const valTauX = document.getElementById('valTauX');
+      const valTauY = document.getElementById('valTauY');
+      const valTauZ = document.getElementById('valTauZ');
+      const btnZeroTorques = document.getElementById('btnZeroTorques');
+
+      const sliderRotorSpeed = document.getElementById('sliderRotorSpeed');
+      const valRotorSpeed = document.getElementById('valRotorSpeed');
+      const sliderDamping = document.getElementById('sliderDamping');
+      const valDamping = document.getElementById('valDamping');
+
+      // -------------------------------------------------------------
+      // 3. Mathematical Utilities (Quaternions, Matrix, RK4)
+      // -------------------------------------------------------------
+      
+      // Normalize quaternion
+      function normalizeQuaternion(q) {
+        const len = Math.hypot(q[0], q[1], q[2], q[3]);
+        if (len < 1e-9) return [1, 0, 0, 0];
+        return [q[0] / len, q[1] / len, q[2] / len, q[3] / len];
+      }
+
+      // Convert quaternion to 3x3 Rotation Matrix R_b^n
+      function quatToRotMatrix(q) {
+        const [w, x, y, z] = q;
+        const x2 = x + x, y2 = y + y, z2 = z + z;
+        const xx = x * x2, xy = x * y2, xz = x * z2;
+        const yy = y * y2, yz = y * z2, zz = z * z2;
+        const wx = w * x2, wy = w * y2, wz = w * z2;
+
+        return [
+          [1 - (yy + zz), xy - wz,       xz + wy],
+          [xy + wz,       1 - (xx + zz), yz - wx],
+          [xz - wy,       yz + wx,       1 - (xx + yy)]
+        ];
+      }
+
+      // Extract ZYX Euler Angles (Roll phi, Pitch theta, Yaw psi) in radians
+      function quatToEuler(q) {
+        const [w, x, y, z] = q;
+        // Pitch theta
+        const sinp = 2 * (w * y - z * x);
+        let theta = 0;
+        if (Math.abs(sinp) >= 1) {
+          theta = Math.copySign(Math.PI / 2, sinp);
+        } else {
+          theta = Math.asin(sinp);
+        }
+
+        // Roll phi
+        const sinr_cosp = 2 * (w * x + y * z);
+        const cosr_cosp = 1 - 2 * (x * x + y * y);
+        const phi = Math.atan2(sinr_cosp, cosr_cosp);
+
+        // Yaw psi
+        const siny_cosp = 2 * (w * z + x * y);
+        const cosy_cosp = 1 - 2 * (y * y + z * z);
+        const psi = Math.atan2(siny_cosp, cosy_cosp);
+
+        return [phi, theta, psi];
+      }
+
+      Math.copySign = function(val, sign) {
+        return Math.sign(sign) * Math.abs(val);
+      };
+
+      // Full State Derivative Function: f(state, torque)
+      // state = [qw, qx, qy, qz, p, q_rate, r]
+      function computeDerivatives(state, tau) {
+        const [qw, qx, qy, qz, p_in, q_in, r_in] = state;
+        const [Tx, Ty, Tz] = tau;
+
+        // 1. Quaternion derivative: q_dot = 0.5 * q x [0, p, q, r]
+        const qw_dot = 0.5 * (-qx * p_in - qy * q_in - qz * r_in);
+        const qx_dot = 0.5 * ( qw * p_in + qy * r_in - qz * q_in);
+        const qy_dot = 0.5 * ( qw * q_in - qx * r_in + qz * p_in);
+        const qz_dot = 0.5 * ( qw * r_in + qx * q_in - qy * p_in);
+
+        // 2. Gyroscopic Precession Moments (from rotor spin momentum Hz)
+        let tau_gyro_x = 0.0;
+        let tau_gyro_y = 0.0;
+        if (enableGyro) {
+          const Hz = Jr * rotorSpeed; // net rotor angular momentum along +z_b
+          // tau_gyro = omega x [0, 0, Hz]^T = [q * Hz, -p * Hz, 0]
+          tau_gyro_x = q_in * Hz;
+          tau_gyro_y = -p_in * Hz;
+        }
+
+        // 3. Nonlinear Euler cross-coupling terms
+        let p_dot = 0.0, q_dot = 0.0, r_dot = 0.0;
+
+        if (Math.abs(Jxz) < 1e-6) {
+          // Principal axes formulation (multirotor standard)
+          let cross_x = 0.0, cross_y = 0.0, cross_z = 0.0;
+          if (enableCrossTerms) {
+            cross_x = (Jy - Jz) * q_in * r_in;
+            cross_y = (Jz - Jx) * p_in * r_in;
+            cross_z = (Jx - Jy) * p_in * q_in;
+          }
+
+          p_dot = (Tx + cross_x - tau_gyro_x - dampingCoeff * p_in) / Jx;
+          q_dot = (Ty + cross_y - tau_gyro_y - dampingCoeff * q_in) / Jy;
+          r_dot = (Tz + cross_z - dampingCoeff * r_in) / Jz;
+        } else {
+          // Asymmetric fixed-wing formulation with Jxz != 0
+          const Gamma = Jx * Jz - Jxz * Jxz;
+          let A = Tx - tau_gyro_x - dampingCoeff * p_in;
+          let B = Ty - tau_gyro_y - dampingCoeff * q_in;
+          let C = Tz - dampingCoeff * r_in;
+
+          if (enableCrossTerms) {
+            A += (Jy - Jz) * q_in * r_in + Jxz * p_in * q_in;
+            B += (Jz - Jx) * p_in * r_in - Jxz * (p_in * p_in - r_in * r_in);
+            C += (Jx - Jy) * p_in * q_in - Jxz * q_in * r_in;
+          }
+
+          p_dot = (Jz * A + Jxz * C) / Gamma;
+          q_dot = B / Jy;
+          r_dot = (Jxz * A + Jx * C) / Gamma;
+        }
+
+        return [qw_dot, qx_dot, qy_dot, qz_dot, p_dot, q_dot, r_dot];
+      }
+
+      // Runge-Kutta 4th Order (RK4) Integrator Step
+      function rk4Step(dt, tau) {
+        const y = [q[0], q[1], q[2], q[3], p, q_rate, r];
+
+        // k1 = f(y)
+        const k1 = computeDerivatives(y, tau);
+
+        // k2 = f(y + 0.5*dt*k1)
+        const y2 = y.map((v, i) => v + 0.5 * dt * k1[i]);
+        const k2 = computeDerivatives(y2, tau);
+
+        // k3 = f(y + 0.5*dt*k2)
+        const y3 = y.map((v, i) => v + 0.5 * dt * k2[i]);
+        const k3 = computeDerivatives(y3, tau);
+
+        // k4 = f(y + dt*k3)
+        const y4 = y.map((v, i) => v + dt * k3[i]);
+        const k4 = computeDerivatives(y4, tau);
+
+        // Update state y_next = y + (dt/6)*(k1 + 2k2 + 2k3 + k4)
+        for (let i = 0; i < 7; i++) {
+          y[i] += (dt / 6.0) * (k1[i] + 2.0 * k2[i] + 2.0 * k3[i] + k4[i]);
+        }
+
+        // Re-normalize quaternion
+        q = normalizeQuaternion([y[0], y[1], y[2], y[3]]);
+        p = y[4];
+        q_rate = y[5];
+        r = y[6];
+      }
+
+      // -------------------------------------------------------------
+      // 4. Physical Simulation Loop Execution
+      // -------------------------------------------------------------
+      function stepSimulation(dt) {
+        // Handle impulse timer countdown
+        if (impulseTimer > 0) {
+          impulseTimer -= dt;
+          if (impulseTimer <= 0) {
+            Mx_impulse = 0;
+            My_impulse = 0;
+            Mz_impulse = 0;
+            impulseTimer = 0;
+          }
+        }
+
+        // Net control torques
+        const Tx_net = Mx_sustained + Mx_impulse;
+        const Ty_net = My_sustained + My_impulse;
+        const Tz_net = Mz_sustained + Mz_impulse;
+
+        // Perform Sub-stepped RK4 numerical integration
+        for (let s = 0; s < SUB_STEPS; s++) {
+          rk4Step(DT, [Tx_net, Ty_net, Tz_net]);
+          simTime += DT;
+
+          // Animate rotor rotations
+          const spinSpeed = rotorSpeed * DT;
+          rotorAngles[0] += spinSpeed;
+          rotorAngles[1] -= spinSpeed;
+          rotorAngles[2] += spinSpeed;
+          rotorAngles[3] -= spinSpeed;
+        }
+
+        // Buffer Scope Data
+        scopeData.push({ t: simTime, p: p, q: q_rate, r: r });
+        if (scopeData.length > SCOPE_CAPACITY) {
+          scopeData.shift();
+        }
+      }
+
+      // -------------------------------------------------------------
+      // 5. 3D Airframe Rendering Engine (Software Perspective Projection)
+      // -------------------------------------------------------------
+      let camYaw = -0.4;
+      let camPitch = 0.45;
+      let camDist = 3.6;
+      let isDragging = false;
+      let lastMouseX = 0, lastMouseY = 0;
+
+      // Mouse Orbit Listeners
+      canvas3D.addEventListener('mousedown', (e) => {
+        isDragging = true;
+        lastMouseX = e.clientX;
+        lastMouseY = e.clientY;
+      });
+      window.addEventListener('mouseup', () => { isDragging = false; });
+      window.addEventListener('mousemove', (e) => {
+        if (!isDragging) return;
+        const dx = e.clientX - lastMouseX;
+        const dy = e.clientY - lastMouseY;
+        camYaw += dx * 0.008;
+        camPitch = Math.max(-1.4, Math.min(1.4, camPitch + dy * 0.008));
+        lastMouseX = e.clientX;
+        lastMouseY = e.clientY;
+      });
+      canvas3D.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        camDist = Math.max(1.8, Math.min(7.0, camDist + e.deltaY * 0.003));
+      }, { passive: false });
+
+      // Project 3D point (world coordinates) to 2D Canvas pixels
+      function project3D(pt, width, height) {
+        // Camera orbit transform
+        const cy = Math.cos(camYaw), sy = Math.sin(camYaw);
+        const cp = Math.cos(camPitch), sp = Math.sin(camPitch);
+
+        // Rotate around world Z (yaw)
+        const x1 = pt[0] * cy - pt[1] * sy;
+        const y1 = pt[0] * sy + pt[1] * cy;
+        const z1 = pt[2];
+
+        // Rotate around camera X (pitch)
+        const x2 = x1;
+        const y2 = y1 * cp - z1 * sp;
+        const z2 = y1 * sp + z1 * cp;
+
+        // Offset by camera distance
+        const depth = y2 + camDist;
+        if (depth < 0.2) return null; // behind camera
+
+        const fov = 380;
+        const scale = fov / depth;
+        return {
+          x: width / 2 + x2 * scale,
+          y: height / 2 - z2 * scale,
+          depth: depth
+        };
+      }
+
+      // Transform Body-relative point to World Inertial point via R_b^n
+      function bodyToWorld(ptBody, R) {
+        return [
+          R[0][0] * ptBody[0] + R[0][1] * ptBody[1] + R[0][2] * ptBody[2],
+          R[1][0] * ptBody[0] + R[1][1] * ptBody[1] + R[1][2] * ptBody[2],
+          R[2][0] * ptBody[0] + R[2][1] * ptBody[1] + R[2][2] * ptBody[2]
+        ];
+      }
+
+      function draw3DAirframe() {
+        const width = canvas3D.clientWidth;
+        const height = canvas3D.clientHeight;
+        if (canvas3D.width !== width || canvas3D.height !== height) {
+          canvas3D.width = width;
+          canvas3D.height = height;
+        }
+
+        ctx3D.clearRect(0, 0, width, height);
+
+        // Background grid floor in inertial NED
+        ctx3D.strokeStyle = 'rgba(30, 41, 59, 0.4)';
+        ctx3D.lineWidth = 1;
+        const gridRange = 2.0;
+        const gridStep = 0.5;
+        for (let gx = -gridRange; gx <= gridRange; gx += gridStep) {
+          const p1 = project3D([gx, -gridRange, 0.8], width, height);
+          const p2 = project3D([gx, gridRange, 0.8], width, height);
+          if (p1 && p2) {
+            ctx3D.beginPath();
+            ctx3D.moveTo(p1.x, p1.y);
+            ctx3D.lineTo(p2.x, p2.y);
+            ctx3D.stroke();
+          }
+        }
+        for (let gy = -gridRange; gy <= gridRange; gy += gridStep) {
+          const p1 = project3D([-gridRange, gy, 0.8], width, height);
+          const p2 = project3D([gridRange, gy, 0.8], width, height);
+          if (p1 && p2) {
+            ctx3D.beginPath();
+            ctx3D.moveTo(p1.x, p1.y);
+            ctx3D.lineTo(p2.x, p2.y);
+            ctx3D.stroke();
+          }
+        }
+
+        // Rotation matrix from current quaternion
+        const R = quatToRotMatrix(q);
+
+        // Drone geometry: Quadrotor X layout
+        // Arm radius L = 0.8m
+        const armL = 0.85;
+        const d = armL / Math.SQRT2;
+        // Rotor positions in body axes [xb, yb, zb]
+        const rotorPosBody = [
+          [ d, -d, -0.05], // Rotor 1: Front-Left (CCW)
+          [ d,  d, -0.05], // Rotor 2: Front-Right (CW)
+          [-d,  d, -0.05], // Rotor 3: Rear-Right (CCW)
+          [-d, -d, -0.05]  // Rotor 4: Rear-Left (CW)
+        ];
+
+        // Draw Center Hub
+        const centerHubWorld = bodyToWorld([0, 0, 0], R);
+        const pHub = project3D(centerHubWorld, width, height);
+
+        // Draw 4 Diagonal Carbon Fiber Arms
+        for (let i = 0; i < 4; i++) {
+          const rPosWorld = bodyToWorld(rotorPosBody[i], R);
+          const pRotor = project3D(rPosWorld, width, height);
+
+          if (pHub && pRotor) {
+            ctx3D.strokeStyle = '#334155';
+            ctx3D.lineWidth = 4;
+            ctx3D.beginPath();
+            ctx3D.moveTo(pHub.x, pHub.y);
+            ctx3D.lineTo(pRotor.x, pRotor.y);
+            ctx3D.stroke();
+
+            // Motor Can
+            ctx3D.fillStyle = '#64748b';
+            ctx3D.beginPath();
+            ctx3D.arc(pRotor.x, pRotor.y, 5, 0, Math.PI * 2);
+            ctx3D.fill();
+
+            // Rotor Disc (Animated)
+            const rRadius = 26;
+            ctx3D.save();
+            ctx3D.translate(pRotor.x, pRotor.y);
+            const isCCW = (i === 0 || i === 2);
+            ctx3D.strokeStyle = isCCW ? 'rgba(244, 63, 94, 0.45)' : 'rgba(16, 185, 129, 0.45)';
+            ctx3D.fillStyle = isCCW ? 'rgba(244, 63, 94, 0.1)' : 'rgba(16, 185, 129, 0.1)';
+            ctx3D.lineWidth = 1.5;
+            ctx3D.beginPath();
+            ctx3D.arc(0, 0, rRadius, 0, Math.PI * 2);
+            ctx3D.fill();
+            ctx3D.stroke();
+
+            // Spinning Blade Line
+            const thetaBlade = rotorAngles[i];
+            const bx = Math.cos(thetaBlade) * rRadius;
+            const by = Math.sin(thetaBlade) * rRadius;
+            ctx3D.strokeStyle = isCCW ? '#fb7185' : '#34d399';
+            ctx3D.lineWidth = 2;
+            ctx3D.beginPath();
+            ctx3D.moveTo(-bx, -by);
+            ctx3D.lineTo(bx, by);
+            ctx3D.stroke();
+            ctx3D.restore();
+          }
+        }
+
+        // Draw Central Body Fuselage
+        if (pHub) {
+          ctx3D.fillStyle = '#0f172a';
+          ctx3D.strokeStyle = '#38bdf8';
+          ctx3D.lineWidth = 2;
+          ctx3D.beginPath();
+          ctx3D.arc(pHub.x, pHub.y, 14, 0, Math.PI * 2);
+          ctx3D.fill();
+          ctx3D.stroke();
+
+          // Forward Heading Pointer
+          const noseWorld = bodyToWorld([0.35, 0, 0], R);
+          const pNose = project3D(noseWorld, width, height);
+          if (pNose) {
+            ctx3D.strokeStyle = '#f43f5e';
+            ctx3D.lineWidth = 3;
+            ctx3D.beginPath();
+            ctx3D.moveTo(pHub.x, pHub.y);
+            ctx3D.lineTo(pNose.x, pNose.y);
+            ctx3D.stroke();
+          }
+        }
+
+        // Draw Principal Body Axes [xb, yb, zb]
+        const axisLen = 0.65;
+        const axes = [
+          { dir: [axisLen, 0, 0], color: '#ef4444', label: 'X_b' },
+          { dir: [0, axisLen, 0], color: '#22c55e', label: 'Y_b' },
+          { dir: [0, 0, axisLen], color: '#3b82f6', label: 'Z_b' }
+        ];
+
+        axes.forEach(ax => {
+          const ptWorld = bodyToWorld(ax.dir, R);
+          const pEnd = project3D(ptWorld, width, height);
+          if (pHub && pEnd) {
+            ctx3D.strokeStyle = ax.color;
+            ctx3D.lineWidth = 2.5;
+            ctx3D.beginPath();
+            ctx3D.moveTo(pHub.x, pHub.y);
+            ctx3D.lineTo(pEnd.x, pEnd.y);
+            ctx3D.stroke();
+
+            ctx3D.fillStyle = ax.color;
+            ctx3D.font = 'bold 10px monospace';
+            ctx3D.fillText(ax.label, pEnd.x + 4, pEnd.y + 3);
+          }
+        });
+
+        // Draw Angular Velocity Vector omega (Yellow Arrow)
+        const omegaMag = Math.hypot(p, q_rate, r);
+        if (omegaMag > 0.05 && pHub) {
+          const omegaScale = 0.35;
+          const omegaWorld = bodyToWorld([p * omegaScale, q_rate * omegaScale, r * omegaScale], R);
+          const pOmega = project3D(omegaWorld, width, height);
+          if (pOmega) {
+            ctx3D.strokeStyle = '#facc15';
+            ctx3D.lineWidth = 3;
+            ctx3D.beginPath();
+            ctx3D.moveTo(pHub.x, pHub.y);
+            ctx3D.lineTo(pOmega.x, pOmega.y);
+            ctx3D.stroke();
+
+            // Arrow head
+            ctx3D.fillStyle = '#facc15';
+            ctx3D.beginPath();
+            ctx3D.arc(pOmega.x, pOmega.y, 4, 0, Math.PI * 2);
+            ctx3D.fill();
+
+            ctx3D.font = 'bold 11px monospace';
+            ctx3D.fillText('ω (' + omegaMag.toFixed(1) + ' rad/s)', pOmega.x + 6, pOmega.y - 4);
+          }
+        }
+
+        // Draw Angular Momentum Vector H = J*omega (Cyan Arrow)
+        const H_body = [Jx * p - Jxz * r, Jy * q_rate, -Jxz * p + Jz * r];
+        const HMag = Math.hypot(H_body[0], H_body[1], H_body[2]);
+        if (HMag > 0.002 && pHub) {
+          const HScale = 12.0; // scale for visualization
+          const HWorld = bodyToWorld([H_body[0] * HScale, H_body[1] * HScale, H_body[2] * HScale], R);
+          const pH = project3D(HWorld, width, height);
+          if (pH) {
+            ctx3D.strokeStyle = '#22d3ee';
+            ctx3D.lineWidth = 2.5;
+            ctx3D.setLineDash([4, 2]);
+            ctx3D.beginPath();
+            ctx3D.moveTo(pHub.x, pHub.y);
+            ctx3D.lineTo(pH.x, pH.y);
+            ctx3D.stroke();
+            ctx3D.setLineDash([]);
+
+            ctx3D.fillStyle = '#22d3ee';
+            ctx3D.beginPath();
+            ctx3D.arc(pH.x, pH.y, 3.5, 0, Math.PI * 2);
+            ctx3D.fill();
+
+            ctx3D.font = 'bold 11px monospace';
+            ctx3D.fillText('H = Jω', pH.x + 6, pH.y + 12);
+          }
+        }
+      }
+
+      // -------------------------------------------------------------
+      // 6. Oscilloscope Strip-Chart Rendering Engine
+      // -------------------------------------------------------------
+      function drawOscilloscope() {
+        const width = canvasScope.clientWidth;
+        const height = canvasScope.clientHeight;
+        if (canvasScope.width !== width || canvasScope.height !== height) {
+          canvasScope.width = width;
+          canvasScope.height = height;
+        }
+
+        ctxScope.clearRect(0, 0, width, height);
+
+        // Chart dimensions & margins
+        const padL = 36;
+        const padR = 12;
+        const padT = 16;
+        const padB = 24;
+        const plotW = width - padL - padR;
+        const plotH = height - padT - padB;
+        const midY = padT + plotH / 2;
+
+        // Dynamic vertical scale (max range: at least 2.5 rad/s)
+        let maxVal = 2.5;
+        scopeData.forEach(d => {
+          maxVal = Math.max(maxVal, Math.abs(d.p), Math.abs(d.q), Math.abs(d.r));
+        });
+        maxVal = Math.ceil(maxVal * 1.25);
+
+        // Draw horizontal grid lines & baseline
+        ctxScope.strokeStyle = 'rgba(30, 41, 59, 0.8)';
+        ctxScope.lineWidth = 1;
+
+        // Baseline (0 rad/s)
+        ctxScope.beginPath();
+        ctxScope.moveTo(padL, midY);
+        ctxScope.lineTo(padL + plotW, midY);
+        ctxScope.strokeStyle = 'rgba(100, 116, 139, 0.6)';
+        ctxScope.stroke();
+
+        // Positive & Negative scale markers
+        ctxScope.strokeStyle = 'rgba(30, 41, 59, 0.5)';
+        const yTop = padT;
+        const yBot = padT + plotH;
+        ctxScope.beginPath();
+        ctxScope.moveTo(padL, yTop);
+        ctxScope.lineTo(padL + plotW, yTop);
+        ctxScope.moveTo(padL, yBot);
+        ctxScope.lineTo(padL + plotW, yBot);
+        ctxScope.stroke();
+
+        // Labels
+        ctxScope.fillStyle = '#64748b';
+        ctxScope.font = '10px monospace';
+        ctxScope.textAlign = 'right';
+        ctxScope.fillText(`+${maxVal}`, padL - 4, yTop + 10);
+        ctxScope.fillText('0', padL - 4, midY + 3);
+        ctxScope.fillText(`-${maxVal}`, padL - 4, yBot);
+
+        // Vertical time grids
+        const numTimeTicks = 5;
+        for (let t = 0; t <= numTimeTicks; t++) {
+          const gx = padL + (t / numTimeTicks) * plotW;
+          ctxScope.beginPath();
+          ctxScope.moveTo(gx, padT);
+          ctxScope.lineTo(gx, padT + plotH);
+          ctxScope.stroke();
+        }
+
+        if (scopeData.length < 2) return;
+
+        // Helper to project value to Y
+        function valToY(v) {
+          const clamped = Math.max(-maxVal, Math.min(maxVal, v));
+          return midY - (clamped / maxVal) * (plotH / 2);
+        }
+
+        // Draw 3 Traces: p (Roll, red), q (Pitch, green), r (Yaw, blue/indigo)
+        const channels = [
+          { key: 'p', color: '#f43f5e', width: 2 },
+          { key: 'q', color: '#10b981', width: 2 },
+          { key: 'r', color: '#6366f1', width: 1.5 }
+        ];
+
+        channels.forEach(ch => {
+          ctxScope.strokeStyle = ch.color;
+          ctxScope.lineWidth = ch.width;
+          ctxScope.beginPath();
+
+          for (let i = 0; i < scopeData.length; i++) {
+            const x = padL + (i / (SCOPE_CAPACITY - 1)) * plotW;
+            const y = valToY(scopeData[i][ch.key]);
+            if (i === 0) ctxScope.moveTo(x, y);
+            else ctxScope.lineTo(x, y);
+          }
+          ctxScope.stroke();
+        });
+
+        // Time window legend at bottom
+        ctxScope.fillStyle = '#64748b';
+        ctxScope.textAlign = 'left';
+        ctxScope.fillText('-5.0s', padL, height - 8);
+        ctxScope.textAlign = 'right';
+        ctxScope.fillText('0s (Now)', padL + plotW, height - 8);
+      }
+
+      // -------------------------------------------------------------
+      // 7. Update UI Telemetry HUD
+      // -------------------------------------------------------------
+      function updateHUD() {
+        const [phi, theta, psi] = quatToEuler(q);
+        const toDeg = 180.0 / Math.PI;
+
+        dispPhi.textContent = (phi * toDeg).toFixed(1) + '°';
+        dispTheta.textContent = (theta * toDeg).toFixed(1) + '°';
+        dispPsi.textContent = (psi * toDeg).toFixed(1) + '°';
+
+        dispP.textContent = `p: ${p.toFixed(2)} rad/s`;
+        dispQ.textContent = `q: ${q_rate.toFixed(2)} rad/s`;
+        dispR.textContent = `r: ${r.toFixed(2)} rad/s`;
+
+        scopeValP.textContent = p.toFixed(3) + ' rad/s';
+        scopeValQ.textContent = q_rate.toFixed(3) + ' rad/s';
+        scopeValR.textContent = r.toFixed(3) + ' rad/s';
+
+        scopeDegP.textContent = (p * toDeg).toFixed(1) + '°/s';
+        scopeDegQ.textContent = (q_rate * toDeg).toFixed(1) + '°/s';
+        scopeDegR.textContent = (r * toDeg).toFixed(1) + '°/s';
+
+        // Rotational Energy: 0.5 * (Jx*p^2 + Jy*q^2 + Jz*r^2 - 2*Jxz*p*r)
+        const E_rot = 0.5 * (Jx * p * p + Jy * q_rate * q_rate + Jz * r * r - 2.0 * Jxz * p * r);
+        dispEnergy.textContent = Math.max(0, E_rot).toFixed(4) + ' J';
+        dispSimTime.textContent = simTime.toFixed(2) + ' s';
+
+        // Gyro momentum readout
+        const netH = Jr * rotorSpeed;
+        valNetMomentum.textContent = `H_z = ${netH.toFixed(4)} N·m·s`;
+      }
+
+      // -------------------------------------------------------------
+      // 8. Event Handlers & Control Binding
+      // -------------------------------------------------------------
+      
+      // Play / Pause
+      btnPlayPause.addEventListener('click', () => {
+        isRunning = !isRunning;
+        if (isRunning) {
+          playIcon.textContent = '⏸';
+          playText.textContent = 'Running';
+          btnPlayPause.classList.replace('bg-amber-600', 'bg-emerald-600');
+          btnPlayPause.classList.replace('hover:bg-amber-500', 'hover:bg-emerald-500');
+        } else {
+          playIcon.textContent = '▶';
+          playText.textContent = 'Paused';
+          btnPlayPause.classList.replace('bg-emerald-600', 'bg-amber-600');
+          btnPlayPause.classList.replace('hover:bg-emerald-500', 'hover:bg-amber-500');
+        }
+      });
+
+      // Single step
+      btnStep.addEventListener('click', () => {
+        stepSimulation(1.0 / 60.0);
+        updateHUD();
+      });
+
+      // Zero rates
+      btnZeroRates.addEventListener('click', () => {
+        p = 0.0;
+        q_rate = 0.0;
+        r = 0.0;
+        updateHUD();
+      });
+
+      // Reset All
+      btnResetAll.addEventListener('click', () => {
+        q = [1.0, 0.0, 0.0, 0.0];
+        p = 0.0;
+        q_rate = 0.0;
+        r = 0.0;
+        Mx_sustained = 0; My_sustained = 0; Mz_sustained = 0;
+        Mx_impulse = 0; My_impulse = 0; Mz_impulse = 0;
+        impulseTimer = 0;
+        sliderTauX.value = 0; valTauX.textContent = '0.00 N·m';
+        sliderTauY.value = 0; valTauY.textContent = '0.00 N·m';
+        sliderTauZ.value = 0; valTauZ.textContent = '0.00 N·m';
+        scopeData.length = 0;
+        simTime = 0.0;
+        updateHUD();
+      });
+
+      // Clear scope
+      btnClearScope.addEventListener('click', () => {
+        scopeData.length = 0;
+      });
+
+      // Moment Impulse Buttons (Duration 100ms)
+      function triggerImpulse(mx, my, mz) {
+        Mx_impulse = mx;
+        My_impulse = my;
+        Mz_impulse = mz;
+        impulseTimer = 0.10; // 100 ms pulse
+      }
+
+      document.getElementById('btnImpulsePitchPos').addEventListener('click', () => triggerImpulse(0, 0.5, 0));
+      document.getElementById('btnImpulsePitchNeg').addEventListener('click', () => triggerImpulse(0, -0.5, 0));
+      document.getElementById('btnImpulseRollPos').addEventListener('click', () => triggerImpulse(0.5, 0, 0));
+      document.getElementById('btnImpulseRollNeg').addEventListener('click', () => triggerImpulse(-0.5, 0, 0));
+      document.getElementById('btnImpulseYawPos').addEventListener('click', () => triggerImpulse(0, 0, 0.2));
+      document.getElementById('btnImpulseYawNeg').addEventListener('click', () => triggerImpulse(0, 0, -0.2));
+
+      // Sustained Torque Sliders
+      sliderTauX.addEventListener('input', (e) => {
+        Mx_sustained = parseFloat(e.target.value);
+        valTauX.textContent = Mx_sustained.toFixed(2) + ' N·m';
+      });
+      sliderTauY.addEventListener('input', (e) => {
+        My_sustained = parseFloat(e.target.value);
+        valTauY.textContent = My_sustained.toFixed(2) + ' N·m';
+      });
+      sliderTauZ.addEventListener('input', (e) => {
+        Mz_sustained = parseFloat(e.target.value);
+        valTauZ.textContent = Mz_sustained.toFixed(2) + ' N·m';
+      });
+      btnZeroTorques.addEventListener('click', () => {
+        Mx_sustained = 0; sliderTauX.value = 0; valTauX.textContent = '0.00 N·m';
+        My_sustained = 0; sliderTauY.value = 0; valTauY.textContent = '0.00 N·m';
+        Mz_sustained = 0; sliderTauZ.value = 0; valTauZ.textContent = '0.00 N·m';
+      });
+
+      // Rotor Speed Slider
+      sliderRotorSpeed.addEventListener('input', (e) => {
+        rotorSpeed = parseFloat(e.target.value);
+        valRotorSpeed.textContent = rotorSpeed.toFixed(0) + ' rad/s';
+      });
+
+      // Damping Slider
+      sliderDamping.addEventListener('input', (e) => {
+        dampingCoeff = parseFloat(e.target.value);
+        valDamping.textContent = dampingCoeff.toFixed(3) + ' N·m·s';
+      });
+
+      // Physics Toggles
+      checkCrossTerms.addEventListener('change', (e) => {
+        enableCrossTerms = e.target.checked;
+      });
+      checkGyro.addEventListener('change', (e) => {
+        enableGyro = e.target.checked;
+      });
+
+      // Inertia Preset
+      selectInertia.addEventListener('change', (e) => {
+        currentInertiaKey = e.target.value;
+        const cfg = INERTIA_CONFIGS[currentInertiaKey];
+        Jx = cfg.Jx; Jy = cfg.Jy; Jz = cfg.Jz; Jxz = cfg.Jxz; Jr = cfg.Jr;
+      });
+
+      // Presets
+      document.getElementById('btnRunPresetGyro').addEventListener('click', () => {
+        // Preset: Set rotor to 1000 rad/s, enable gyro, zero initial rates, trigger pitch impulse
+        rotorSpeed = 1000;
+        sliderRotorSpeed.value = 1000;
+        valRotorSpeed.textContent = '1000 rad/s';
+        enableGyro = true;
+        checkGyro.checked = true;
+        p = 0; q_rate = 0; r = 0;
+        triggerImpulse(0, 0.5, 0);
+      });
+
+      document.getElementById('btnRunPresetSpin').addEventListener('click', () => {
+        // Preset: High rate nutation (p=1, q=2, r=1)
+        p = 1.0; q_rate = 2.0; r = 1.0;
+        enableCrossTerms = true;
+        checkCrossTerms.checked = true;
+      });
+
+      // -------------------------------------------------------------
+      // 9. Main Animation Loop (60 FPS)
+      // -------------------------------------------------------------
+      function animLoop() {
+        if (isRunning) {
+          stepSimulation(1.0 / 60.0);
+        }
+
+        draw3DAirframe();
+        drawOscilloscope();
+        updateHUD();
+
+        requestAnimationFrame(animLoop);
+      }
+
+      // Initialize
+      requestAnimationFrame(animLoop);
+
+    })();
+  </script>
+</body>
+</html>
