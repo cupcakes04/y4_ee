@@ -53,3 +53,11 @@ Every transform between a parent and child frame consists of:
 * Yaw (turn left/right around Z axis — primary rotation for 2D mobile robots)
 * Identity quaternion (zero rotation): $(x=0.0, y=0.0, z=0.0, w=1.0)$.
 
+---
+
+## 4. Hands-On Practical Package
+
+A full practical implementation covering all concepts in this section is available in:
+👉 [`ros2_ws/src/learning_tf2_py/`](../../ros2_ws/src/learning_tf2_py/README.md)
+
+

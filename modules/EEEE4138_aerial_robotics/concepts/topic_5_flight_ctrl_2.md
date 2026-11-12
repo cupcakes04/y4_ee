@@ -124,6 +124,74 @@ Using a feedforward + PD control law:
 $$u_x = \ddot{x}^d + k_{px} e_x + k_{dx} \dot{e}_x$$
 *(For setpoint regulation where $\ddot{x}^d = 0$ and $\dot{x}^d = 0$: $u_x = k_{px} e_x - k_{dx} \dot{x}$.)*
 
+#### Closed-Loop Architecture & Block Diagram
+The signal flow connecting reference trajectory $(x^d, \dot{x}^d, \ddot{x}^d)$, tracking errors $(e_x, \dot{e}_x)$, virtual control acceleration $u_x$, and actual states $(\dot{x}, x)$ forms the following closed negative feedback loop:
+
+```mermaid
+flowchart LR
+    subgraph Ref ["References"]
+        xd["xᵈ (Desired Position)"]
+        dxd["ẋᵈ (Desired Velocity)"]
+        ddxd["ẍᵈ (Feedforward Accel)"]
+    end
+
+    subgraph Error ["Error Calculation"]
+        sum_pos(("+/-"))
+        sum_vel(("+/-"))
+    end
+
+    subgraph Controller ["Outer-Loop Controller"]
+        kp["Gain k_px"]
+        kd["Gain k_dx"]
+        sum_u(("+"))
+    end
+
+    subgraph Plant ["Inner Loop & Double Integrator Plant"]
+        inner["Tilt Mapping: θᵈ = -uₓ/g  -->  ẍ ≈ -gθ = uₓ"]
+        int1["Integrator 1/s"]
+        int2["Integrator 1/s"]
+    end
+
+    xd -->|"+"| sum_pos
+    dxd -->|"+"| sum_vel
+
+    sum_pos -->|"eₓ = xᵈ - x"| kp
+    sum_vel -->|"ėₓ = ẋᵈ - ẋ"| kd
+
+    kp -->|"+ k_px · eₓ"| sum_u
+    kd -->|"+ k_dx · ėₓ"| sum_u
+    ddxd -->|"+ ẍᵈ"| sum_u
+
+    sum_u -->|"uₓ (Virtual Accel)"| inner
+    inner -->|"ẍ"| int1
+    int1 -->|"ẋ"| int2
+    int2 -->|"x"| PosOutput["Position x"]
+
+    int2 -.->|"- x (Feedback)"| sum_pos
+    int1 -.->|"- ẋ (Feedback)"| sum_vel
+```
+
+#### How the Closed Loop is Obtained (Error Dynamics Derivation)
+1. **Controller Output ($u_x$):**
+   $$u_x = \ddot{x}^d + k_{px} e_x + k_{dx} \dot{e}_x = \ddot{x}^d + k_{px}(x^d - x) + k_{dx}(\dot{x}^d - \dot{x})$$
+
+2. **Plant Response ($\ddot{x}$):**
+   Assuming the high-bandwidth inner attitude loop tracks the commanded pitch angle quickly ($\theta \approx \theta^d = -\frac{u_x}{g}$), the linearized horizontal motion satisfies:
+   $$\ddot{x} \approx -g\theta = -g\left(-\frac{u_x}{g}\right) = u_x$$
+   Thus, $u_x$ acts directly as the commanded acceleration $\ddot{x}_{\text{cmd}}$.
+
+3. **Closed-Loop Error Dynamics:**
+   Equating plant acceleration to the controller command ($\ddot{x} = u_x$):
+   $$\ddot{x} = \ddot{x}^d + k_{px} e_x + k_{dx} \dot{e}_x$$
+   Rearranging into tracking error terms (since $e_x = x^d - x \implies \ddot{e}_x = \ddot{x}^d - \ddot{x}$):
+   $$\ddot{x}^d - \ddot{x} + k_{dx}\dot{e}_x + k_{px}e_x = 0 \implies \boxed{\ddot{e}_x + k_{dx}\dot{e}_x + k_{px}e_x = 0}$$
+
+4. **Second-Order Characteristic Equation:**
+   Taking the Laplace transform yields the closed-loop characteristic equation:
+   $$s^2 + k_{dx}s + k_{px} = 0 \iff s^2 + 2\zeta\omega_n s + \omega_n^2 = 0$$
+   * **Gains:** $k_{px} = \omega_n^2$ and $k_{dx} = 2\zeta\omega_n$.
+   * **Tracking Convergence:** For positive gains $k_{px}, k_{dx} > 0$ ($\zeta > 0$), the error dynamics are strictly Hurwitz stable: $e_x(t) \to 0$ and $\dot{e}_x(t) \to 0$ exponentially as $t \to \infty$.
+
 ### 3. Acceleration-to-Tilt Mapping ($\theta^d$)
 Matching the requested acceleration $u_x$ with the linearized plant $\ddot{x} \approx -g\theta$:
 $$u_x = -g\theta^d \implies \boxed{\theta^d = -\frac{u_x}{g}}$$
