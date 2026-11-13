@@ -48,6 +48,53 @@ style: |
   .card-highlight strong {
     color: #0B2545;
   }
+  /* Slide 2: Compact cards + Ablation Evolution Table */
+  section.methods-slide {
+    padding: 28px 44px;
+  }
+  section.methods-slide .card-highlight {
+    padding: 7px 12px;
+    margin-bottom: 7px;
+    font-size: 12.6px;
+    line-height: 1.32;
+  }
+  section.methods-slide .ablation-heading {
+    font-size: 13px;
+    font-weight: 800;
+    color: #0B2545;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin: 12px 0 6px 0;
+  }
+  section.methods-slide table.ablation-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 0;
+    font-size: 11.4px;
+    line-height: 1.35;
+    border: 1px solid #CBD5E1;
+  }
+  section.methods-slide table.ablation-table th {
+    background: #0B2545;
+    color: #FFFFFF;
+    padding: 8px 7px;
+    text-align: left;
+    font-weight: 700;
+    font-size: 11.5px;
+    border: 1px solid #0B2545;
+  }
+  section.methods-slide table.ablation-table td {
+    padding: 10px 7px;
+    border: 1px solid #E2E8F0;
+    vertical-align: middle;
+    background: #FFFFFF;
+  }
+  section.methods-slide table.ablation-table tbody tr:nth-child(even) td {
+    background: #F8FAFC;
+  }
+  section.methods-slide table.ablation-table tbody tr.row-proposed td {
+    background: #EFF6FF;
+  }
   /* Slide 3: Risk Table styling */
   section.risk-slide {
     padding: 30px 48px;
@@ -118,40 +165,74 @@ style: |
 </div>
 
 <div class="card-highlight" style="border-left: 4px solid #1E40AF;">
-  <strong>The Freezing Problem:</strong> 2D LiDAR treats walking people as static obstacles, causing autonomous mobile robots to freeze or spin erratically in corridors.
+  <strong>Established Space &rarr; Freezing Problem:</strong> Commercial AMRs rely on 2D safety LiDAR + static costmaps for walls. Because planar scans treat walking people as fixed obstacles, robots freeze or spin in shared aisles.
 </div>
 
 <div class="card-highlight" style="border-left: 4px solid #0D9488;">
-  <strong>Vision-LiDAR Fusion:</strong> Monocular camera (YOLOv8 + ByteTrack) + laser depth gating tracks obstacles and calculates real-time velocities via Kalman filter.
+  <strong>Vision-LiDAR Fusion (O1):</strong> Pairs existing 2D LiDAR with a monocular camera (YOLOv8 + ByteTrack + frustum gating) and Kalman filter for real-time obstacle velocities.
 </div>
 
 <div class="card-highlight" style="border-left: 4px solid #0B2545;">
-  <strong>Predictive MPPI:</strong> Dynamic critic projects obstacle motion 2.0s forward, allowing the robot to steer smoothly behind pedestrians on standard CPU.
+  <strong>Predictive MPPI &amp; Methods (O2&ndash;O3):</strong> Custom C++ critic projects motion 2.0s ahead to steer smoothly behind pedestrians on CPU&mdash;built and benchmarked via our 6-step workflow next.
 </div>
 
 ---
 
 <!-- Slide 2 -->
-![bg right:58% fit](../assets/fig2_methodology_flow.png)
+<!-- _class: methods-slide -->
+![bg right:51% fit](../assets/fig2_methodology_flow.png)
 
-<div class="sub-tag">6-Step Lifecycle &amp; Fallback Architecture</div>
+<div class="sub-tag">6-Step Lifecycle, Fallback &amp; Ablation Plan</div>
 
 # Methods and Approach
 
-<div class="card-highlight" style="border-left: 4px solid #EF4444; margin-top: 14px;">
-  <strong style="color: #B91C1C;">Critical Path (Solid Red):</strong><br>
-  M0 (Docker Setup) &rarr; M1 (Sim &amp; C0 Baseline) &rarr; M2 (Tracker O1) &rarr; M3 (MPPI Critic O2) &rarr; M5 (Statistical Analysis). Builds and verifies core objectives sequentially.
+<div class="card-highlight" style="border-left: 4px solid #EF4444; margin-top: 8px;">
+  <strong style="color: #B91C1C;">Critical Path (Solid Red):</strong>
+  M0 (Docker) &rarr; M1 (Sim &amp; C0) &rarr; M2 (Tracker O1) &rarr; M3 (MPPI Critic O2) &rarr; M5 (Statistical Analysis).
 </div>
 
 <div class="card-highlight" style="border-left: 4px solid #3B82F6;">
-  <strong style="color: #1E40AF;">Parallel Test Harness (Blue):</strong><br>
-  M4 automated scenario runner built concurrently (W11&ndash;20). Automates Gazebo world resets and rosbag2 logging for unattended 450 batch trials.
+  <strong style="color: #1E40AF;">Parallel Test Harness (Blue):</strong>
+  M4 automated runner (W11&ndash;20) executes Gazebo resets and rosbag2 logging for 450 unattended trials.
 </div>
 
 <div class="card-highlight" style="border-left: 4px solid #F59E0B;">
-  <strong style="color: #B45309;">Fallback Architecture (F1, Dotted Red):</strong><br>
-  De-risks C++ plugin development: if MPPI critic encounters bottlenecks, dynamic velocity bubbles are injected directly into standard 2D costmaps.
+  <strong style="color: #B45309;">Fallback Architecture (F1, Dotted Red):</strong>
+  If C++ MPPI critic hits bottlenecks, velocity bubbles are injected directly into standard 2D costmaps.
 </div>
+
+<div class="ablation-heading">Expected Ablation Evolution (C0 &rarr; C1 &rarr; C2)</div>
+
+<table class="ablation-table">
+  <thead>
+    <tr>
+      <th style="width: 13%;">ID</th>
+      <th style="width: 33%;">Parameters &amp; Stack</th>
+      <th style="width: 28%;">Expected Navigation</th>
+      <th style="width: 26%;">Target Metrics &amp; Limits</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>C0</strong><br><span style="color:#64748B;font-size:10px;">Baseline</span></td>
+      <td>2D LiDAR (20 Hz) + static costmap; 2000 rollouts (&tau; = 0 s)</td>
+      <td>Frequent freezes (&Delta;t &ge; 1.5 s, v &lt; 0.05 m/s) &amp; stop&ndash;go delays</td>
+      <td>0 collisions (via halts); 0 velocity tracking</td>
+    </tr>
+    <tr>
+      <td><strong>C1</strong><br><span style="color:#64748B;font-size:10px;">Vision</span></td>
+      <td>+ RGB (30 FPS, 80&deg; FOV), YOLOv8 + ByteTrack + frustum (v = 0)</td>
+      <td>Cuts leg-split false stops; reactive yields only (no lookahead)</td>
+      <td>&ge;95% scan&ndash;ID assoc.; &tau; = 0 s clearance</td>
+    </tr>
+    <tr class="row-proposed">
+      <td><strong style="color:#1E40AF;">C2</strong><br><span style="color:#1E40AF;font-size:10px;">Proposed</span></td>
+      <td>+ 4-state Kalman CV + C++ critic (&tau; = 2.0 s, 40 steps, &lt;0.5 ms)</td>
+      <td><strong>0 freezes, 15&ndash;25% faster</strong> transit (&le;5 s wait), smooth wake steering</td>
+      <td><strong>RMSE &lt; 0.15 m/s</strong>, d<sub>min</sub> &ge; 0.35 m, TTC &ge; 1.2 s, <strong>&ge;20 Hz</strong> (450 runs, <em>p</em> &lt; 0.01)</td>
+    </tr>
+  </tbody>
+</table>
 
 ---
 
@@ -182,8 +263,8 @@ style: |
 
 # Planned Work Schedule (Weeks 5–30)
 
-<div style="text-align: center; margin: 4px 0 10px 0;">
-  <img src="../assets/fig3_gantt_chart.png" style="width: 100%; max-height: 420px; object-fit: contain; border: 1px solid #CBD5E1; border-radius: 6px;" alt="Gantt Chart">
+<div style="text-align: center; margin: 4px 0 12px 0; border: 1px solid #CBD5E1; border-radius: 6px; padding: 6px 8px; background: #FFFFFF;">
+  <img src="../assets/fig3_gantt_chart.png" style="width: 100%; height: auto; display: block;" alt="Gantt Chart">
 </div>
 
 <div style="display: flex; gap: 12px; margin-top: 4px;">

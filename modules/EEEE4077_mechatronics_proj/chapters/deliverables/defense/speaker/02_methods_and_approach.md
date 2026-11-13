@@ -6,52 +6,51 @@
 ---
 
 ## 1. Quick Summary (What This Slide Is About)
-We build the project in 6 logical steps (M0 to M5). We start with setting up the simulation and recording the standard baseline, then build the camera-laser tracker, develop the predictive controller, run batch tests, and analyze the results. If the C++ controller plugin gets too difficult, we have a simple backup plan (Fallback F1).
+We build and validate the project in 6 logical steps (M0 to M5), paired with a 3-way comparative ablation study (C0 $\rightarrow$ C1 $\rightarrow$ C2). The ablation table makes clear what each step adds, how it changes the system, and what improvement we expect to achieve (culminating in 0 freezes, 0 collisions, and 15–25% faster transit). If the C++ controller plugin gets too difficult, we have a simple backup plan (Fallback F1).
 
 ---
 
 ## 2. What to Point to on Screen (Visual Walkthrough)
-1. **Critical Path (Red boxes from top to bottom):**
-   - **M0 (Setup):** Ubuntu, ROS 2 Jazzy, Gazebo Harmonic in Docker.
-   - **M1 (Sim & Baseline C0):** Build the corridor world, add moving human models, and test how badly the standard robot freezes (Condition C0).
-   - **M2 (Perception - O1):** Integrate YOLOv8, ByteTrack, and the Kalman Filter to estimate speed.
-   - **M3 (Predictive Controller - O2):** Write the C++ dynamic obstacle plugin for MPPI.
-   - **M5 (Analysis - O3):** Generate graphs and calculate travel time, waiting time, and freezing stats.
-2. **Parallel Path (Blue box on the right):**
-   - **M4 (Automated Test Harness):** A Python script that automatically runs trials, resets Gazebo, and logs data in the background so we don't have to manually click 450 times.
-3. **Backup Plan (Dotted red arrow F1):**
-   - If C++ plugin development takes too long, we use Fallback F1: draw a dynamic bubble in the standard 2D costmap.
+1. **Right Diagram — 6-Step Workflow:**
+   - **Critical Path (Solid Red, M0 $\rightarrow$ M1 $\rightarrow$ M2 $\rightarrow$ M3 $\rightarrow$ M5):** Setup Docker (M0), build Gazebo world & C0 baseline (M1), build Vision–LiDAR tracker O1 (M2), write C++ predictive MPPI critic O2 (M3), and run comparative statistics O3 (M5).
+   - **Parallel Path (Blue Dashed, M4):** Automated Python scenario runner & rosbag2 logger built in parallel (W11–20) so 450 trials run unattended.
+   - **Fallback Path (Dotted Red, F1):** Velocity-inflated 2D costmap bubbles if the C++ critic encounters integration bottlenecks.
+2. **Left Bottom — Expected Ablation Evolution Table (C0 $\rightarrow$ C1 $\rightarrow$ C2):**
+   - **C0 (Baseline: 2D LiDAR Only):** `20 Hz` 2D LiDAR + static costmap (`2000` rollouts, $\tau = 0\text{ s}$) $\rightarrow$ reference baseline showing frequent freezes ($\Delta t \ge 1.5\text{ s}$ at $v < 0.05\text{ m/s}$) and stop-go delays.
+   - **C1 (Vision + LiDAR, $t=0$):** Adds `30 FPS` (`80°` FOV) RGB, YOLOv8 + ByteTrack + frustum gating ($\ge 95\%$ assoc., $v_{\text{obs}} = 0$) $\rightarrow$ cuts leg-split noise, but still yields reactively without lookahead.
+   - **C2 (Full Predictive MPPI):** Adds 4-state Kalman CV ($\text{RMSE} < 0.15\text{ m/s}$) + C++ critic ($\tau = 2.0\text{ s}$, `40` steps, $< 0.5\text{ ms}$) $\rightarrow$ **0 freezes, 0 collisions ($d_{\min} \ge 0.35\text{ m}$, $\text{TTC} \ge 1.2\text{ s}$), 15–25% faster transit ($\le 5\text{ s}$ wait), $\ge 20\text{ Hz}$** across `450` paired runs ($p < 0.01$).
 
 ---
 
 ## 3. Conversational Spoken Script (Natural & Comfortable)
 
-> *"Moving on to our methodology and approach.*
+> *"Building on that architecture, here is our methodology, workflow, and expected ablation evolution.*
 >
-> *As shown in the workflow diagram, the project is broken down into six practical milestones, marked M0 through M5.*
+> *On the right, the project is organized into six milestones, M0 through M5. Following the red critical path: we set up ROS 2 Jazzy and Gazebo Harmonic in Docker (M0), build our indoor corridors and record the baseline (M1), implement the camera–LiDAR tracker in M2, develop the native C++ MPPI critic in M3, and run full statistical evaluation in M5. In parallel, M4 builds an automated Python test harness so we can run 450 trials unattended without manual resets.*
 >
-> *We follow the red critical path:*
-> - *We start in M0 and M1 by creating our simulation environment inside Docker using ROS 2 Jazzy and Gazebo Harmonic. Here, we build virtual hallway worlds, add animated walking pedestrians, and record the baseline performance—called **Condition C0**—to see how often the standard robot freezes when people walk past.*
-> - *Next, in M2, we build Objective O1: the perception pipeline. We use YOLOv8 for object detection and ByteTrack for multi-object tracking because they run fast on normal CPUs. We then match the camera detection box with the laser scan to find the obstacle's depth, and feed that into a Linear Kalman Filter to get clean, smoothed velocity estimates.*
-> - *In M3, we implement Objective O2: the predictive controller. We write a custom plugin in C++ for the Nav2 MPPI local planner. Every control cycle, this plugin projects where the moving person will be over the next two seconds and steers the robot safely around them.*
-> - *To make testing manageable, M4 is an automated Python testing harness that runs in parallel. It automatically spawns trials, resets the world, and logs data in the background.*
-> - *Finally, in M5, we run 450 automated test runs comparing our predictive system against the baseline, measuring collision rates, route completion times, and how many times the robot stopped or froze.*
+> *To make sure we prove not just that the system works, but **why** each component helps, M5 evaluates the 3-way ablation evolution summarized in the table on the bottom left:*
+> - *First, **C0** is the stock 2D LiDAR baseline using the static costmap—this establishes how often the standard robot freezes and delays.*
+> - *Second, **C1** adds YOLOv8, ByteTrack, and laser frustum gating, but zeros out velocity so obstacles are still treated as static circles. This isolates whether semantic detection alone reduces false stops, even without lookahead.*
+> - *Third, **C2** is our full proposed system—adding Kalman velocity estimation and the 2.0-second predictive MPPI critic. Because it anticipates where the pedestrian will clear, we expect C2 to achieve **zero freezes, zero collisions, and a 15 to 25% reduction in travel time** compared to C0.*
 >
-> *I should also mention that writing a custom C++ plugin for Nav2 is a technical challenge for me. To manage this safely, I have an early prototype scheduled for Week 13, and a complete backup plan—Fallback F1. If the C++ plugin ever gets blocked, F1 draws velocity-stretched safety bubbles directly into the existing costmap, ensuring the project finishes smoothly either way."*
+> *Finally, because writing a custom C++ Nav2 plugin carries technical risk, I have an early prototype in Week 13 and a clean backup—Fallback F1—which injects velocity-stretched safety bubbles into the 2D costmap if needed."*
 
 ---
 
 ## 4. Key Bullet Points (If You Prefer Speaking Freely)
-- **M0 & M1:** Setup Docker + Gazebo simulation and test the baseline robot (C0) to measure freezing.
-- **M2 (Perception):** Camera detects with YOLO, ByteTrack tracks IDs, laser gives depth, Kalman filter calculates speed.
-- **M3 (Controller):** Custom C++ MPPI critic predicts obstacle positions 2 seconds ahead and avoids them.
-- **M4 (Automation):** Python script runs tests automatically overnight.
-- **M5 (Results):** Compare travel times and freezing across 450 runs.
-- **Fallback F1:** If C++ is too complex, use standard costmap inflation bubbles as a proven backup.
+- **Workflow (M0–M5):** M0 Docker $\rightarrow$ M1 Sim & C0 Baseline $\rightarrow$ M2 Tracker (O1) $\rightarrow$ M3 MPPI Critic (O2) $\rightarrow$ M5 Ablation Stats (O3), with **M4** running tests automatically in parallel.
+- **Ablation Evolution (C0 $\rightarrow$ C1 $\rightarrow$ C2):**
+  - **C0:** 2D LiDAR + static costmap $\rightarrow$ baseline (frequent freezes).
+  - **C1:** + Vision/ByteTrack ($t=0$, no velocity) $\rightarrow$ isolates detection/filtering vs. prediction.
+  - **C2:** + Kalman velocity + 2.0 s MPPI critic $\rightarrow$ **0 freezes, 0 collisions, 15–25% faster transit**.
+- **Fallback F1:** Velocity-inflated costmap layer if C++ plugin hits bottlenecks.
 
 ---
 
 ## 5. Simple Questions the Moderator Might Ask
+
+- **"Why test C0, C1, and C2 instead of just comparing C0 and C2?"**
+  - *Answer:* *"Including C1 lets us separate the effect of better obstacle detection from the effect of motion prediction. It proves whether seeing the person with a camera alone stops freezing, or whether the 2-second velocity prediction in C2 is what actually enables smooth passing."*
 
 - **"Why did you choose a Kalman Filter instead of a deep learning model for trajectory prediction?"**
   - *Answer:* *"A Linear Kalman Filter takes less than 0.2 milliseconds of CPU time, which easily fits within our real-time 20 Hz loop. Since people in corridors usually walk at a steady speed for 1 to 2 seconds, a linear model gives us accurate short-term predictions without needing heavy GPU hardware."*
@@ -65,5 +64,5 @@ We build the project in 6 logical steps (M0 to M5). We start with setting up the
 ---
 
 ## 6. "If You Get Stuck" Anchor Line
-If you lose your train of thought, pause, take a breath, look at the diagram and say:
-> *"To summarize the approach: we build the perception in M2, plug it into the controller in M3, automate the testing in M4, and compare our results against the baseline in M5."*
+If you lose your train of thought, pause, take a breath, look at the diagram and table and say:
+> *"In short: we follow a 6-step workflow from baseline to predictive MPPI with Fallback F1 as backup, and our C0-to-C2 ablation table shows how adding tracking and 2-second prediction eliminates freezes and cuts transit time by 15 to 25%."*

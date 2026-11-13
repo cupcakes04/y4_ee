@@ -22,8 +22,8 @@
 
 | Slide | File | Visual Asset Used | What You Explain in 90 Seconds |
 | :---: | :--- | :--- | :--- |
-| **1** | [`01_title_and_architecture.md`](01_title_and_architecture.md) | `../assets/fig1_system_architecture.png` | Why 2D lasers cause robots to freeze, and how adding camera tracking + MPPI planning solves it. |
-| **2** | [`02_methods_and_approach.md`](02_methods_and_approach.md) | `../assets/fig2_methodology_flow.png` | Our 6-step roadmap (M0 to M5), why we picked our algorithms, and our C++ backup plan (F1). |
+| **1** | [`01_title_and_architecture.md`](01_title_and_architecture.md) | `../assets/fig1_system_architecture.png` | Established 2D LiDAR space, why it causes freezing, how camera + MPPI solves it, and smooth bridge to methods. |
+| **2** | [`02_methods_and_approach.md`](02_methods_and_approach.md) | `../assets/fig2_methodology_flow.png` + Ablation Table | Our 6-step roadmap (M0–M5), C0 $\rightarrow$ C1 $\rightarrow$ C2 expected ablation improvements, and C++ backup plan (F1). |
 | **3** | [`03_risk_management.md`](03_risk_management.md) | Structured Risk Table | Our 4 technical risks, why R1 (C++ plugin) is our biggest focus, and how our mitigations drop risks to low. |
 | **4** | [`04_work_schedule_gantt.md`](04_work_schedule_gantt.md) | `../assets/fig3_gantt_chart.png` | 450h workload across Weeks 5–30 (no W1–4), 5 supervisor reviews, automated testing, and 2-week buffer. |
 

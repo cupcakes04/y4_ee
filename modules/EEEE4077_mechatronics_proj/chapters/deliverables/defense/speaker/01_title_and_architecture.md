@@ -6,20 +6,21 @@
 ---
 
 ## 1. Quick Summary (What This Slide Is About)
-Standard warehouse robots freeze whenever someone walks in front of them because their 2D laser scanner only sees "points on the floor" and treats people like static walls. Your project adds a simple camera to track people, predict where they are walking, and guide the robot smoothly around them in simulation without freezing.
+Modern warehouse AMRs are built around **2D safety LiDAR** and **static 2D costmaps**, which handle walls well but fail when people walk across corridors—causing the **Freezing Robot Problem**. Our project pairs that existing 2D LiDAR with an inexpensive camera to track people, predict their motion 2.0 seconds ahead in MPPI, and validate the whole pipeline in Gazebo simulation via a structured 6-step engineering methodology.
 
 ---
 
 ## 2. What to Point to on Screen (Visual Walkthrough)
 1. **Title & Info:** Point to project title, your name, Dr. Shalini (Supervisor), and Ir Dr. Daniel Pu (Moderator).
-2. **Top Boxes (Sensors):** Point to the RGB camera on the left and 2D LiDAR on the right.
-3. **Middle Section (Perception / Tracking - O1):**
-   - Camera gives bounding boxes with YOLO and ByteTrack.
-   - Frustum gating combines camera box with laser points to get clean distance.
-   - Kalman filter smooths the motion and calculates the person's walking velocity.
-4. **Bottom Right (Planning - O2):**
-   - The MPPI planner takes that predicted velocity and plans forward paths that steer safely behind the person.
-   - Static walls stay in the 2D costmap; moving people are handled dynamically.
+2. **Left Cards (Established Space → Problem → Methods Handoff):**
+   - **Established Space & Freezing Problem:** Existing AMRs rely on 2D LiDAR + static costmaps, which treat pedestrians as fixed walls and cause freezing.
+   - **Vision-LiDAR Fusion (O1) & Predictive MPPI (O2):** Add a camera + Kalman velocity tracker + 2.0 s predictive critic.
+   - **Methods Bridge:** Mention how we implement and benchmark this systematically, transitioning straight into Slide 2.
+3. **Right Diagram — 4 Main Category Blocks (Now Enlarged Headers):**
+   - **1. Simulated Sensor Inputs:** Monocular RGB camera + Planar 2D Safety LiDAR.
+   - **2. Multi-Modal Obstacle Tracker (O1):** YOLOv8 + ByteTrack + Camera–LiDAR Frustum Gate + Linear Kalman Filter.
+   - **3. Motion-Aware Local Path Planning (O2):** Dynamic Obstacle Critic Plugin + Nav2 MPPI Trajectory Planner (while static walls stay in the 2D costmap).
+   - **4. Closed-Loop Execution & Evaluation (O3):** Simulated Mobile Robot Base + Automated Benchmark Logger.
 
 ---
 
@@ -27,26 +28,25 @@ Standard warehouse robots freeze whenever someone walks in front of them because
 
 > *"Good morning Dr. Shalini, Ir Dr. Daniel Pu. My name is Nicholas Khor, and today I'm presenting the plan for my Final Year Project: **'Vision-Augmented Mobile Robot Navigation in Dynamic Environments'**.*
 >
-> *To give some quick context: in modern warehouses and factories, thousands of autonomous mobile robots share narrow aisles with human workers and carts. Most of these robots use a standard 2D safety laser scanner mounted near the floor.*
+> *To start with the established space: in modern warehouses and factories, commercial autonomous mobile robots almost universally rely on **2D planar safety LiDAR** paired with **static 2D costmaps** in stacks like ROS 2 Nav2. That setup is economical, safety-certified, and works very well for mapping fixed walls and storage racks.*
 >
-> *The big issue with this setup is what researchers call the **'Freezing Robot Problem'**. Because a 2D laser scanner only cuts across a person's legs at ankle height, the navigation system just sees two random dots. It treats those dots as an immovable brick wall. So whenever someone walks across a hallway, the robot panics, freezes in place, or spins around trying to find an exit.*
+> *However, it breaks down in shared human corridors—causing what is known as the **'Freezing Robot Problem'**. Because a 2D laser only cuts across a person's legs near floor level and the costmap treats every return as an immovable wall, the planner has no idea the person is walking past. All forward paths look blocked, so the robot panics, freezes in place, or spins.*
 >
-> *My project aims to solve this freezing issue in simulation by pairing the existing 2D laser scanner with an inexpensive monocular camera.*
+> *To solve this without expensive 3D LiDARs, our system adds a low-cost monocular camera to the existing 2D laser scanner, structured across the four stages shown on the right:*
+> - *First, **Sensor Inputs**: the RGB camera and 2D LiDAR in Gazebo.*
+> - *Second, **Multi-Modal Tracking (O1)**: lightweight YOLOv8 and ByteTrack identify and track people in 2D, frustum gating fuses those boxes with laser rays for clean depth, and a Kalman filter estimates real-time walking velocity.*
+> - *Third, **Motion-Aware Planning (O2)**: a custom Nav2 MPPI dynamic critic projects those velocities two seconds ahead so the robot steers smoothly behind pedestrians, while static walls remain in the standard 2D costmap.*
+> - *Fourth, **Execution & Evaluation (O3)**: the simulated robot executes these commands while an automated logger records freezes, collisions, and travel time.*
 >
-> *Looking at the system architecture diagram here:*
-> - *On the left, the camera detects people using lightweight YOLO and keeps track of them across frames using ByteTrack.*
-> - *We then match the camera box with the laser scan to find exactly how far away the person is, and feed that into a Kalman filter. This gives us the person's real-time walking speed and direction.*
-> - *Finally, over on the right, we pass these predicted movements into a custom plugin for the Nav2 MPPI controller. Instead of assuming the obstacle is stuck where it is right now, the controller predicts where the person will be over the next two seconds and gently steers the robot behind them.*
->
-> *This lets the robot navigate smoothly around moving traffic without expensive 3D sensors and entirely on normal CPU compute."*
+> *To deliver and prove this architecture rigorously on standard CPU compute, we execute it through a 6-step engineering methodology and a 3-way ablation benchmark in ROS 2 Jazzy and Gazebo Harmonic—which brings us right into our methods and approach on the next slide."*
 
 ---
 
 ## 4. Key Bullet Points (If You Prefer Speaking Freely)
-- **The Problem:** 2D LiDAR can't tell if an obstacle is moving or static $\rightarrow$ robot freezes when people cross the corridor.
-- **The Idea:** Camera gives semantic recognition + tracking; 2D LiDAR gives accurate depth; Kalman filter gives velocity.
-- **The Controller:** Nav2 MPPI controller uses the velocity to predict where obstacles will be 2 seconds ahead, so the robot doesn't freeze.
-- **The Setup:** 100% simulation in Gazebo Harmonic and ROS 2 Jazzy.
+- **Established Space:** Industrial AMRs use 2D safety LiDAR + static 2D costmaps (great for walls, cheap, certified).
+- **The Gap (Freezing Problem):** 2D LiDAR sees ankles as static walls $\rightarrow$ robot freezes when people cross the aisle.
+- **The Solution (Stages 1–3):** Add monocular camera (YOLO + ByteTrack) + laser frustum gating + Kalman velocity $\rightarrow$ Nav2 MPPI dynamic critic predicts 2.0 s ahead.
+- **Methods Transition (Stage 4 → Slide 2):** Built in ROS 2 Jazzy / Gazebo Harmonic and validated via a 6-step workflow and 3-way ablation study.
 
 ---
 
@@ -65,4 +65,4 @@ Standard warehouse robots freeze whenever someone walks in front of them because
 
 ## 6. "If You Get Stuck" Anchor Line
 If you lose your train of thought, pause, take a breath, look at the diagram and say:
-> *"In short: 2D laser alone makes the robot freeze when people cross; adding camera tracking lets the planner anticipate their motion and steer smoothly around them."*
+> *"In short: existing 2D LiDAR setups treat crossing people as static walls and freeze; adding camera tracking and predictive MPPI lets the robot anticipate their motion—which we build and evaluate through the methodology on the next slide."*
