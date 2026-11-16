@@ -1,0 +1,29 @@
+status: active
+
+# M1 + M2 working plan → midterm meeting (wk 16, by Fri 18 Dec 2026)
+
+Goal for the meeting: show the robot driving through a corridor with a walking person in sim, stock Nav2 MPPI, and the first baseline numbers from an automated batch of runs. That's the whole demo.
+
+Each step: **learn** (only what's listed) → **build** → **check** (what you should see). ~2 steps/week alongside other modules.
+
+## M1 — sim + stock Nav2 (by Fri 4 Dec)
+
+| # | Learn | Build | Check |
+|---|---|---|---|
+| 1 | Gazebo Harmonic basics: worlds, models, `gz sim` GUI; how ROS talks to it (`ros_gz_bridge`, `/clock`, `use_sim_time`) | Install `ros-jazzy-ros-gz`; open an empty world | Gazebo opens; `ros2 topic echo /clock` ticks |
+| 2 | Gazebo sensor + diff-drive *system plugins* in URDF/xacro | `fyp_description`: your 07 URDF + diff-drive, 2D LiDAR, camera plugins; spawn launch | Robot drives with `teleop_twist_keyboard`; scan visible in RViz |
+| 3 | Actors in Gazebo (scripted walking) | Corridor world (2.4 m aisle) + one walking actor | **Q3**: does the actor appear in `/scan`? (decides the whole sim approach) |
+| 4 | Nav2 mental model: map, AMCL, planner vs controller, costmaps, BT navigator — just enough to read a params file | `fyp_bringup`: Nav2 with stock MPPI on the corridor map (map from slam_toolbox once, or hand-drawn) | Send goal in RViz → robot reaches it |
+| 5 | pluginlib + MPPI `CriticFunction` interface (Jazzy branch — **Q2**) | `fyp_dynamic_critic` hello: critic that adds zero cost and logs once | Loads in controller_server without errors |
+
+## M2 — harness + B0 (by Fri 18 Dec)
+
+| # | Learn | Build | Check |
+|---|---|---|---|
+| 6 | Driving Nav2 from Python (`nav2_simple_commander`); headless Gazebo | `fyp_harness` runner: scenario YAML → spawn actor → send goal → wait → stop | One scripted run end-to-end without touching the GUI |
+| 7 | What to log (GT poses, robot odom, cmd_vel) | Logger → CSV per run; metrics script (success, collision, min separation, time, freeze time) | Metrics for one run make sense vs what you watched |
+| 8 | MPPI tuning basics (README tuning guide [L1]) | Batch runner with seeds; scenarios A (crossing) + B (head-on); tune B0 | **Q1, Q4**: B0 distributions + runs/hour on laptop → `results.md` |
+| 9 | — | Plot script (matplotlib from CSV) + 4–5 midterm slides | Slides uploaded after meeting |
+
+## Notes / findings while working
+(append here; promote when done)

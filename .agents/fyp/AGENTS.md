@@ -1,32 +1,56 @@
-# EEEE4077 Mechatronics FYP Agent Instructions
+# EEEE4077 FYP — Agent Instructions
 
-## Core Working Principle: Practical Engineering Over Academic Fluff
+Project: vision-augmented (2D LiDAR + camera) dynamic-obstacle avoidance for a diff-drive robot,
+using tracked/predicted obstacles inside Nav2 MPPI. Module root: `modules/EEEE4077_mechatronics_proj/`.
+Proposal + defense are submitted (Nov 2026). Everything from that phase is in `archive/` — context only.
 
-The user is fundamentally building a real, functioning mechatronics engineering pipeline and prioritizes working, maintainable software and hardware reality over decorative academic theater or grade-rubric chasing.
+## 0. Session protocol
 
-Every agent interacting with this project (`EEEE4077_mechatronics_proj`) MUST adhere to the following rules:
+**Start:** read `chapters/research/brief.md` → `plan.md` (its **Now** line) → `stack.md` (what the student knows) → the `status: active` file(s) in `chapters/scratch/`. Pick up where the scratch file's last note left off.
+**During:** work and notes go in the scratch file. Sources read → register. Unsourced numbers → debt list.
+**End:** update plan.md's **Now** line and any learning-map status in stack.md. If a task is done and the user agrees, promote it (see `chapters/scratch/README.md`), add one dated line to the `ws/README.md` log, and update the brief's decision log if a decision changed. Leave the scratch file with a clear "next step" line if not done.
 
-1. **Practical Engineering First:**
-   - Always prioritize battle-tested, proven, open-source industrial solutions (e.g., standard ROS 2 / Nav2 packages, Ultralytics, BoxMOT, OpenCV, standard Kalman filtering) over ungrounded "novel" algorithms.
-   - If a standard industrial tool exists, USE IT. Never suggest inventing a new algorithm when an idiomatic standard exists.
-   - Do not propose decorative complexity (e.g., unnecessary deep learning networks, complex non-linear models) where linear or simple methods suffice.
+## 1. Zones
 
-2. **Zero Mark-Chasing Bias (Rubric Fluffing Forbidden):**
-   - The user gives zero weight to chasing rubric criteria or pandering to grading rubrics purely to sound academically impressive.
-   - Do NOT propose architectural additions, research directions, or scope expansions purely for marks.
-   - However, **rubrics and guides in `raw/` define the structural baseline and examiner expectations** (e.g., required sections, formatting, evaluation categories). Use them strictly to ensure proper structure, completeness, and clarity without injecting fluff.
-   - When preparing reports, trade-offs, or defense notes, base every argument on real physical and computational constraints (field of view, memory, frame rates, sensor physics, wall-clock engineering time).
-   - Be completely blunt and transparent about what works, what doesn't, and where practical engineering trade-offs lie.
+| Path | What | Agent rights |
+|---|---|---|
+| `chapters/scratch/` | Shared work-in-progress, one file per task. Promoted into research/library/ws when done, then deleted (see its README) | Read/write freely. **Default place for unfinished work** |
+| `chapters/research/` | Engineering truth. Small set of living docs (see its README). Only settled content, promoted from scratch | Read/write, negotiate with user |
+| `chapters/library/` | Sources: register, cards, PDFs. Only place a citation can come from. | Read/write, strict rules below |
+| `ws/` | Colcon workspace (project code) + learn↔build log | Read/write |
+| `chapters/deliverables/` | Future outward outputs (midterm slides, thesis, poster) | Write only when asked |
+| `raw/` | University requirements, rubrics, spec. Ground truth for *structure* only | Read-only |
+| `concepts/`, `chapters/meetings/` | User's own learning notes and meeting records | **Never edit.** Reading is fine |
+| `archive/2026-11_proposal/` | Old proposal-phase docs. Known inconsistencies, unsourced numbers | Read for context. **Never cite, never copy numbers from it as fact** |
 
-3. **Workspace Zoning & Responsibilities:**
-   - **`raw/proposals/` and `raw/thesis/`**: Ground truth requirements and examiner expectations. Every non-markdown file has an equivalent `.md` file for fast, reliable cross-referencing. Agents across all sessions MUST consult these files when preparing or checking proposals and thesis work.
-   - **`chapters/research/`**: Engineering truth. Technical details, models, architecture, trade-offs, and algorithms. This is where user and agent actively negotiate and build.
-   - **chapters/research/notes/**: Personal concept understanding notes (titled and indexed after research sections, e.g., section 4.1.1 becomes 4_1_1_<topic>.md). Dedicated to building intuitive personal understanding and unpacking complex mathematical/theoretical foundations for the student; these are personal study aids, not assessed deliverables.
-   - **`chapters/proposals/` (or `chapters/proposals/`)**: The agent's working area for proposal sections. Can be modularized into discrete section files or subfolders for clean organization, drafting, and iterative refinement.
-   - **`chapters/deliverables/`**: Strictly the outward-facing output repository. Holds polished, final-ready submission documents meant for examiners / 3rd parties (e.g., `project_proposal.md`, `abstract.md`, future `thesis.md`). Do not use this as a working draft area or internal reference dump.
-   - **Thesis workflow**: Will follow a similar decoupled working structure later.
+## 2. Claim tags (applies to `chapters/research/` and anything derived from it)
 
-4. **Respect Student Engineering Bandwidth:**
-   - Never inflate project scope with unrealistic academic ambitions.
-   - Keep the critical path achievable and decoupled so that unexpected hurdles do not cascade into project failure.
+Every number or non-obvious factual claim carries one tag:
 
+- `[L#]` — from a library entry (add `§`/page when it matters). Entry status decides if it can be shown (see library README).
+- `[M#]` — measured by us; points to a row in `chapters/research/results.md` that names the script/log.
+- `[E]` — engineering judgement, design choice, or common knowledge. Honest label, no citation needed.
+
+Untagged numbers do not go in. If a number is needed but unsourced, tag `[E]` and add it to the debt list in `chapters/library/register.md`.
+**Never fabricate data or results.** If something is unsourced or unmeasured, omit it or label it — don't invent it.
+
+## 3. Engineering stance
+
+- "SOTA" here = industry-grade engineering rigour, not academic novelty: a properly tuned stock baseline, fair comparisons, reuse standard packages (Nav2, nav2_collision_monitor, standard KF), claims backed by measurement.
+- Prefer the smallest thing that can be measured. Add complexity only when a measured failure demands it.
+- Modular by interface: modules talk through defined ROS messages so any one can be replaced by ground truth or a mock.
+- Perception (detection + 2D tracking, domain adaptation, lighting) is the **user's specialty and is assumed solved**. Agents don't design detectors; in sim, a synthetic detector stands in. Fusion (box + LiDAR → metric track) *is* in scope.
+- Hardware is a personal goal, off the thesis critical path. Nothing assessed may depend on it.
+- C++ only where Nav2 forces it (the MPPI critic plugin). Everything else Python unless measured too slow.
+
+## 4. Working with the user
+
+- The user must understand everything that ships. Learn↔build loop: explain the concept briefly, then build the smallest piece, then the user runs/reviews it (see `ws/README.md`).
+- Build first, literature just-in-time: read a source only when it changes a decision or settles a debt; log it in the register as you go. Nav2 docs, source code and tutorials count as literature (raw/thesis/thesis_guide.md).
+- Diagrams (flows, architecture, lifecycles, timelines) in **Mermaid** code blocks, top-down unless a flow is clearer left-right. No ASCII-art diagrams.
+- Meeting records are context, not rules. Only the spec (`raw/general/FYP Specification…`) is binding.
+- Figures are generated by scripts from logged data (matplotlib), never hand-made. Map `raw/` requirements to content only when a deliverable is being prepared.
+- The user handles git (add/commit/push). Don't commit.
+- The user can verify things directly (open a PDF, screenshot a chart, run a sim). Ask them when that's cheaper than guessing.
+- Ask the user to fetch paywalled PDFs; fetch open-access ones (arXiv, docs, GitHub) yourself.
+- Be blunt about what works and what doesn't. Rubrics in `raw/` set structure, never scope.
