@@ -76,7 +76,7 @@ end
 
 figure;
 plot(t, Traw, 'LineWidth', 1.2); hold on
-yline(Tmax,'k--','T_{max}'); yline(0,'k:','0');
+yline(Tmax,'r--','T_{max}','LineWidth',1.5); yline(0,'r:','0','LineWidth',1.5);
 xlabel('Time (s)'); ylabel('Requested rotor thrust T_{raw} (N)');
 legend('T_1','T_2','T_3','T_4','Location','best'); grid on
 title('Combined with limit: requested thrust vs bounds');

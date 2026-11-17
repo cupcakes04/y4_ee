@@ -1,156 +1,217 @@
-# Practical 2 — Section 3 Guide: Rotor Loads and Allocation
+# Practical 2 Guide: Nonlinear Quadrotor Model and Validation
 
-This guide covers **Section 3** of `EEEE4138 Practical 2 Guided Laboratory.pdf` for `Practical2_Quadrotor.slx` using `practical2_parameters.m` (`student_id = 19`, X configuration).
+This guide covers `EEEE4138 Practical 2 Guided Laboratory.pdf` (Sections 1–8) for `Practical2_Quadrotor.slx`, using `practical2_parameters.m` (`student_id = 19`, X configuration). It is written for re-reading: each block has a **why** next to its **how**.
 
----
-
-## 1. Simulink Blocks Needed (Section 3 Only)
-
-Add these blocks to `Practical2_Quadrotor.slx`:
-
-1. **Rotor speed input & limits**
-   - **Constant** (*Simulink → Sources*) → set **Constant value** to `Omega_cmd`
-   - **Saturation** (*Simulink → Discontinuities*) → set **Upper limit** to `Omega_max`, **Lower limit** to `0`
-2. **Parameter Constant blocks** (4 separate **Constant** blocks from *Simulink → Sources*):
-   - `rotor_xy` (`2 × 4`)
-   - `sigma` (`4 × 1`)
-   - `kT` (scalar)
-   - `kM` (scalar)
-3. **Calculation block**
-   - **MATLAB Function** (*Simulink → User-Defined Functions*) → rename the block to `RotorLoads`
-4. **Optional check (before building Section 4)**
-   - Two **Display** blocks (*Simulink → Sinks*) connected to `Fprop` and `Mprop` to inspect the `3 × 1` outputs.
-
-> **Important:** Do **not** add gravity inside `RotorLoads`. Gravity is added later inside `StateDerivative` (Section 4).
+> **Viewing the diagrams:** they are written in mermaid. GitHub renders them automatically. In VS Code, install **"Markdown Preview Mermaid Support"** (bierner.markdown-mermaid), then open the preview with `Ctrl+Shift+V`.
 
 ---
 
-## 2. Wiring Diagram
+## 0. The big picture
 
-```text
-[Constant: Omega_cmd] ──► [Saturation (0 to Omega_max)] ──► Omega
-[Constant: rotor_xy]  ────────────────────────────────────► rotor_xy   ┌────────────┐ ──► Fprop (3x1)
-[Constant: sigma]     ────────────────────────────────────► sigma      │ RotorLoads │
-[Constant: kT]        ────────────────────────────────────► kT         └────────────┘ ──► Mprop (3x1)
-[Constant: kM]        ────────────────────────────────────► kM
+Lab 2 builds the **plant**: a simulation of the drone's physics, with **no controller**. You command four rotor speeds, and the model works out how the drone moves. Lab 3 later puts a controller in front of it.
+
+```mermaid
+flowchart LR
+    classDef input fill:#fef9c3,stroke:#ca8a04,color:#111
+    classDef block fill:#dbeafe,stroke:#2563eb,color:#111
+    classDef state fill:#dcfce7,stroke:#16a34a,color:#111
+
+    OC["Constant<br/>Omega_cmd (4x1)"]:::input --> SAT["Saturation<br/>0 to Omega_max"]:::block
+    SAT -->|"Omega (rad/s)"| RL["RotorLoads<br/>speeds → force & moment"]:::block
+    RL -->|"Fprop, Mprop<br/>(body axes)"| SD["StateDerivative<br/>Newton + Euler equations"]:::block
+    SD -->|"Xdot (12x1)"| INT["Integrator<br/>IC: X0"]:::state
+    INT -->|"X (12x1)"| SD
 ```
 
-Simulink automatically creates the 5 input ports and 2 output ports on `RotorLoads` from the function signature below.
+| Block | Question it answers | Physics |
+| :--- | :--- | :--- |
+| `Saturation` | What speeds can the motors actually reach? | 0 ≤ Ω ≤ 800 rad/s (ideal motor, no lag) |
+| `RotorLoads` | What force and moment do these speeds produce? | Tᵢ = kT Ωᵢ², moments from lever arms + rotor drag torque |
+| `StateDerivative` | Given the forces and the current state, how fast is each state changing? | F = ma (translation), M = Jω̇ + ω×Jω (rotation), frame rotations |
+| `Integrator` | Where is the drone now? | X(t) = X0 + ∫ Xdot dt |
+
+The `X → StateDerivative` feedback is **not a controller**. The equations of motion depend on the current state (for example, gravity's direction in the body frame depends on the attitude), so the derivative block needs to see X.
+
+### The 12 states
+
+| Index | Symbol | Meaning | Frame | Units |
+| :--- | :--- | :--- | :--- | :--- |
+| 1–3 | pN, pE, pD | Position | NED (world) | m |
+| 4–6 | u, v, w | Velocity | **Body** | m/s |
+| 7–9 | φ, θ, ψ | Roll, pitch, yaw | Euler angles (ZYX) | rad |
+| 10–12 | p, q, r | Angular rates | **Body** | rad/s |
+
+> **Trap:** `pN` (North position) is not `p` (roll rate). Also, **Down is positive** in NED, so climbing means pD becomes *more negative*.
+
+### Frames
+
+- **NED (world):** x = North, y = East, z = **Down**.
+- **Body (FRD):** x = Forward (nose), y = Right, z = **Down** (through the belly).
+- Rotor thrust pushes along **−z body** (up through the top of the drone).
+- `R` converts body → NED: `v_NED = R v_body`. `Rᵀ` converts NED → body.
 
 ---
 
-## 3. Code Inside `RotorLoads`
+## 1. Folder and Quick Start
 
-Double-click the `RotorLoads` MATLAB Function block and enter:
+1. The PDF asks for a folder named `Practical2_S19`. Yours is `Lab2_S20617556/`, containing a `results/` subfolder.
+2. `practical2_parameters.m` holds every parameter. MATLAB Function blocks **cannot** see workspace variables directly, so each parameter enters through a Constant block.
+3. Workflow for every test: **run `practical2_parameters` → apply the test overrides → `sim` → save under a distinct filename.** Never re-run the parameter script after applying overrides, because it resets them.
+
+---
+
+## 2. Parameters (`student_id = 19`)
+
+The script is copied from the PDF with `student_id = 19`. Since 19 > 10, you get the **X configuration**.
+
+| Quantity | Formula | Value |
+| :--- | :--- | :--- |
+| `m0` | round(100(1.31 + 0.02·18))/100 | 1.67 kg |
+| `l` | arm_values(mod(54,5)+1) = arm_values(5) | 0.27 m |
+| `d` | l/√2 (lever arm about x or y) | 0.190919 m |
+| `m_nom` | 1.5·m0 | 2.505 kg |
+| `Jdiag` | [0.03;0.03;0.05]·(m0/1.5)·(l/0.25)² | [0.038958; 0.038958; 0.064930] kg·m² |
+| `kT` | 2·m_nom·g/(4·800²) | 1.919848e-5 N/(rad/s)² |
+| `kM` | 0.020·kT | 3.839696e-7 N·m/(rad/s)² |
+| `Omega_hover` | √(m_nom g/(4 kT)) = 800/√2 | 565.685 rad/s |
+| Hover thrust per rotor | m_nom g/4 | 6.1435 N |
+
+`kT` is chosen so that full speed (800 rad/s) gives **2× hover thrust**: a thrust-to-weight ratio of 2.
+
+### Rotor layout (X configuration, viewed from above)
+
+|  | **Left** (y < 0) | | **Right** (y > 0) |
+| :---: | :---: | :---: | :---: |
+| **Front** (x > 0) | **1** (+d, −d)<br/>σ = +1, CCW | ↑ nose | **2** (+d, +d)<br/>σ = −1, CW |
+| **Rear** (x < 0) | **4** (−d, −d)<br/>σ = −1, CW | | **3** (−d, +d)<br/>σ = +1, CCW |
+
+- Columns of `rotor_xy = [d d -d -d; -d d d -d]` are rotors 1–4: row 1 is x, row 2 is y.
+- Diagonal rotors (1 & 3, 2 & 4) spin the **same** way and neighbours spin opposite ways. This cancels the yaw torque at hover.
+
+---
+
+## 3. RotorLoads: speeds → force and moment
+
+### Physics, per rotor i
+
+$$T_i = k_T\Omega_i^2,\qquad \mathbf F_i = \begin{bmatrix}0\\0\\-T_i\end{bmatrix},\qquad \mathbf M_i = \mathbf r_i\times\mathbf F_i + \begin{bmatrix}0\\0\\\sigma_i k_M\Omega_i^2\end{bmatrix}$$
+
+Expanding the cross product with **r** = [x, y, 0]:
+
+$$\mathbf r_i\times\mathbf F_i = \begin{bmatrix} y\cdot(-T) - 0 \\ 0 - x\cdot(-T) \\ 0\end{bmatrix} = \begin{bmatrix}-y_iT_i\\ x_iT_i\\0\end{bmatrix}$$
+
+What this means physically:
+- **Mx = −y T (roll):** a rotor on the **left** (y < 0) gives **+Mx**, which lifts the left side and rolls right.
+- **My = x T (pitch):** a rotor at the **front** (x > 0) gives **+My**, which lifts the nose (pitch up).
+- **Mz = σ kM Ω² (yaw):** each spinning rotor drags on the air, and the air twists the airframe the opposite way. σ sets the direction. Thrust itself produces no yaw because it is vertical.
+
+### 🟦 Block card: `RotorLoads`
+
+| | |
+| :--- | :--- |
+| **Library** | *Simulink → User-Defined Functions → MATLAB Function* |
+| **Rename to** | `RotorLoads` |
+| **Inputs** | `Omega` (from Saturation), Constants `rotor_xy`, `sigma`, `kT`, `kM` |
+| **Outputs** | `Fprop` (3×1), `Mprop` (3×1) → StateDerivative |
+
+```mermaid
+flowchart LR
+    classDef block fill:#dbeafe,stroke:#2563eb,color:#111
+    classDef c fill:#fef9c3,stroke:#ca8a04,color:#111
+    O["Omega 4x1"] --> RL["RotorLoads"]:::block
+    P["rotor_xy, sigma,<br/>kT, kM"]:::c --> RL
+    RL --> F["Fprop 3x1"]
+    RL --> M["Mprop 3x1"]
+```
 
 ```matlab
 function [Fprop,Mprop] = RotorLoads(Omega,rotor_xy,sigma,kT,kM)
-% Sum the thrust forces and moments from all 4 rotors in body axes
-% (x forward, y right, z down).
-
+% Sum thrust forces and moments from all 4 rotors (body axes: x fwd, y right, z down)
 Fprop = zeros(3,1);
 Mprop = zeros(3,1);
-
 for i = 1:4
     Ti = kT * Omega(i)^2;
-    Fi = [0; 0; -Ti];
+    Fi = [0; 0; -Ti];                                   % thrust along -z body
     ri = [rotor_xy(1,i); rotor_xy(2,i); 0];
-    Mi = cross(ri, Fi) + [0; 0; sigma(i) * kM * Omega(i)^2];
-
+    Mi = cross(ri, Fi) + [0; 0; sigma(i)*kM*Omega(i)^2];
     Fprop = Fprop + Fi;
     Mprop = Mprop + Mi;
 end
 end
 ```
 
-### Fixed Port Dimensions (Ports and Data Manager / Edit Data)
-If automatic size inference fails, open **Edit Data** (or **Ports and Data Manager**) in the MATLAB Function Editor and set **Size** explicitly:
+> **Don't add gravity here.** `RotorLoads` is propulsion only, and gravity is added exactly once, in `StateDerivative`.
 
-| Port | Direction | Size |
+### Allocation matrix A (the PDF's "Allocation task")
+
+Stacking the four rotors gives a linear map from rotor thrusts to the total load:
+
+$$\begin{bmatrix}T_{total}\\M_x\\M_y\\M_z\end{bmatrix} = A\begin{bmatrix}T_1\\T_2\\T_3\\T_4\end{bmatrix},\qquad \text{column } i = \begin{bmatrix}1\\-y_i\\x_i\\\sigma_i k_M/k_T\end{bmatrix}$$
+
+For your X geometry (`kM/kT = 0.020`):
+
+$$A = \begin{bmatrix} 1 & 1 & 1 & 1 \\ d & -d & -d & d \\ d & d & -d & -d \\ 0.02 & -0.02 & 0.02 & -0.02 \end{bmatrix},\quad d = 0.190919$$
+
+How to read each row:
+- **Row 2, Mx = d(T1 − T2 − T3 + T4):** left rotors (1, 4) minus right rotors (2, 3).
+- **Row 3, My = d(T1 + T2 − T3 − T4):** front rotors (1, 2) minus rear rotors (3, 4).
+- **Row 4, Mz = 0.02(T1 − T2 + T3 − T4):** CCW pair (1, 3) minus CW pair (2, 4).
+- **rank(A) = 4,** so any [T; Mx; My; Mz] has a unique set of rotor thrusts. Lab 3's `Allocation` block uses `A \ cmd` for exactly this.
+- **T_total vs Fprop,z:** T_total is a positive magnitude, while `Fprop(3) = −T_total` because thrust points up and z points down.
+
+### Hover check
+
+All Ω = 565.685 rad/s, so every Tᵢ = 6.1435 N. That gives `Fprop = [0; 0; −24.574] N`, and `Mprop = 0` because the left/right, front/rear and CCW/CW contributions all cancel.
+
+**Zero moment ≠ zero angular velocity:** M = 0 means no angular **acceleration**. A drone that is already spinning keeps spinning (Newton's first law for rotation).
+
+---
+
+## 4. StateDerivative: the equations of motion
+
+### Physics, one line per state group
+
+| States | Equation | Meaning |
 | :--- | :--- | :--- |
-| `Omega` | Input | `[4 1]` |
-| `rotor_xy` | Input | `[2 4]` |
-| `sigma` | Input | `[4 1]` |
-| `kT` | Input | `1` |
-| `kM` | Input | `1` |
-| `Fprop` | Output | `[3 1]` |
-| `Mprop` | Output | `[3 1]` |
+| ṗ (1–3) | **R v_b** | Body velocity rotated into NED gives the rate of change of world position |
+| v̇_b (4–6) | **(F_g + F_prop + F_drag)/m − ω × v_b** | Newton's 2nd law, written in the rotating body frame |
+| Euler rates (7–9) | **E ω** | Converts body rates (p, q, r) into Euler-angle rates |
+| ω̇ (10–12) | **J⁻¹[M_prop − ω × (Jω)]** | Euler's rotation equation |
 
----
+What each term does:
+- **F_g = Rᵀ[0; 0; mg]:** gravity is "straight down" in NED. Rᵀ expresses it in body axes. When the drone is tilted, part of gravity lies along body x or y, and that is what makes a tilted drone accelerate sideways.
+- **F_drag = −c·v_b:** linear drag opposing body velocity. It is zero in the baseline (c_drag = 0).
+- **−ω × v_b:** the body axes themselves rotate. Even with no force, a body-frame velocity component appears to change when the axes turn under it. This is why v̇_b is **not** simply "acceleration in body axes".
+- **ω × Jω:** gyroscopic coupling between axes. It is zero when ω = 0, which is why the initial-derivative predictions in Section 6 are simple.
+- **E:** at φ = θ = 0, E = I, so Euler rates equal (p, q, r). E blows up at θ = ±90° (gimbal lock: cos θ = 0).
 
-## 4. Verification & Allocation Task (`student_id = 19`, X Configuration)
+### Rotation matrix (ZYX)
 
-1. Run `practical2_parameters` in the MATLAB Command Window so workspace variables are loaded.
-2. In Simulink, press **Ctrl+D** (Update Diagram) to confirm there are no port or dimension errors.
-3. **Hover check:** At `Omega_cmd = Omega_hover * ones(4,1)`, each rotor produces $T_i = m_{\text{nom}} g / 4$, so:
-   - `Fprop` = `[0; 0; -m_nom*g]`
-   - `Mprop` = `[0; 0; 0]`
-4. **Allocation matrix $A$** mapping $[T_1, T_2, T_3, T_4]^T \mapsto [T_{\text{total}}, M_x, M_y, M_z]^T$:
-   - Each column $i$ is $[1,\; -y_i,\; x_i,\; \sigma_i (k_M/k_T)]^T$.
-   - For `student_id = 19` (`rotor_xy = [d d -d -d; -d d d -d]`, $d = l/\sqrt{2}$, `sigma = [1; -1; 1; -1]`, $k_{MT} = k_M/k_T = 0.020$):
-
-   $$A = \begin{bmatrix} 1 & 1 & 1 & 1 \\ d & -d & -d & d \\ d & d & -d & -d \\ k_{MT} & -k_{MT} & k_{MT} & -k_{MT} \end{bmatrix}$$
-
-   Verify in MATLAB that `rank(A) == 4`.
-5. **Conceptual check:** Zero propulsive moment ($\mathbf{M}_{\text{prop}} = \mathbf{0}$) means zero external torque, not necessarily zero angular velocity $\boldsymbol{\omega}$ — a rigid body with zero torque can still have a non-zero initial or coasting angular velocity.
-
----
-
-# Practical 2 — Section 4 Guide: Frame Transformations and Dynamics
-
-This guide covers **Section 4** of `EEEE4138 Practical 2 Guided Laboratory.pdf` for `Practical2_Quadrotor.slx` using `practical2_parameters.m` (`student_id = 19`, X configuration).
-
----
-
-## 1. Simulink Blocks Needed (Section 4 Only)
-
-Add these blocks to `Practical2_Quadrotor.slx` (connecting to `Fprop` and `Mprop` from `RotorLoads` in Section 3):
-
-1. **Calculation block**
-   - **MATLAB Function** (*Simulink → User-Defined Functions*) → rename the block to `StateDerivative`
-2. **Parameter Constant blocks** (4 separate **Constant** blocks from *Simulink → Sources*):
-   - `m` (scalar, `2.505` kg for `student_id = 19` nominal)
-   - `J` (`3 × 3` diagonal inertia matrix)
-   - `g` (scalar, `9.81` m/s²)
-   - `c_drag` (scalar, `0` N·s/m nominal)
-3. **State integrator (plant feedback loop)**
-   - **Integrator** (*Simulink → Continuous*) → set **Initial condition** to `X0` (`12 × 1` zeros)
-   - *(Optional static check before connecting the Integrator)*: Temporarily feed a **Constant** block set to `X0` into the `X` port of `StateDerivative` and connect a **Display** block (*Simulink → Sinks*) to `Xdot` to verify the `12 × 1` initial derivative vector.
-
-> **Important:**
-> - Gravity is included **exactly once** inside `StateDerivative` via $\mathbf{F}_g = R^T [0,\; 0,\; mg]^T$.
-> - The baseline model includes **no** aerodynamic moment.
-> - Use explicit parameter ports (`m`, `J`, `g`, `c_drag`); MATLAB Function blocks do not automatically read base-workspace variables.
-
----
-
-## 2. Wiring Diagram
-
-```text
-                ┌─────────────────────────────────────────────────────────────┐
-                │                     State feedback (X: 12x1)                │
-                ▼                                                             │
-         ┌───►  X                                                             │
-[Fprop] ─┼───►  Fprop  ┌─────────────────┐                                    │
-[Mprop] ─┼───►  Mprop  │                 │                                    │
-[m]     ─┼───►  m      │ StateDerivative │ ──► Xdot (12x1) ──► [Integrator] ──┴──► X (12x1)
-[J]     ─┼───►  J      │                 │                     (IC: X0)
-[g]     ─┼───►  g      └─────────────────┘
-[c_drag]─┴───►  c_drag
+```matlab
+Rx = [1 0 0; 0 cos(phi) -sin(phi); 0 sin(phi) cos(phi)];
+Ry = [cos(theta) 0 sin(theta); 0 1 0; -sin(theta) 0 cos(theta)];
+Rz = [cos(psi) -sin(psi) 0; sin(psi) cos(psi) 0; 0 0 1];
+R  = Rz*Ry*Rx;      % body -> NED: yaw applied last
 ```
 
-- `Fprop` (`3 × 1`) and `Mprop` (`3 × 1`) come directly from the `RotorLoads` outputs built in Section 3.
-- `X` (`12 × 1`) state order:
-  - `X(1:3)`: NED position `[pN; pE; pD]` (m)
-  - `X(4:6)`: Body velocity `[u; v; w]` (m/s)
-  - `X(7:9)`: Euler angles `[phi; theta; psi]` (rad)
-  - `X(10:12)`: Body angular rates `[p; q; r]` (rad/s)
+### 🟦 Block card: `StateDerivative`
 
----
+| | |
+| :--- | :--- |
+| **Library** | *Simulink → User-Defined Functions → MATLAB Function* |
+| **Rename to** | `StateDerivative` |
+| **Inputs** | `X` (Integrator output, fed back), `Fprop`, `Mprop` (RotorLoads), Constants `m`, `J`, `g`, `c_drag` |
+| **Output** | `Xdot` (12×1) → Integrator |
 
-## 3. Code Inside `StateDerivative`
-
-Double-click the `StateDerivative` MATLAB Function block and enter:
+```mermaid
+flowchart LR
+    classDef block fill:#dbeafe,stroke:#2563eb,color:#111
+    classDef c fill:#fef9c3,stroke:#ca8a04,color:#111
+    X["X 12x1 (feedback)"] --> SD["StateDerivative"]:::block
+    FM["Fprop, Mprop"] --> SD
+    P["m, J, g, c_drag"]:::c --> SD
+    SD --> XD["Xdot 12x1"]
+```
 
 ```matlab
 function Xdot = StateDerivative(X,Fprop,Mprop,m,J,g,c_drag)
@@ -179,8 +240,8 @@ vb_dot = (Fg + Fprop + Fdrag)/m - cross(omega, vb);
 
 % Attitude kinematics (Euler angle rates)
 E = [1  sin(phi)*tan(theta)   cos(phi)*tan(theta);
-     0  cos(phi)             -sin(phi);
-     0  sin(phi)/cos(theta)   cos(phi)/cos(theta)];
+    0  cos(phi)             -sin(phi);
+    0  sin(phi)/cos(theta)   cos(phi)/cos(theta)];
 euler_dot = E * omega;
 
 % Rotational dynamics (body axes)
@@ -193,385 +254,208 @@ Xdot(4:6)   = vb_dot;
 Xdot(7:9)   = euler_dot;
 Xdot(10:12) = omega_dot;
 end
+
 ```
 
-### Fixed Port Dimensions (Ports and Data Manager / Edit Data)
-If automatic size inference fails, open **Edit Data** (or **Ports and Data Manager**) in the MATLAB Function Editor and set **Size** explicitly:
+### 🟦 Block card: `Integrator`
 
-| Port | Direction | Size |
+| | |
+| :--- | :--- |
+| **Library** | *Simulink → Continuous → Integrator* |
+| **Settings** | **Initial condition** = `X0` |
+| **Wiring** | `Xdot` → in; out = `X` → back to `StateDerivative.X` (and to `X_log`) |
+
+---
+
+## 5. Assembling the model
+
+### How to add a block (general Simulink moves)
+
+| Action | How |
+| :--- | :--- |
+| Add a block | Click an empty spot on the canvas and **type the block name** → Enter. Or open the Library Browser with `Ctrl+Shift+L` and drag. |
+| Rename | Double-click the name text under the block |
+| Constant value | Double-click the block → **Constant value** = the variable name (e.g. `kT`) |
+| MATLAB Function code | Double-click → paste → `Ctrl+S`. Ports appear from the function signature. |
+| Branch a line | `Ctrl` + drag from an existing line |
+| Check | `Ctrl+D`. Show sizes with **Debug → Information Overlays → Signal Dimensions** |
+
+### Full wiring, including parameters and logs
+
+```mermaid
+flowchart LR
+    classDef c fill:#fef9c3,stroke:#ca8a04,color:#111
+    classDef block fill:#dbeafe,stroke:#2563eb,color:#111
+    classDef state fill:#dcfce7,stroke:#16a34a,color:#111
+    classDef log fill:#f3e8ff,stroke:#9333ea,color:#111
+
+    OC["Omega_cmd"]:::c --> SAT["Saturation<br/>lower 0, upper Omega_max"]:::block
+    SAT -->|"Omega"| RL["RotorLoads"]:::block
+    P1["rotor_xy, sigma, kT, kM"]:::c --> RL
+    RL -->|"Fprop"| SD["StateDerivative"]:::block
+    RL -->|"Mprop"| SD
+    P2["m, J, g, c_drag"]:::c --> SD
+    SD -->|"Xdot"| INT["Integrator<br/>IC X0"]:::state
+    INT -->|"X"| SD
+
+    SAT --> L1["Omega_log"]:::log
+    RL --> L2["Fprop_log"]:::log
+    RL --> L3["Mprop_log"]:::log
+    SD --> L4["Xdot_log"]:::log
+    INT --> L5["X_log"]:::log
+```
+
+| Block | Library | Settings |
 | :--- | :--- | :--- |
-| `X` | Input | `[12 1]` |
-| `Fprop` | Input | `[3 1]` |
-| `Mprop` | Input | `[3 1]` |
-| `m` | Input | `1` |
-| `J` | Input | `[3 3]` |
-| `g` | Input | `1` |
-| `c_drag` | Input | `1` |
-| `Xdot` | Output | `[12 1]` |
+| Constant `Omega_cmd` | *Sources → Constant* | value `Omega_cmd` (4×1) |
+| Saturation | *Discontinuities → Saturation* | Upper `Omega_max`, Lower `0` |
+| 8 parameter Constants | *Sources → Constant* | `rotor_xy`, `sigma`, `kT`, `kM`, `m`, `J`, `g`, `c_drag` |
+| 5 × To Workspace | *Sinks → To Workspace* | names as in the diagram, **Timeseries**, sample time **0.01** |
+
+`Omega_log` taps the **Saturation output**, so it records the speeds actually applied.
+
+### Model settings (`Ctrl+E`)
+
+| Pane → setting | Value |
+| :--- | :--- |
+| Solver → Type / Solver | **Variable-step**, **`ode45`** |
+| Max step size | `0.01` |
+| Relative / Absolute tolerance | `1e-6` / `1e-8` |
+| Stop time | `2` (`0.20` for the differential-moment tests) |
+| Data Import/Export → Single simulation output | on, `out` |
+
+> Lab 3 switches this to fixed-step `ode4`.
+
+### Pre-run check (`Ctrl+D`)
+
+`X` and `Xdot` must be **12**, `Fprop` and `Mprop` **3**, and `Omega` **4**.
 
 ---
 
-## 4. Verification Checks (Before Running Full Validation Tests)
+## 6. Isolated validation tests: predictions vs your results
 
-1. **Diagram & dimension check:** Run `practical2_parameters` in the MATLAB Command Window, then press **Ctrl+D** (Update Diagram) in Simulink. Confirm there are no dimension errors and that `X` and `Xdot` are `12 × 1` while `Fprop` and `Mprop` are `3 × 1`.
-2. **Frame-mapping checks (in MATLAB Command Window):**
-   - **Zero angles:** At `phi = 0; theta = 0; psi = 0;`, verify `R` equals `eye(3)`.
-   - **East-facing velocity:** At `phi = 0; theta = 0; psi = pi/2;` and `vb = [5; 0; 0]`, verify `R * vb` equals `[0; 5; 0]` m/s (due East).
-   - **Orthogonality & determinant:** Verify `R * R.'` is `eye(3)` (within floating-point precision) and `det(R) == 1`.
-3. **Nominal hover derivative check:** At `X = zeros(12,1)` and `Omega_cmd = Omega_hover * ones(4,1)` with `c_drag = 0`:
-   - `Fprop = [0; 0; -m_nom*g]` cancels `Fg = [0; 0; m_nom*g]`, and `Mprop = [0; 0; 0]`.
-   - Every entry of `Xdot` should evaluate to `0`.
-4. **Euler singularity & rate note:**
-   - At `phi = theta = 0`, `E = eye(3)` so `euler_dot = omega` ($[\dot{\phi},\dot{\theta},\dot{\psi}]^T = [p,q,r]^T$); this equality does **not** hold at nonzero roll/pitch.
-   - Keep pitch $\theta$ away from $\pm 90^\circ$ ($\pm \pi/2$ rad), where $\cos(\theta) = 0$ causes a singularity in `E`.
+Predict first, then simulate. Each test isolates **one** piece of the physics, so if it fails you know which equation is wrong. The scripts are [run_hover_test.m](run_hover_test.m) (Section 5 hover) and [run_validation_tests.m](run_validation_tests.m) (all of Section 6, written to `results/section6_validation.csv`).
 
----
+| Test | What it isolates | Setup |
+| :--- | :--- | :--- |
+| Frame mapping | `R` alone | φ = θ = 0, ψ = 90°, v_b = [5; 0; 0] |
+| Hover | Force balance | All Ω = Ω_hover |
+| Free fall | Gravity sign and direction | All Ω = 0 |
+| Differential pitch | `My` row of A, then q̇ = My/Jyy | T1, T2 + δ; T3, T4 − δ; 0.20 s |
+| Yaw reaction | σ signs, then Mz | T1, T3 + δ; T2, T4 − δ; 0.20 s |
 
-# Practical 2 — Section 5 Guide: Assemble, Configure, and Log the Model
+where Ti0 = 6.143513 N and δ = 0.05·Ti0 = 0.307176 N.
 
-This guide covers **Section 5** of `EEEE4138 Practical 2 Guided Laboratory.pdf` for `Practical2_Quadrotor.slx` using `practical2_parameters.m` (`student_id = 19`, X configuration).
+### Worked predictions
 
----
+**1. Frame mapping.** At ψ = 90°, `R = [0 −1 0; 1 0 0; 0 0 1]`, so R·[5; 0; 0] = **[0; 5; 0]**: the nose points East, so forward motion is East. Also RRᵀ = I and det R = +1, which confirms a proper rotation (no reflection).
 
-## 1. Full Plant Wiring & Logging Blocks
+**2. Hover.** Fprop = [0; 0; −24.574] N and Fg = [0; 0; +24.574] N cancel, and M = 0. So **every entry of Ẋ(0) = 0** and nothing moves.
 
-Assemble the complete open-loop plant (`RotorLoads` → `StateDerivative` → `Integrator` with state feedback `X`) and attach **5 `To Workspace` blocks** (*Simulink → Sinks*):
+**3. Free fall.** No thrust, so ẇ = +g (Down is +). At t = 2 s: **w = gt = 19.62 m/s** and **pD = ½gt² = 19.62 m**. The two numbers match only because t = 2 s. Attitude stays 0 because there is no moment.
 
-```text
-[Constant: Omega_cmd] ─► [Saturation (0 to Omega_max)] ─┬─► Omega ──► [RotorLoads] ──┬─► Fprop ──┬─► [StateDerivative] ──┬─► Xdot ──► [Integrator (IC: X0)] ──┬─► X
-                                                        │                            │           │                       │                                 │
-                                                        ▼                            ▼           │                       ▼                                 ├──► [To Workspace: X_log]
-                                             [To Workspace: Omega_log]   [To Workspace: Fprop_log]│           [To Workspace: Xdot_log]                      │
-                                                                                                 ▼                                                         │
-                                                                                   Mprop ────────┴──► [To Workspace: Mprop_log]                            │
-                                                                                                                                                           │
-                                                        ▲                                                                                                  │
-                                                        └─────────────────────────────── State feedback X (12x1) ──────────────────────────────────────────┘
-```
+**4. Differential pitch.** The front pair (1, 2) gets +δ and the rear pair (3, 4) gets −δ:
+- Ω = [579.655; 579.655; 551.362; 551.362] rad/s, all within [0, 800].
+- **My = d(T1 + T2 − T3 − T4) = 4dδ = 0.234582 N·m.** Mx = Mz = 0, and T_total is unchanged at 24.574 N.
+- **q̇(0) = My/Jyy = 6.021456 rad/s²** (ω = 0, so ω × Jω = 0). Positive q means nose up.
+- Over 0.20 s: q ≈ 1.204 rad/s and θ ≈ ½·6.02·0.2² = 0.1204 rad.
 
-*(Note: Keep all parameter `Constant` blocks connected as in Sections 3 & 4: `rotor_xy`, `sigma`, `kT`, `kM` to `RotorLoads`, and `m`, `J`, `g`, `c_drag` to `StateDerivative`.)*
+**5. Yaw reaction.** The CCW pair (1, 3) gets +δ and the CW pair (2, 4) gets −δ:
+- **Mz = kMT(T1 − T2 + T3 − T4) = 4·0.02·δ = 0.024574 N·m.** Mx = My = 0.
+- **ṙ(0) = Mz/Jzz = 0.378472 rad/s².** Positive r means the nose turns right (clockwise seen from above).
+- This is about 16× smaller than the pitch response from the same δ, because reaction torque (factor 0.02) is far weaker than a lever arm (d = 0.19).
 
-### `To Workspace` Block Settings (All 5 Blocks)
+### ✅ Your results (from `results/section6_validation.csv`)
 
-| Signal | Connect From | Variable name | Save format | Sample time |
-| :--- | :--- | :--- | :--- | :--- |
-| State vector `X` | Output of `Integrator` | `X_log` | `Timeseries` | `0.01` |
-| Applied rotor speeds | Output of `Saturation` | `Omega_log` | `Timeseries` | `0.01` |
-| Propulsive force `Fprop` | Output 1 of `RotorLoads` | `Fprop_log` | `Timeseries` | `0.01` |
-| Propulsive moment `Mprop` | Output 2 of `RotorLoads` | `Mprop_log` | `Timeseries` | `0.01` |
-| State derivative `Xdot` | Output of `StateDerivative` | `Xdot_log` | `Timeseries` | `0.01` |
-
----
-
-## 2. Model Settings (`Ctrl+E` / Configuration Parameters)
-
-Open **Modeling → Model Settings** (`Ctrl+E`) and configure both tabs:
-
-1. **Solver**
-   - **Type:** `Variable-step`
-   - **Solver:** `ode45` (Dormand-Prince)
-   - **Max step size:** `0.01`
-   - **Relative tolerance:** `1e-6`
-   - **Absolute tolerance:** `1e-8`
-   - **Stop time:** `2` (initially `2` s; shorten to `0.20` s for differential-moment tests in Section 6)
-2. **Data Import/Export**
-   - Enable **Single simulation output**
-   - **Single simulation output** variable name: `out`
-
----
-
-## 3. Pre-Run Diagram Check
-
-1. Save `Practical2_Quadrotor.slx`.
-2. Run `practical2_parameters` in the MATLAB Command Window.
-3. Press **Ctrl+D** (Update Diagram) in Simulink and confirm:
-   - No compilation or dimension errors.
-   - `X` and `Xdot` signals show `12 × 1` (`12`).
-   - `Fprop` and `Mprop` signals show `3 × 1` (`3`).
-
----
-
-## 4. Run and Save the Nominal Hover Test (`run_hover_test.m`)
-
-Run [run_hover_test.m](file:///d:/gdrive/study_notes/degree/y4/modules/EEEE4138_aerial_robotics/drills/Lab2_S20617556/run_hover_test.m) (or paste the commands below into the MATLAB Command Window):
-
-```matlab
-practical2_parameters
-out = sim('Practical2_Quadrotor');
-if ~exist('results','dir'), mkdir('results'); end
-save('results/hover.mat','out','X0','Omega_cmd','m','J');
-
-ts = out.X_log;
-if ts.IsTimeFirst
-    X = reshape(ts.Data,numel(ts.Time),[]);
-else
-    X = reshape(ts.Data,[],numel(ts.Time)).';
-end
-
-figure;
-plot(ts.Time,X(:,1:3));
-xlabel('Time (s)'); ylabel('NED position (m)');
-legend('North','East','Down'); grid on;
-saveas(gcf,'results/hover_position.png');
-```
-
-### Expected Result & Multi-Test Workflow
-- **Nominal hover check:** All three NED position traces (`North`, `East`, `Down`) and body velocities stay close to `0` over the `2 s` run.
-- **Test isolation rules (for Sections 6 & 7):**
-  1. Run `practical2_parameters` first to reset all workspace variables.
-  2. Apply the test-specific overrides (e.g., `Omega_cmd`, `X0`, `m`, `c_drag`, or `StopTime`) **after** running `practical2_parameters`. Do **not** re-run `practical2_parameters` after applying overrides.
-  3. Save each `out` object under a distinct filename in `results/` before running the next test.
-
----
-
-# Practical 2 — Section 6 Guide: Isolated Validation Tests
-
-This guide covers **Section 6** of `EEEE4138 Practical 2 Guided Laboratory.pdf` for `Practical2_Quadrotor.slx` using `practical2_parameters.m` (`student_id = 19`, X configuration).
-
-Key baseline numbers for `student_id = 19`:
-- `m_nom = 2.5050` kg, `l = 0.27` m, $d = l/\sqrt{2} = 0.190919$ m
-- `Jdiag = [0.038958; 0.038958; 0.064930]` kg·m²
-- Hover thrust per rotor: $T_{i0} = m_{\text{nom}} g / 4 = 6.143513\text{ N}$ ($T_{\text{total}} = 24.574050\text{ N}$)
-- Differential thrust increment: $\delta = 0.05\, T_{i0} = 0.307176\text{ N}$
-
----
-
-## 1. Analytical Predictions (`student_id = 19`, X Geometry)
-
-Compute and verify these **before** looking at simulation outputs:
-
-1. **Frame mapping ($\phi = \theta = 0,\; \psi = \pi/2,\; \mathbf{v}_b = [5;\; 0;\; 0]\text{ m/s}$)**
-   - $R = R_z(\pi/2) R_y(0) R_x(0) = \begin{bmatrix} 0 & -1 & 0 \\ 1 & 0 & 0 \\ 0 & 0 & 1 \end{bmatrix}$
-   - NED velocity: $R \mathbf{v}_b = [0;\; 5;\; 0]\text{ m/s}$ (due East).
-   - Orthogonality & right-handedness: $R R^T = I_3$ and $\det(R) = +1$.
-
-2. **Hover (`X0 = zeros(12,1)`, `Omega_cmd = Omega_hover*ones(4,1)`, `c_drag = 0`, `2 s`)**
-   - $\mathbf{F}_{\text{prop}} = [0;\; 0;\; -24.574050]\text{ N}$ cancels $\mathbf{F}_g = [0;\; 0;\; +24.574050]\text{ N}$; $\mathbf{M}_{\text{prop}} = \mathbf{0}$.
-   - Predicted $\dot{\mathbf{X}}(0) = \mathbf{0}_{12\times 1}$; position and velocity drift $\approx 0$ over $2\text{ s}$.
-
-3. **Free fall (`X0 = zeros(12,1)`, `Omega_cmd = zeros(4,1)`, `2 s`)**
-   - $\mathbf{F}_{\text{prop}} = \mathbf{0}$, $\mathbf{M}_{\text{prop}} = \mathbf{0}$, so $\dot{w}(0) = +g = +9.81\text{ m/s}^2$ (Down is $+z$).
-   - At $t = 2\text{ s}$:
-     - $w(2) = g t = 9.81 \times 2 = 19.62\text{ m/s}$
-     - $p_D(2) = \frac{1}{2} g t^2 = 0.5 \times 9.81 \times 2^2 = 19.62\text{ m}$
-   - Unchanged attitude and rates: $\phi = \theta = \psi = 0$, $p = q = r = 0$.
-
-4. **Differential pitch (`T_target = [Ti0+delta; Ti0+delta; Ti0-delta; Ti0-delta]`, `0.20 s`)**
-   - `Omega_cmd = sqrt(T_target / kT)` $= [579.6551;\; 579.6551;\; 551.3620;\; 551.3620]\text{ rad/s}$ (all within $[0,\; 800]$).
-   - Using X-geometry allocation $A$:
-     - $T_{\text{total}} = 4 T_{i0} = 24.574050\text{ N}$ ($F_{\text{prop},z} = -24.574050\text{ N}$)
-     - $M_x = d(T_1 - T_2 - T_3 + T_4) = 0\text{ N}\cdot\text{m}$
-     - $M_y = d(T_1 + T_2 - T_3 - T_4) = 4 d \delta = 4(0.190919)(0.307176) = +0.234582\text{ N}\cdot\text{m}$
-     - $M_z = k_{MT}(T_1 - T_2 + T_3 - T_4) = 0\text{ N}\cdot\text{m}$
-   - Initial $q$ derivative ($\boldsymbol{\omega}(0)=\mathbf{0} \implies \boldsymbol{\omega}\times J\boldsymbol{\omega} = \mathbf{0}$):
-     $$\dot{q}(0) = \frac{M_y}{J_{yy}} = \frac{0.234582}{0.03895776} = +6.021456\text{ rad/s}^2$$
-   - Pure pitch rotation about principal $y$-axis ($\dot{q}$ stays constant over $0.20\text{ s}$, so $q(0.20) \approx 1.204291\text{ rad/s}$, $\theta(0.20) \approx 0.120429\text{ rad}$).
-
-5. **Yaw reaction (`T_target = [Ti0+delta; Ti0-delta; Ti0+delta; Ti0-delta]`, `0.20 s`)**
-   - `Omega_cmd = sqrt(T_target / kT)` $= [579.6551;\; 551.3620;\; 579.6551;\; 551.3620]\text{ rad/s}$ (all within $[0,\; 800]$).
-   - Using `sigma = [1; -1; 1; -1]` and $k_{MT} = 0.020$:
-     - $T_{\text{total}} = 24.574050\text{ N}$, $M_x = 0\text{ N}\cdot\text{m}$, $M_y = 0\text{ N}\cdot\text{m}$
-     - $M_z = k_{MT}(T_1 - T_2 + T_3 - T_4) = 4 k_{MT} \delta = 4(0.020)(0.307176) = +0.024574\text{ N}\cdot\text{m}$
-   - Initial $r$ derivative ($\boldsymbol{\omega}(0)=\mathbf{0}$):
-     $$\dot{r}(0) = \frac{M_z}{J_{zz}} = \frac{0.024574}{0.0649296} = +0.378472\text{ rad/s}^2$$
-   - Positive $M_z$ gives $+r$ and $+\psi$ (clockwise viewed from above in NED body axes, matching `+1` reaction torque on rotors 1 & 3). Over $0.20\text{ s}$, $r(0.20) \approx 0.075694\text{ rad/s}$, $\psi(0.20) \approx 0.007569\text{ rad}$.
-
-> **Important conceptual rules (PDF pp. 6–7):**
-> - Record **initial derivative** comparisons separately from **final state** comparisons.
-> - Do **not** assume later angular rates equal $M/J$; $J^{-1} M$ is initial angular acceleration, and the full 12-state plant evolves over time.
-> - Body velocity derivatives $\dot{\mathbf{v}}_b$ are not simply inertial acceleration in body axes; $-\boldsymbol{\omega} \times \mathbf{v}_b$ accounts for the rotating body frame.
-
----
-
-## 2. MATLAB Script (`run_validation_tests.m`)
-
-Run [run_validation_tests.m](file:///d:/gdrive/study_notes/degree/y4/modules/EEEE4138_aerial_robotics/drills/Lab2_S20617556/run_validation_tests.m) in MATLAB (ensure [run_hover_test.m](file:///d:/gdrive/study_notes/degree/y4/modules/EEEE4138_aerial_robotics/drills/Lab2_S20617556/run_hover_test.m) has already produced `results/hover.mat`). Each test resets via `practical2_parameters` first, applies its overrides, runs `sim` with the required `StopTime`, saves a distinct `.mat` file and plot in `results/`, and exports the Section 6 comparison table to `results/section6_validation.csv`.
-
-```matlab
-%% Section 6: Isolated Validation Tests (student_id = 19, X configuration)
-if ~exist('results','dir'), mkdir('results'); end
-
-%% 1. Frame mapping check (analytic)
-phi = 0; theta = 0; psi = pi/2;
-Rx = [1 0 0; 0 cos(phi) -sin(phi); 0 sin(phi) cos(phi)];
-Ry = [cos(theta) 0 sin(theta); 0 1 0; -sin(theta) 0 cos(theta)];
-Rz = [cos(psi) -sin(psi) 0; sin(psi) cos(psi) 0; 0 0 1];
-R  = Rz*Ry*Rx;
-v_ned_pred = [0; 5; 0];
-v_ned = R * [5; 0; 0];
-ortho_err = norm(R*R.' - eye(3));
-det_R = det(R);
-fprintf('Frame mapping: v_ned = [%.4f %.4f %.4f], norm(R*R''-I) = %.2e, det(R) = %.6f\n', ...
-    v_ned(1), v_ned(2), v_ned(3), ortho_err, det_R);
-
-%% 2. Hover (load Section 5 baseline to inspect initial derivative & drift)
-load('results/hover.mat');
-X_hov  = extract_ts(out.X_log);
-Xd_hov = extract_ts(out.Xdot_log);
-hov_xdot0_max = max(abs(Xd_hov(1,:)));
-hov_xend_max  = max(abs(X_hov(end,:)));
-fprintf('Hover: max|Xdot(0)| = %.2e, max|X(end)| = %.2e\n', hov_xdot0_max, hov_xend_max);
-
-%% 3. Free fall (2 s)
-practical2_parameters
-X0 = zeros(12,1);
-Omega_cmd = zeros(4,1);
-out = sim('Practical2_Quadrotor','StopTime','2');
-save('results/freefall.mat','out','X0','Omega_cmd','m','J');
-
-t_ff = out.X_log.Time;
-X_ff = extract_ts(out.X_log);
-pD_ff_pred = 0.5 * g * 2^2;
-w_ff_pred  = g * 2;
-pD_ff_sim  = X_ff(end,3);
-w_ff_sim   = X_ff(end,6);
-att_ff_max = max(abs(X_ff(end,7:12)));
-fprintf('Free fall (t=2 s): pD = %.6f m, w = %.6f m/s, max|att,rates| = %.2e\n', ...
-    pD_ff_sim, w_ff_sim, att_ff_max);
-
-figure;
-plot(t_ff, X_ff(:,3), 'LineWidth', 1.5); hold on;
-plot(t_ff, X_ff(:,6), '--', 'LineWidth', 1.5);
-xlabel('Time (s)'); ylabel('Down position (m) / w (m/s)');
-legend('p_D (m)', 'w (m/s)', 'Location', 'northwest'); grid on;
-title('Section 6: Free Fall Response');
-saveas(gcf,'results/freefall.png');
-
-%% 4. Differential pitch (0.20 s)
-practical2_parameters
-Ti0 = m_nom*g/4;
-delta = 0.05*Ti0;
-T_target = [Ti0+delta; Ti0+delta; Ti0-delta; Ti0-delta];
-Omega_cmd = sqrt(T_target/kT);
-assert(all(Omega_cmd >= 0 & Omega_cmd <= Omega_max), 'Omega_cmd out of bounds!');
-out = sim('Practical2_Quadrotor','StopTime','0.20');
-save('results/diff_pitch.mat','out','X0','Omega_cmd','m','J','T_target');
-
-t_dp  = out.X_log.Time;
-X_dp  = extract_ts(out.X_log);
-Xd_dp = extract_ts(out.Xdot_log);
-F_dp  = extract_ts(out.Fprop_log);
-M_dp  = extract_ts(out.Mprop_log);
-
-d_arm        = l/sqrt(2);
-Ttotal_pred  = 4*Ti0;
-My_pred      = 4*d_arm*delta;
-qdot0_pred   = My_pred / J(2,2);
-Ttotal_dp    = -F_dp(1,3);
-Mx_dp        = M_dp(1,1);
-My_dp        = M_dp(1,2);
-Mz_dp        = M_dp(1,3);
-qdot0_dp     = Xd_dp(1,11);
-q_end_dp     = X_dp(end,11);
-theta_end_dp = X_dp(end,8);
-
-fprintf('Diff pitch: Fprop(0) = [%.4f %.4f %.4f] N, Mprop(0) = [%.6f %.6f %.6f] N*m\n', ...
-    F_dp(1,1), F_dp(1,2), F_dp(1,3), Mx_dp, My_dp, Mz_dp);
-fprintf('Diff pitch: qdot(0) = %.6f rad/s^2, q(0.20) = %.6f rad/s, theta(0.20) = %.6f rad\n', ...
-    qdot0_dp, q_end_dp, theta_end_dp);
-
-figure;
-subplot(2,1,1); plot(t_dp, X_dp(:,11), 'LineWidth', 1.5);
-ylabel('q (rad/s)'); title('Section 6: Differential Pitch (0.20 s)'); grid on;
-subplot(2,1,2); plot(t_dp, X_dp(:,8), 'LineWidth', 1.5);
-xlabel('Time (s)'); ylabel('\theta (rad)'); grid on;
-saveas(gcf,'results/diff_pitch.png');
-
-%% 5. Yaw reaction (0.20 s)
-practical2_parameters
-Ti0 = m_nom*g/4;
-delta = 0.05*Ti0;
-T_target = [Ti0+delta; Ti0-delta; Ti0+delta; Ti0-delta];
-Omega_cmd = sqrt(T_target/kT);
-assert(all(Omega_cmd >= 0 & Omega_cmd <= Omega_max), 'Omega_cmd out of bounds!');
-out = sim('Practical2_Quadrotor','StopTime','0.20');
-save('results/yaw_reaction.mat','out','X0','Omega_cmd','m','J','T_target');
-
-t_yaw  = out.X_log.Time;
-X_yaw  = extract_ts(out.X_log);
-Xd_yaw = extract_ts(out.Xdot_log);
-F_yaw  = extract_ts(out.Fprop_log);
-M_yaw  = extract_ts(out.Mprop_log);
-
-Mz_pred     = 4*kMT*delta;
-rdot0_pred  = Mz_pred / J(3,3);
-Ttotal_yaw  = -F_yaw(1,3);
-Mx_yaw      = M_yaw(1,1);
-My_yaw      = M_yaw(1,2);
-Mz_yaw      = M_yaw(1,3);
-rdot0_yaw   = Xd_yaw(1,12);
-r_end_yaw   = X_yaw(end,12);
-psi_end_yaw = X_yaw(end,9);
-
-fprintf('Yaw reaction: Fprop(0) = [%.4f %.4f %.4f] N, Mprop(0) = [%.6f %.6f %.6f] N*m\n', ...
-    F_yaw(1,1), F_yaw(1,2), F_yaw(1,3), Mx_yaw, My_yaw, Mz_yaw);
-fprintf('Yaw reaction: rdot(0) = %.6f rad/s^2, r(0.20) = %.6f rad/s, psi(0.20) = %.6f rad\n', ...
-    rdot0_yaw, r_end_yaw, psi_end_yaw);
-
-figure;
-subplot(2,1,1); plot(t_yaw, X_yaw(:,12), 'LineWidth', 1.5);
-ylabel('r (rad/s)'); title('Section 6: Yaw Reaction (0.20 s)'); grid on;
-subplot(2,1,2); plot(t_yaw, X_yaw(:,9), 'LineWidth', 1.5);
-xlabel('Time (s)'); ylabel('\psi (rad)'); grid on;
-saveas(gcf,'results/yaw_reaction.png');
-
-%% 6. Export validation summary table (matches PDF Section 6 table) to CSV
-Test = { ...
-    'Frame mapping'; ...
-    'Hover'; ...
-    'Free fall'; ...
-    'Differential pitch'; ...
-    'Yaw reaction' };
-
-Predicted_quantity_and_value = { ...
-    'v_ned = [0; 5; 0] m/s; R*R'' = I3; det(R) = 1'; ...
-    'Xdot(0) = 0 (12x1); drift = 0 m over 2 s'; ...
-    sprintf('pD(2s) = %.6f m; w(2s) = %.6f m/s; att,rates = 0', pD_ff_pred, w_ff_pred); ...
-    sprintf('My = %.6f N*m; qdot(0) = %.6f rad/s^2; Ttotal = %.6f N; Mx = Mz = 0', My_pred, qdot0_pred, Ttotal_pred); ...
-    sprintf('Mz = %.6f N*m; rdot(0) = %.6f rad/s^2; Ttotal = %.6f N; Mx = My = 0', Mz_pred, rdot0_pred, Ttotal_pred) };
-
-Simulated_value = { ...
-    sprintf('v_ned = [%.4f; %.4f; %.4f] m/s; norm(R*R''-I) = %.2e; det(R) = %.6f', v_ned(1), v_ned(2), v_ned(3), ortho_err, det_R); ...
-    sprintf('max|Xdot(0)| = %.2e; max|X(2s)| = %.2e', hov_xdot0_max, hov_xend_max); ...
-    sprintf('pD(2s) = %.6f m; w(2s) = %.6f m/s; max|att,rates| = %.2e', pD_ff_sim, w_ff_sim, att_ff_max); ...
-    sprintf('My = %.6f N*m; qdot(0) = %.6f rad/s^2; Ttotal = %.6f N; Mx = %.2e, Mz = %.2e N*m; q(0.20) = %.6f rad/s, theta(0.20) = %.6f rad', My_dp, qdot0_dp, Ttotal_dp, Mx_dp, Mz_dp, q_end_dp, theta_end_dp); ...
-    sprintf('Mz = %.6f N*m; rdot(0) = %.6f rad/s^2; Ttotal = %.6f N; Mx = %.2e, My = %.2e N*m; r(0.20) = %.6f rad/s, psi(0.20) = %.6f rad', Mz_yaw, rdot0_yaw, Ttotal_yaw, Mx_yaw, My_yaw, r_end_yaw, psi_end_yaw) };
-
-Difference_and_explanation = { ...
-    sprintf('max|v_err| = %.2e m/s; orthogonal R (det = +1) maps +x body to +y NED East at psi = pi/2.', max(abs(v_ned - v_ned_pred))); ...
-    sprintf('max|X(2s)| = %.2e m; hover thrust cancels gravity (Fg + Fprop = 0) with Mprop = 0 up to roundoff.', hov_xend_max); ...
-    sprintf('dpD = %.2e m, dw = %.2e m/s; +g acts along +z Down with zero thrust and unchanged attitude.', abs(pD_ff_sim - pD_ff_pred), abs(w_ff_sim - w_ff_pred)); ...
-    sprintf('dMy = %.2e N*m, dqdot(0) = %.2e rad/s^2; +My about body y accelerates q linearly over 0.20 s (zero initial coupling).', abs(My_dp - My_pred), abs(qdot0_dp - qdot0_pred)); ...
-    sprintf('dMz = %.2e N*m, drdot(0) = %.2e rad/s^2; sigma = [1;-1;1;-1] produces +Mz and +r/+psi yaw acceleration with Mx = My = 0.', abs(Mz_yaw - Mz_pred), abs(rdot0_yaw - rdot0_pred)) };
-
-T_val = table(Test, Predicted_quantity_and_value, Simulated_value, Difference_and_explanation, ...
-    'VariableNames', {'Test', 'Predicted quantity and value', 'Simulated value', 'Difference and explanation'});
-writetable(T_val, 'results/section6_validation.csv');
-disp(T_val);
-
-%% Local helper
-function A = extract_ts(ts)
-    if ts.IsTimeFirst
-        A = reshape(ts.Data, numel(ts.Time), []);
-    else
-        A = reshape(ts.Data, [], numel(ts.Time)).';
-    end
-end
-```
-
----
-
-## 3. Validation Summary Table (`student_id = 19`)
-
-Fill in the **Simulated value** and **Difference and explanation** columns after running the script above:
-
-| Test | Predicted quantity and value | Simulated value | Difference and explanation |
+| Test | Predicted | Your simulation | Abs. difference |
 | :--- | :--- | :--- | :--- |
-| Frame mapping | $R\mathbf{v}_b = [0;\; 5;\; 0]\text{ m/s}$, $R R^T = I_3$, $\det(R) = 1$ | | |
-| Hover | $\dot{\mathbf{X}}(0) = \mathbf{0}_{12\times 1}$; zero drift over $2\text{ s}$ | | |
-| Free fall | $p_D(2) = 19.62\text{ m}$, $w(2) = 19.62\text{ m/s}$, $\phi=\theta=\psi=0$ | | |
-| Differential pitch | $M_y = 0.234582\text{ N}\cdot\text{m}$, $\dot{q}(0) = 6.021456\text{ rad/s}^2$, $T_{\text{total}} = 24.574050\text{ N}$, $M_x = M_z = 0$ | | |
-| Yaw reaction | $M_z = 0.024574\text{ N}\cdot\text{m}$, $\dot{r}(0) = 0.378472\text{ rad/s}^2$, $T_{\text{total}} = 24.574050\text{ N}$, $M_x = M_y = 0$ | | |
+| Frame mapping | [0; 5; 0] m/s, det = 1 | [0.0000; 5.0000; 0.0000], det = 1.000000 | 3.1e-16 m/s |
+| Hover | Ẋ(0) = 0, drift 0 | max\|Ẋ(0)\| = 1.4e-15, max\|X(2)\| = 2.8e-15 | ~1e-15 |
+| Free fall | pD = w = 19.620000 | 19.620000 m, 19.620000 m/s | 3.6e-14 m |
+| Diff. pitch | My = 0.234582, q̇ = 6.021456 | 0.234582, 6.021456; θ(0.2) = 0.120429 | 2.4e-14 rad/s² |
+| Yaw reaction | Mz = 0.024574, ṙ = 0.378472 | 0.024574, 0.378472; ψ(0.2) = 0.007569 | 1.9e-15 rad/s² |
 
+All differences are at floating-point roundoff (~1e-15), so **the model is correct**. Report these as **absolute** differences with units. A percentage error is meaningless when the expected value is 0.
 
+> **Initial vs final:** q̇(0) = My/J is an *initial* angular acceleration. Later values come from the full state evolving, so record initial-derivative checks separately from final-state checks.
 
+---
+
+## 7. Payload, drag and numerical checks
+
+> ⚠️ **Your `results/` folder has no Section 7 outputs yet.** [run_section7_tests.m](run_section7_tests.m) runs all three checks. It saves `payload.mat/png`, `drag.mat`, `nodrag.mat`, `drag.png` and `diff_pitch_fine.mat`, and prints simulated vs predicted values. It needs `results/diff_pitch.mat`, which you already have.
+
+### 7.1 Payload: m = 1.80·m0, rotor speeds kept at the old hover values
+
+- New mass m = 1.8 × 1.67 = **3.006 kg**, so the weight is 29.489 N. Thrust is still 24.574 N, sized for the old 2.505 kg.
+- Net downward force 4.915 N, so **ẇ(0) = g(1 − m_nom/m) = 9.81 × (1 − 1.5/1.8) = 1.635 m/s²**, constant because the attitude stays level.
+- At 2 s: **w = 3.270 m/s** and **pD = ½·1.635·2² = 3.270 m** (sinks).
+- **Why it can't hover:** hover speed is set by √(m g/(4kT)). A heavier drone needs √(1.8/1.5) ≈ 1.095× faster rotors (619.7 rad/s), but Ω_cmd was left at 565.7. In the payload convention J is unchanged, so only mass changes.
+
+### 7.2 Drag: u(0) = 2 m/s, c_drag = 0.25 N·s/m vs 0
+
+- Initial drag force −c·u = −0.5 N, so **u̇(0) = −0.5/2.505 = −0.199601 m/s²**.
+- With level attitude and hover thrust (gravity and thrust cancel), only drag acts along x: m u̇ = −c u, so **u(t) = 2e^(−t/τ)** with τ = m/c = **10.02 s**.
+- At 2 s: **u = 1.638 m/s**, and **pN = 2τ(1 − e^(−2/τ)) = 3.626 m**.
+- Without drag: u stays 2 m/s and **pN = 4.000 m**.
+- **Physical explanation:** u decays exponentially and never reverses, because drag shrinks as speed shrinks, so it can't push the drone backwards. North-position traces: the drag case curves below the straight no-drag line, and the gap grows with time.
+
+### 7.3 Numerical check: differential pitch with max step 0.005 s
+
+- Re-run the 0.20 s differential-pitch test with `MaxStep = 0.005` (same inputs, same 0.01 s logging) and compare with the original `diff_pitch.mat`.
+- **Expect absolute differences of about 1e-12 or smaller.** With constant moment and ω × Jω ≈ 0 over this short pitch-only run, q(t) is linear and θ(t) is quadratic, and ode45 integrates polynomials essentially exactly. A large change would mean a bug, such as a discontinuity or a wrong sign.
+- Report it as e.g. "final |Δq| = 3e-15 rad/s, |Δθ| = 2e-16 rad: step-size independent."
+
+### 7.4 Other checks to document
+
+- Orthogonality: RRᵀ = I and det R = +1 (Section 6.1).
+- rank(A) = 4 (printed by the script).
+- Units: Ω rad/s, T N, M N·m, J kg·m², kT N/(rad/s)², kM N·m/(rad/s)².
+- Assumptions behind the analytical predictions: rigid body, diagonal J, no motor lag, no drag (except in 7.2), no gyroscopic rotor effects, no wind or ground contact, ω(0) = 0 so the coupling terms vanish initially.
+
+---
+
+## 8. Demonstration: what to say
+
+- **"Where is gravity added?"** Only in `StateDerivative`, as `Fg = R.'*[0;0;m*g]`, a NED-down vector expressed in body axes. `RotorLoads` is propulsion only.
+- **"What is the plant input?"** **Rotor speed** (`Omega_cmd` → Saturation), not a force or moment. Forces and moments are *computed* from the speeds in `RotorLoads`. This is why Lab 3 needs the `Allocation` block to convert the desired [T; M] back into speeds.
+- **Hover:** all states stay at about 1e-15 for 2 s.
+- **Differential moment (pitch):** front rotors faster, so +My and q̇(0) = 6.02 rad/s² (nose up), matching My/Jyy exactly.
+- **One discrepancy / tolerance:** differences of about 1e-15 are floating-point roundoff, and the solver tolerances (RelTol 1e-6, AbsTol 1e-8) bound the integration error. Halving the max step changes nothing visible.
+
+### Submission checklist
+
+- [x] `practical2_parameters.m`, `Practical2_Quadrotor.slx`
+- [x] Allocation matrix with reaction signs (Section 3)
+- [x] Section 6 table + `hover/freefall/diff_pitch/yaw_reaction` `.mat` + `.png`
+- [ ] Section 7: payload, drag and step-size results and explanations (run `run_section7_tests.m`)
+
+---
+
+## 9. How this connects to Lab 3
+
+```mermaid
+flowchart LR
+    classDef lab2 fill:#e5e7eb,stroke:#6b7280,color:#111
+    classDef lab3 fill:#dbeafe,stroke:#2563eb,color:#111
+    C["Lab 3 controller<br/>Reference → PositionPD → AttitudePD → Allocation"]:::lab3 -->|"Omega replaces<br/>Constant Omega_cmd"| P["Lab 2 plant<br/>Saturation → RotorLoads → StateDerivative → Integrator"]:::lab2
+    P -->|"X"| C
+```
+
+- Lab 3's `Allocation` is `A \ [T; Mx; My; Mz]`: the **inverse** of the A you derived here.
+- The test signs carry over directly. In Lab 3, +My (front rotors faster) means nose up, and a nose-up drone drifts South.
+- Lab 3's `PositionPD` uses the same R as `StateDerivative` to get NED velocity.
+
+---
+
+## 10. Troubleshooting
+
+| Symptom | Likely cause |
+| :--- | :--- |
+| Hover accelerates down | About g: gravity added twice. About 2g: thrust sign wrong (`+Ti` instead of `−Ti`) |
+| Free fall goes *up* (pD negative) | `Fg` uses `R` instead of `R.'`, or `[0;0;-m*g]` |
+| Pitch test gives Mx ≠ 0 | `rotor_xy` rows swapped (x and y mixed up) |
+| Yaw test gives the wrong-sign r | `sigma` sign flipped, or yaw term missing from `Mprop(3)` |
+| Size errors on `Ctrl+D` | Set port sizes in **Symbols / Edit Data**: `X` [12 1], `Omega` [4 1], `rotor_xy` [2 4], `J` [3 3] |
+| A test "remembers" the previous test | Didn't re-run `practical2_parameters` before applying overrides |
+| "Undefined variable" in `sim` | Parameter script not run, or a Constant's value is misspelled |

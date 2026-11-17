@@ -526,6 +526,7 @@ What to expect, from the Python check:
 - At t = 1 s the climb asks for 25.82 N, so **`Traw` exceeds `Tmax` immediately** (peak ≈ 8.1 N on one rotor). No `Traw` goes below 0.
 - **Fraction of samples with any applied Ω at 575 rad/s ≈ 0.43**, mostly in the seconds after t = 1 s. Compute your own value with the script.
 - **Tracking change:** at 8 s the position is only about [0.43, 0.21, −0.43] m instead of [0.5, 0.3, −0.5], and small attitude errors appear (≈ 0.1–0.2°).
+- **The drone first *sinks* about 0.33 m (D goes positive, 1–4 s) before climbing.** While yaw speeds up (1–2 s), rotors 1 and 3 request about 7.8 N but are clipped at 575 rad/s (6.35 N), while rotors 2 and 4 drop to about 527 rad/s (5.3 N) to create +Mz. While yaw brakes (2–3 s), the pairs swap: rotors 2 and 4 request about 8.1 N and are clipped, while rotors 1 and 3 drop. In both phases total thrust is about 23.4 N, less than the weight of 24.57 N. The clipping removed the "extra" thrust the climb asked for, but the yaw differential stayed. Yaw also overshoots to about 16.3° (none in the nominal run). Clipping is applied when 2 of the 4 speeds sit flat at 575 rad/s from about 1–4.45 s.
 - **Why:** Clipping each rotor separately does **not** preserve the requested `[T; Mx; My; Mz]`. Total thrust falls below `Tcmd`, so the climb slows, and the moments are distorted, so attitude tracking suffers. The allocator has no priority between thrust and attitude.
 - Restore `Omega_max = 800` (re-run `practical3_setup`) before any further runs.
 
