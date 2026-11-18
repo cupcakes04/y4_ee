@@ -33,6 +33,45 @@
     .badge-amber { background-color: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
     .badge-rose { background-color: rgba(244, 63, 94, 0.15); color: #fb7185; border: 1px solid rgba(244, 63, 94, 0.3); }
     .badge-emerald { background-color: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
+    /* Zero-dependency mathematical typography */
+    .math {
+      font-family: "Times New Roman", "Liberation Serif", "DejaVu Serif", Georgia, "Cambria Math", "STIX Two Text", serif;
+      font-style: normal;
+      font-size: 1.05em;
+      line-height: 1.15;
+    }
+    .math i { font-style: italic; }
+    .math .vec { font-weight: 700; font-style: italic; }
+    .math .vec-rm { font-weight: 700; font-style: normal; }
+    .math sub, .math sup {
+      font-size: 0.72em;
+      line-height: 0;
+      position: relative;
+      vertical-align: baseline;
+    }
+    .math sup { top: -0.45em; }
+    .math sub { bottom: -0.22em; }
+    .math .overdot {
+      position: relative;
+      display: inline-block;
+      line-height: 1;
+    }
+    .math .overdot::before {
+      content: "\2022";
+      position: absolute;
+      top: -0.22em;
+      left: 55%;
+      transform: translateX(-50%);
+      font-size: 0.42em;
+      font-style: normal;
+      font-weight: 700;
+      line-height: 1;
+      pointer-events: none;
+    }
+    .math .overdot-x::before {
+      top: 0.04em;
+      left: 54%;
+    }
   </style>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen p-3 md:p-6 flex flex-col items-center">
@@ -49,7 +88,7 @@
         <span>6-DoF Rigid-Body Dynamics & Precession Explorer</span>
       </h1>
       <p class="text-xs md:text-sm text-slate-400">
-        Euler Rotational Equations $\mathbf{M}_b = J\dot{\boldsymbol{\omega}}_b + \boldsymbol{\omega}_b \times (J\boldsymbol{\omega}_b) + \boldsymbol{\tau}_{\text{gyro}}$ & Coriolis Cross-Coupling
+        Euler Rotational Equations <span class="math"><span class="vec">M</span><sub><i>b</i></sub> = <i>J</i><span class="overdot overdot-x"><span class="vec">&omega;</span></span><sub><i>b</i></sub> + <span class="vec">&omega;</span><sub><i>b</i></sub> &times; (<i>J</i><span class="vec">&omega;</span><sub><i>b</i></sub>) + <span class="vec">&tau;</span><sub>gyro</sub></span> &amp; Coriolis Cross-Coupling
       </p>
     </div>
     <div class="flex items-center gap-2">
@@ -75,17 +114,17 @@
           <span class="text-[10px] font-mono px-1.5 py-0.2 rounded bg-cyan-900/60 text-cyan-200">Interactive Drill</span>
         </h3>
         <p class="text-slate-300 leading-relaxed mb-2">
-          1. Set <strong>Motor Rotor Speed ($\Omega_{\text{rotor}}$)</strong> to <strong>1000 rad/s</strong> and confirm <strong>Gyroscopic Precession</strong> is <span class="text-emerald-400 font-semibold">ON</span>.<br>
+          1. Set <strong>Motor Rotor Speed (<span class="math">&Omega;<sub>rotor</sub></span>)</strong> to <strong>1000 rad/s</strong> and confirm <strong>Gyroscopic Precession</strong> is <span class="text-emerald-400 font-semibold">ON</span>.<br>
           2. Click the <strong>"+Pitch Impulse (+0.5 N·m)"</strong> button below. <br>
-          3. <strong>Watch the oscilloscope on the right:</strong> Notice that although applied roll moment is strictly zero ($M_x = 0$), the quadrotor immediately develops a large roll rate <span class="text-rose-400 font-bold">$p(t)$ (red trace)</span>! <br>
-          4. <strong>The Math:</strong> Pitching rotating blades ($q > 0$) causes their spin angular momentum $H_z$ to precess, generating an orthogonal gyroscopic reaction moment: $\tau_{\text{gyro, roll}} = -q J_r \Omega_{\text{net}}$.
+          3. <strong>Watch the oscilloscope on the right:</strong> Notice that although applied roll moment is strictly zero (<span class="math"><i>M</i><sub><i>x</i></sub> = 0</span>), the quadrotor immediately develops a large roll rate <span class="text-rose-400 font-bold"><span class="math"><i>p</i>(<i>t</i>)</span> (red trace)</span>! <br>
+          4. <strong>The Math:</strong> Pitching rotating blades (<span class="math"><i>q</i> &gt; 0</span>) causes their spin angular momentum <span class="math"><i>H</i><sub><i>z</i></sub></span> to precess, generating an orthogonal gyroscopic reaction moment: <span class="math"><i>&tau;</i><sub>gyro, roll</sub> = &minus;<i>q</i><i>J</i><sub><i>r</i></sub>&Omega;<sub>net</sub></span>.
         </p>
         <div class="flex flex-wrap gap-2 text-xs">
           <button id="btnRunPresetGyro" class="px-2.5 py-1 rounded bg-cyan-600 hover:bg-cyan-500 text-white font-medium transition shadow">
             Auto-Run Gyro Precession Test
           </button>
           <button id="btnRunPresetSpin" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition">
-            Test High-Rate Nutation ($\boldsymbol{\omega} \times J\boldsymbol{\omega}$)
+            Test High-Rate Nutation (<span class="math"><span class="vec">&omega;</span> &times; <i>J</i><span class="vec">&omega;</span></span>)
           </button>
         </div>
       </div>
@@ -107,11 +146,11 @@
         <div class="flex items-center gap-3 text-xs font-mono">
           <span class="flex items-center gap-1 text-yellow-400">
             <span class="w-2 h-2 rounded-full bg-yellow-400"></span>
-            Angular Velocity $\boldsymbol{\omega}$
+            <span>Angular Velocity <span class="math"><span class="vec">&omega;</span></span></span>
           </span>
           <span class="flex items-center gap-1 text-cyan-400">
             <span class="w-2 h-2 rounded-full bg-cyan-400"></span>
-            Momentum $\mathbf{H} = J\boldsymbol{\omega}$
+            <span>Momentum <span class="math"><span class="vec">H</span> = <i>J</i><span class="vec">&omega;</span></span></span>
           </span>
         </div>
       </div>
@@ -124,26 +163,26 @@
         </div>
         <!-- Coordinate Frame Indicators in 3D canvas corner -->
         <div class="absolute top-2 left-2 flex flex-col gap-1 text-[10px] font-mono bg-slate-900/80 px-2 py-1.5 rounded border border-slate-800">
-          <div class="text-red-400 flex items-center gap-1"><span class="font-bold">+X_b:</span> Forward (Nose)</div>
-          <div class="text-green-400 flex items-center gap-1"><span class="font-bold">+Y_b:</span> Starboard (Right)</div>
-          <div class="text-blue-400 flex items-center gap-1"><span class="font-bold">+Z_b:</span> Belly (Down)</div>
+          <div class="text-red-400 flex items-center gap-1"><span class="font-bold math">+<i>X</i><sub><i>b</i></sub>:</span><span>Forward (Nose)</span></div>
+          <div class="text-green-400 flex items-center gap-1"><span class="font-bold math">+<i>Y</i><sub><i>b</i></sub>:</span><span>Starboard (Right)</span></div>
+          <div class="text-blue-400 flex items-center gap-1"><span class="font-bold math">+<i>Z</i><sub><i>b</i></sub>:</span><span>Belly (Down)</span></div>
         </div>
       </div>
 
       <!-- 3D Airframe Telemetry Summary Bar -->
       <div class="grid grid-cols-3 gap-2 mt-3 text-center font-mono text-xs">
         <div class="p-2 rounded bg-slate-900/60 border border-slate-800">
-          <div class="text-[10px] text-slate-400 uppercase">Roll ($\phi$)</div>
+          <div class="text-[10px] text-slate-400 uppercase">Roll (<span class="math"><i>&phi;</i></span>)</div>
           <div id="dispPhi" class="text-sm font-bold text-cyan-300">0.0°</div>
           <div id="dispP" class="text-[10px] text-slate-400">p: 0.00 rad/s</div>
         </div>
         <div class="p-2 rounded bg-slate-900/60 border border-slate-800">
-          <div class="text-[10px] text-slate-400 uppercase">Pitch ($\theta$)</div>
+          <div class="text-[10px] text-slate-400 uppercase">Pitch (<span class="math"><i>&theta;</i></span>)</div>
           <div id="dispTheta" class="text-sm font-bold text-emerald-300">0.0°</div>
           <div id="dispQ" class="text-[10px] text-slate-400">q: 0.00 rad/s</div>
         </div>
         <div class="p-2 rounded bg-slate-900/60 border border-slate-800">
-          <div class="text-[10px] text-slate-400 uppercase">Yaw ($\psi$)</div>
+          <div class="text-[10px] text-slate-400 uppercase">Yaw (<span class="math"><i>&psi;</i></span>)</div>
           <div id="dispPsi" class="text-sm font-bold text-indigo-300">0.0°</div>
           <div id="dispR" class="text-[10px] text-slate-400">r: 0.00 rad/s</div>
         </div>
@@ -155,7 +194,7 @@
       <div class="flex items-center justify-between mb-2">
         <h2 class="text-sm font-bold text-white tracking-wide uppercase flex items-center gap-1.5">
           <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 inline-block"></span>
-          Real-Time Oscilloscope: $\boldsymbol{\omega}_b(t)$
+          <span>Real-Time Oscilloscope: <span class="math"><span class="vec">&omega;</span><sub><i>b</i></sub>(<i>t</i>)</span></span>
         </h2>
         <button id="btnClearScope" class="px-2 py-0.5 text-[10px] font-mono rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition">
           Clear Scope
@@ -171,21 +210,21 @@
       <div class="grid grid-cols-3 gap-2 mt-3 font-mono text-xs">
         <div class="p-2 rounded bg-rose-950/20 border border-rose-900/40 text-center">
           <div class="flex items-center justify-center gap-1 text-[10px] text-rose-400 font-bold">
-            <span class="w-2 h-2 rounded-full bg-rose-500"></span> Roll Rate $p$
+            <span class="w-2 h-2 rounded-full bg-rose-500"></span><span>Roll Rate <span class="math"><i>p</i></span></span>
           </div>
           <div id="scopeValP" class="text-sm font-bold text-rose-300 mt-0.5">0.000 rad/s</div>
           <div id="scopeDegP" class="text-[10px] text-slate-400">0.0°/s</div>
         </div>
         <div class="p-2 rounded bg-emerald-950/20 border border-emerald-900/40 text-center">
           <div class="flex items-center justify-center gap-1 text-[10px] text-emerald-400 font-bold">
-            <span class="w-2 h-2 rounded-full bg-emerald-500"></span> Pitch Rate $q$
+            <span class="w-2 h-2 rounded-full bg-emerald-500"></span><span>Pitch Rate <span class="math"><i>q</i></span></span>
           </div>
           <div id="scopeValQ" class="text-sm font-bold text-emerald-300 mt-0.5">0.000 rad/s</div>
           <div id="scopeDegQ" class="text-[10px] text-slate-400">0.0°/s</div>
         </div>
         <div class="p-2 rounded bg-indigo-950/20 border border-indigo-900/40 text-center">
           <div class="flex items-center justify-center gap-1 text-[10px] text-indigo-400 font-bold">
-            <span class="w-2 h-2 rounded-full bg-indigo-500"></span> Yaw Rate $r$
+            <span class="w-2 h-2 rounded-full bg-indigo-500"></span><span>Yaw Rate <span class="math"><i>r</i></span></span>
           </div>
           <div id="scopeValR" class="text-sm font-bold text-indigo-300 mt-0.5">0.000 rad/s</div>
           <div id="scopeDegR" class="text-[10px] text-slate-400">0.0°/s</div>
@@ -216,7 +255,7 @@
           Step (+4.1ms)
         </button>
         <button id="btnZeroRates" class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-800 hover:bg-slate-700 text-cyan-400 border border-slate-700 transition">
-          Zero Rates ($\boldsymbol{\omega}_b = 0$)
+          Zero Rates (<span class="math"><span class="vec">&omega;</span><sub><i>b</i></sub> = 0</span>)
         </button>
       </div>
     </div>
@@ -253,7 +292,7 @@
 
         <!-- Inertia Preset Dropdown -->
         <div class="mt-2">
-          <label class="block text-xs font-mono text-slate-400 mb-1">Airframe Inertia Matrix $J$:</label>
+          <label class="block text-xs font-mono text-slate-400 mb-1">Airframe Inertia Matrix <span class="math"><i>J</i></span>:</label>
           <select id="selectInertia" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs font-mono text-slate-200 focus:outline-none focus:border-cyan-500">
             <option value="multirotor">Symmetric Multirotor (Jx=0.025, Jy=0.035, Jz=0.045)</option>
             <option value="racer">Acrobatic Quad (Jx=0.015, Jy=0.015, Jz=0.028)</option>
@@ -266,7 +305,7 @@
       <div class="flex flex-col gap-3">
         <div class="flex items-center justify-between">
           <h3 class="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
-            <span class="w-2 h-2 rounded bg-cyan-400"></span> Sustained Moments $\mathbf{M}_b$
+            <span class="w-2 h-2 rounded bg-cyan-400"></span><span>Sustained Moments <span class="math"><span class="vec">M</span><sub><i>b</i></sub></span></span>
           </h3>
           <button id="btnZeroTorques" class="text-[10px] font-mono text-cyan-400 hover:underline">
             Reset to 0
@@ -276,7 +315,7 @@
         <!-- Roll Slider -->
         <div>
           <div class="flex justify-between text-xs font-mono mb-1">
-            <span class="text-rose-400 font-semibold">Roll Moment $\tau_\phi$:</span>
+            <span class="text-rose-400 font-semibold">Roll Moment <span class="math"><i>&tau;</i><sub><i>&phi;</i></sub></span>:</span>
             <span id="valTauX" class="text-slate-200">0.00 N·m</span>
           </div>
           <input type="range" id="sliderTauX" min="-1.0" max="1.0" step="0.02" value="0.0" class="w-full h-1.5 bg-slate-800 rounded-lg cursor-pointer">
@@ -285,7 +324,7 @@
         <!-- Pitch Slider -->
         <div>
           <div class="flex justify-between text-xs font-mono mb-1">
-            <span class="text-emerald-400 font-semibold">Pitch Moment $\tau_\theta$:</span>
+            <span class="text-emerald-400 font-semibold">Pitch Moment <span class="math"><i>&tau;</i><sub><i>&theta;</i></sub></span>:</span>
             <span id="valTauY" class="text-slate-200">0.00 N·m</span>
           </div>
           <input type="range" id="sliderTauY" min="-1.0" max="1.0" step="0.02" value="0.0" class="w-full h-1.5 bg-slate-800 rounded-lg cursor-pointer">
@@ -294,7 +333,7 @@
         <!-- Yaw Slider -->
         <div>
           <div class="flex justify-between text-xs font-mono mb-1">
-            <span class="text-indigo-400 font-semibold">Yaw Moment $\tau_\psi$:</span>
+            <span class="text-indigo-400 font-semibold">Yaw Moment <span class="math"><i>&tau;</i><sub><i>&psi;</i></sub></span>:</span>
             <span id="valTauZ" class="text-slate-200">0.00 N·m</span>
           </div>
           <input type="range" id="sliderTauZ" min="-0.5" max="0.5" step="0.01" value="0.0" class="w-full h-1.5 bg-slate-800 rounded-lg cursor-pointer">
@@ -303,13 +342,13 @@
         <!-- Rotor Speed Slider (Gyroscopic Precession Intensity) -->
         <div class="pt-2 border-t border-slate-800/80">
           <div class="flex justify-between text-xs font-mono mb-1">
-            <span class="text-amber-300 font-semibold">Rotor Spin $\Omega_{\text{rotor}}$:</span>
+            <span class="text-amber-300 font-semibold">Rotor Spin <span class="math">&Omega;<sub>rotor</sub></span>:</span>
             <span id="valRotorSpeed" class="text-slate-200">1000 rad/s</span>
           </div>
           <input type="range" id="sliderRotorSpeed" min="0" max="1200" step="50" value="1000" class="w-full h-1.5 bg-slate-800 rounded-lg cursor-pointer">
           <div class="flex justify-between text-[10px] font-mono text-slate-500 mt-0.5">
             <span>0 (Hover Net Zero)</span>
-            <span id="valNetMomentum">H_z = 0.050 N·m·s</span>
+            <span id="valNetMomentum"><span class="math"><i>H</i><sub><i>z</i></sub></span> = 0.050 N·m·s</span>
             <span>1200 rad/s</span>
           </div>
         </div>
@@ -325,8 +364,8 @@
         <!-- Toggle: Nonlinear Cross Terms -->
         <label class="flex items-center justify-between p-2.5 rounded-lg bg-slate-900/80 border border-slate-800 cursor-pointer hover:border-slate-700 transition">
           <div>
-            <div class="text-xs font-semibold text-slate-200">Euler Cross-Terms $\boldsymbol{\omega}\times(J\boldsymbol{\omega})$</div>
-            <div class="text-[10px] text-slate-500 font-mono">$(J_z - J_y)qr, (J_x - J_z)pr, (J_y - J_x)pq$</div>
+            <div class="text-xs font-semibold text-slate-200">Euler Cross-Terms <span class="math"><span class="vec">&omega;</span> &times; (<i>J</i><span class="vec">&omega;</span>)</span></div>
+            <div class="text-[10px] text-slate-500 font-mono"><span class="math">(<i>J</i><sub><i>z</i></sub> &minus; <i>J</i><sub><i>y</i></sub>)<i>qr</i>, (<i>J</i><sub><i>x</i></sub> &minus; <i>J</i><sub><i>z</i></sub>)<i>pr</i>, (<i>J</i><sub><i>y</i></sub> &minus; <i>J</i><sub><i>x</i></sub>)<i>pq</i></span></div>
           </div>
           <input type="checkbox" id="checkCrossTerms" checked class="w-4 h-4 text-cyan-500 rounded bg-slate-800 border-slate-700 focus:ring-0">
         </label>
@@ -334,8 +373,8 @@
         <!-- Toggle: Gyroscopic Precession -->
         <label class="flex items-center justify-between p-2.5 rounded-lg bg-slate-900/80 border border-slate-800 cursor-pointer hover:border-slate-700 transition">
           <div>
-            <div class="text-xs font-semibold text-slate-200">Rotor Gyroscopic Precession $\boldsymbol{\tau}_{\text{gyro}}$</div>
-            <div class="text-[10px] text-slate-500 font-mono">$\boldsymbol{\tau}_{\text{gyro}} = \boldsymbol{\omega}_b \times [0, 0, J_r\Omega_{\text{net}}]^T$</div>
+            <div class="text-xs font-semibold text-slate-200">Rotor Gyroscopic Precession <span class="math"><span class="vec">&tau;</span><sub>gyro</sub></span></div>
+            <div class="text-[10px] text-slate-500 font-mono"><span class="math"><span class="vec">&tau;</span><sub>gyro</sub> = <span class="vec">&omega;</span><sub><i>b</i></sub> &times; [0, 0, <i>J</i><sub><i>r</i></sub>&Omega;<sub>net</sub>]<sup><i>T</i></sup></span></div>
           </div>
           <input type="checkbox" id="checkGyro" checked class="w-4 h-4 text-cyan-500 rounded bg-slate-800 border-slate-700 focus:ring-0">
         </label>
@@ -343,7 +382,7 @@
         <!-- Aerodynamic Damping Slider -->
         <div>
           <div class="flex justify-between text-xs font-mono mb-1">
-            <span class="text-slate-300">Rotational Damping ($d_\omega$):</span>
+            <span class="text-slate-300">Rotational Damping (<span class="math"><i>d</i><sub><i>&omega;</i></sub></span>):</span>
             <span id="valDamping" class="text-slate-200">0.015 N·m·s</span>
           </div>
           <input type="range" id="sliderDamping" min="0.0" max="0.06" step="0.005" value="0.015" class="w-full h-1.5 bg-slate-800 rounded-lg cursor-pointer">
@@ -356,7 +395,7 @@
 
         <!-- Live Energy Readout -->
         <div class="p-2.5 rounded-lg bg-slate-900/80 border border-slate-800 flex items-center justify-between font-mono text-xs">
-          <span class="text-slate-400">Kinetic Energy $E_{\text{rot}}$:</span>
+          <span class="text-slate-400">Kinetic Energy <span class="math"><i>E</i><sub>rot</sub></span>:</span>
           <span id="dispEnergy" class="text-cyan-300 font-bold">0.000 J</span>
         </div>
       </div>
@@ -366,7 +405,7 @@
   <!-- Technical Formulation Footer -->
   <footer class="w-full max-w-7xl border-t border-slate-800/80 pt-3 pb-8 text-xs text-slate-500 flex flex-col md:flex-row items-center justify-between gap-2">
     <div>
-      Autonomous UAV Dynamics Engine &bull; Runge-Kutta 4th Order Integrator ($\Delta t = 1/240\text{ s}$, 4 sub-steps per animation frame)
+      Autonomous UAV Dynamics Engine &bull; Runge-Kutta 4th Order Integrator (<span class="math">&Delta;<i>t</i> = 1/240 s</span>, 4 sub-steps per animation frame)
     </div>
     <div class="font-mono text-[11px] text-slate-400">
       Sim Time: <span id="dispSimTime" class="text-slate-200">0.00 s</span> &bull; 60 FPS Software 3D Projection
@@ -1063,7 +1102,7 @@
 
         // Gyro momentum readout
         const netH = Jr * rotorSpeed;
-        valNetMomentum.textContent = `H_z = ${netH.toFixed(4)} N·m·s`;
+        valNetMomentum.innerHTML = `<span class="math"><i>H</i><sub><i>z</i></sub></span> = ${netH.toFixed(4)} N·m·s`;
       }
 
       // -------------------------------------------------------------

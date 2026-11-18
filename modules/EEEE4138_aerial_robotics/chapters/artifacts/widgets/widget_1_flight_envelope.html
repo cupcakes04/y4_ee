@@ -38,6 +38,23 @@
       display: block;
       border-radius: 0.375rem;
     }
+    /* Zero-dependency mathematical typography */
+    .math {
+      font-family: "Times New Roman", "Liberation Serif", "DejaVu Serif", Georgia, "Cambria Math", "STIX Two Text", serif;
+      font-style: normal;
+      font-size: 1.05em;
+      line-height: 1.15;
+    }
+    .math i { font-style: italic; }
+    .math .vec { font-weight: 700; font-style: italic; }
+    .math sub, .math sup {
+      font-size: 0.72em;
+      line-height: 0;
+      position: relative;
+      vertical-align: baseline;
+    }
+    .math sup { top: -0.45em; }
+    .math sub { bottom: -0.22em; }
   </style>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen p-3 md:p-6 flex flex-col justify-between">
@@ -85,7 +102,7 @@
       <!-- Arm Length (Radius) Slider -->
       <div>
         <div class="flex justify-between text-xs mb-1">
-          <span class="text-slate-300">Arm Radius $L$ (Center to Motor)</span>
+          <span class="text-slate-300">Arm Radius <span class="math"><i>L</i></span> (Center to Motor)</span>
           <span id="val-arm" class="font-mono text-cyan-400 font-bold">0.25 m</span>
         </div>
         <input id="slider-arm" type="range" min="0.10" max="0.80" step="0.01" value="0.25" class="w-full h-1.5 bg-slate-800 rounded-lg cursor-pointer">
@@ -99,7 +116,7 @@
       <!-- Propeller Diameter Slider -->
       <div>
         <div class="flex justify-between text-xs mb-1">
-          <span class="text-slate-300">Propeller Diameter $D$</span>
+          <span class="text-slate-300">Propeller Diameter <span class="math"><i>D</i></span></span>
           <span id="val-prop" class="font-mono text-cyan-400 font-bold">10.0 in (0.254 m)</span>
         </div>
         <input id="slider-prop" type="range" min="5.0" max="22.0" step="0.5" value="10.0" class="w-full h-1.5 bg-slate-800 rounded-lg cursor-pointer">
@@ -152,7 +169,7 @@
       <!-- Clearance / Warning Banner -->
       <div id="clearance-alert" class="hidden p-2 rounded bg-amber-950/80 border border-amber-600/80 text-amber-200 text-xs flex items-center gap-2">
         <svg class="w-4 h-4 text-amber-400 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
-        <span id="clearance-msg">Propeller collision hazard! Increase arm radius $L$.</span>
+        <span id="clearance-msg">Propeller collision hazard! Increase arm radius <span class="math"><i>L</i></span>.</span>
       </div>
 
       <!-- Powertrain Parameters Accordion / Note -->
@@ -163,7 +180,7 @@
         </div>
         <div class="flex justify-between">
           <span>Total Powertrain Efficiency:</span>
-          <span class="font-mono text-slate-300">η = 55%</span>
+          <span class="font-mono text-slate-300"><span class="math"><i>&eta;</i></span> = 55%</span>
         </div>
         <div class="flex justify-between">
           <span>Avionics & Camera Draw:</span>
@@ -251,14 +268,14 @@
               <span id="hud-twr" class="text-sm md:text-base font-bold font-mono text-emerald-400">2.04</span>
               <span id="hud-twr-badge" class="text-[9px] px-1.5 py-0.2 rounded font-semibold bg-emerald-950 text-emerald-300 border border-emerald-800">SAFE</span>
             </div>
-            <span id="hud-twr-sub" class="text-[9px] text-slate-500 font-mono block">T_max: 32.0 N</span>
+            <span id="hud-twr-sub" class="text-[9px] text-slate-500 font-mono block"><span class="math"><i>T</i><sub>max</sub></span>: 32.0 N</span>
           </div>
 
           <!-- Tilt Limit θ_max -->
           <div class="bg-slate-900/90 p-2 rounded border border-slate-800/80">
-            <span class="block text-[10px] text-slate-400 uppercase font-medium">Max Tilt Limit θ_max</span>
+            <span class="block text-[10px] text-slate-400 uppercase font-medium">Max Tilt Limit <span class="math"><i>&theta;</i><sub>max</sub></span></span>
             <div id="hud-tilt" class="text-sm md:text-base font-bold font-mono text-cyan-300 mt-0.5">60.6°</div>
-            <span id="hud-accel-sub" class="text-[9px] text-slate-500 font-mono block">a_max: 1.78 g</span>
+            <span id="hud-accel-sub" class="text-[9px] text-slate-500 font-mono block"><span class="math"><i>a</i><sub>max</sub></span>: 1.78 <i>g</i></span>
           </div>
 
           <!-- Hover Endurance -->
@@ -467,7 +484,7 @@
       hudCurrentSub.textContent = `Current: ${p.hoverCurrent.toFixed(2)} A @ ${p.nominalVoltage.toFixed(1)}V`;
 
       hudTwr.textContent = p.twr.toFixed(2);
-      hudTwrSub.textContent = `T_max: ${p.totalMaxThrust.toFixed(1)} N (mg: ${p.totalWeight.toFixed(1)} N)`;
+      hudTwrSub.innerHTML = `<span class="math"><i>T</i><sub>max</sub></span>: ${p.totalMaxThrust.toFixed(1)} N (<span class="math"><i>mg</i></span>: ${p.totalWeight.toFixed(1)} N)`;
 
       // TWR Badge
       if (p.twr < 1.2) {
@@ -489,7 +506,7 @@
       }
 
       hudTilt.textContent = `${p.maxTiltDeg.toFixed(1)}°`;
-      hudAccelSub.textContent = `a_max: ${(p.maxAccelMps2 / state.gravity).toFixed(2)} g (${p.maxAccelMps2.toFixed(1)} m/s²)`;
+      hudAccelSub.innerHTML = `<span class="math"><i>a</i><sub>max</sub></span>: ${(p.maxAccelMps2 / state.gravity).toFixed(2)} <i>g</i> (${p.maxAccelMps2.toFixed(1)} m/s<sup>2</sup>)`;
 
       // Endurance format
       const mins = Math.floor(p.hoverTimeMinutes);
@@ -500,7 +517,7 @@
       // Prop clearance warning
       if (p.clearance <= 0) {
         clearanceAlert.classList.remove('hidden');
-        clearanceMsg.textContent = `CRITICAL: Propeller collision! Overlap by ${Math.abs(p.clearance * 100).toFixed(1)} cm. Increase Arm Radius L or decrease Prop Diameter D.`;
+        clearanceMsg.innerHTML = `CRITICAL: Propeller collision! Overlap by ${Math.abs(p.clearance * 100).toFixed(1)} cm. Increase Arm Radius <span class="math"><i>L</i></span> or decrease Prop Diameter <span class="math"><i>D</i></span>.`;
         clearanceStat.textContent = `COLLISION (${(p.clearance * 100).toFixed(1)} cm)`;
         clearanceStat.className = 'text-[11px] font-mono text-red-400 font-bold';
       } else if (p.clearance < 0.02) {

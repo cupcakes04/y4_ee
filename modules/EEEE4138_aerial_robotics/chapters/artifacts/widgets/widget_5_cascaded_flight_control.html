@@ -60,6 +60,23 @@
     canvas {
       touch-action: none;
     }
+    /* Zero-dependency mathematical typography */
+    .math {
+      font-family: "Times New Roman", "Liberation Serif", "DejaVu Serif", Georgia, "Cambria Math", "STIX Two Text", serif;
+      font-style: normal;
+      font-size: 1.05em;
+      line-height: 1.15;
+    }
+    .math i { font-style: italic; }
+    .math .vec { font-weight: 700; font-style: italic; }
+    .math sub, .math sup {
+      font-size: 0.72em;
+      line-height: 0;
+      position: relative;
+      vertical-align: baseline;
+    }
+    .math sup { top: -0.45em; }
+    .math sub { bottom: -0.22em; }
   </style>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col selection:bg-cyan-500 selection:text-white">
@@ -86,7 +103,7 @@
         FLIGHT ACTIVE
       </span>
       <span id="badgeSeparation" class="px-2.5 py-1 rounded-full font-mono bg-slate-800 border border-slate-700 text-slate-300">
-        ω_att / ω_pos = <strong id="ratioValue" class="text-cyan-400">6.0×</strong>
+        <span class="math"><i>&omega;</i><sub>att</sub> / <i>&omega;</i><sub>pos</sub></span> = <strong id="ratioValue" class="text-cyan-400">6.0×</strong>
       </span>
       <button id="btnPlayPause" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 active:bg-slate-600 rounded text-slate-200 border border-slate-700 transition font-medium flex items-center gap-1">
         <span id="playPauseIcon">⏸</span> <span id="playPauseText">Pause</span>
@@ -143,11 +160,11 @@
           <!-- Accelerometer G-Force & Thrust HUD Overlay -->
           <div class="absolute top-3 right-3 bg-slate-900/85 backdrop-blur border border-slate-800 px-2.5 py-1.5 rounded-lg text-xs font-mono flex items-center gap-3 pointer-events-none">
             <div>
-              <span class="text-slate-500">T_cmd:</span>
+              <span class="text-slate-500"><span class="math"><i>T</i><sub>cmd</sub></span>:</span>
               <strong id="hudThrust" class="text-amber-300">14.7 N</strong>
             </div>
             <div>
-              <span class="text-slate-500">M_y:</span>
+              <span class="text-slate-500"><span class="math"><i>M</i><sub><i>y</i></sub></span>:</span>
               <strong id="hudMoment" class="text-purple-300">0.00 Nm</strong>
             </div>
             <div>
@@ -187,11 +204,11 @@
             <span class="text-[10px] text-slate-500 font-normal">(Last 6 Seconds History)</span>
           </div>
           <div class="flex items-center gap-3 text-[11px]">
-            <span class="flex items-center gap-1 text-cyan-400"><span class="w-3 h-0.5 bg-cyan-400"></span> Pos x(t)</span>
-            <span class="flex items-center gap-1 text-white"><span class="w-3 h-0.5 border-t border-dashed border-white"></span> Ref xᵈ</span>
-            <span class="flex items-center gap-1 text-emerald-400"><span class="w-3 h-0.5 bg-emerald-400"></span> Pitch θ(t)</span>
-            <span class="flex items-center gap-1 text-amber-400"><span class="w-3 h-0.5 border-t border-dashed border-amber-400"></span> Desired θᵈ</span>
-            <span class="flex items-center gap-1 text-purple-400"><span class="w-3 h-0.5 bg-purple-400"></span> Torque M_y</span>
+            <span class="flex items-center gap-1 text-cyan-400"><span class="w-3 h-0.5 bg-cyan-400"></span><span>Pos <span class="math"><i>x</i>(<i>t</i>)</span></span></span>
+            <span class="flex items-center gap-1 text-white"><span class="w-3 h-0.5 border-t border-dashed border-white"></span><span>Ref <span class="math"><i>x</i><sup><i>d</i></sup></span></span></span>
+            <span class="flex items-center gap-1 text-emerald-400"><span class="w-3 h-0.5 bg-emerald-400"></span><span>Pitch <span class="math"><i>&theta;</i>(<i>t</i>)</span></span></span>
+            <span class="flex items-center gap-1 text-amber-400"><span class="w-3 h-0.5 border-t border-dashed border-amber-400"></span><span>Desired <span class="math"><i>&theta;</i><sup><i>d</i></sup></span></span></span>
+            <span class="flex items-center gap-1 text-purple-400"><span class="w-3 h-0.5 bg-purple-400"></span><span>Torque <span class="math"><i>M</i><sub><i>y</i></sub></span></span></span>
           </div>
         </div>
         <div class="w-full h-36 bg-slate-950 rounded-lg overflow-hidden border border-slate-800/80 relative">
@@ -245,7 +262,7 @@
             <div class="flex items-center justify-between text-xs font-bold text-cyan-400 mb-2">
               <span class="flex items-center gap-1.5">
                 <span class="w-1.5 h-3 bg-cyan-400 rounded-sm"></span>
-                Outer Loop: Position x(t) ➔ Tilt θᵈ
+                <span>Outer Loop: Position <span class="math"><i>x</i>(<i>t</i>)</span> &#10132; Tilt <span class="math"><i>&theta;</i><sup><i>d</i></sup></span></span>
               </span>
               <span class="text-[10px] text-slate-400 font-mono">Slow: ~2 rad/s</span>
             </div>
@@ -253,7 +270,7 @@
             <!-- Kp Pos -->
             <div class="mb-2">
               <div class="flex justify-between text-xs font-mono text-slate-300 mb-1">
-                <span>K_p,pos (Stiffness):</span>
+                <span><span class="math"><i>K</i><sub><i>p</i>,pos</sub></span> (Stiffness):</span>
                 <span id="val_kp_pos" class="text-cyan-400 font-bold">4.00</span>
               </div>
               <input id="slider_kp_pos" type="range" min="0.5" max="25.0" step="0.5" value="4.0" class="custom-slider">
@@ -262,7 +279,7 @@
             <!-- Kd Pos -->
             <div class="mb-2">
               <div class="flex justify-between text-xs font-mono text-slate-300 mb-1">
-                <span>K_d,pos (Velocity Damping):</span>
+                <span><span class="math"><i>K</i><sub><i>d</i>,pos</sub></span> (Velocity Damping):</span>
                 <span id="val_kd_pos" class="text-cyan-400 font-bold">2.80</span>
               </div>
               <input id="slider_kd_pos" type="range" min="0.2" max="10.0" step="0.2" value="2.8" class="custom-slider">
@@ -271,7 +288,7 @@
             <!-- Ki Pos -->
             <div>
               <div class="flex justify-between text-xs font-mono text-slate-300 mb-1">
-                <span>K_i,pos (Wind Disturbance Rejection):</span>
+                <span><span class="math"><i>K</i><sub><i>i</i>,pos</sub></span> (Wind Disturbance Rejection):</span>
                 <span id="val_ki_pos" class="text-cyan-400 font-bold">1.20</span>
               </div>
               <input id="slider_ki_pos" type="range" min="0.0" max="5.0" step="0.1" value="1.2" class="custom-slider">
@@ -283,7 +300,7 @@
             <div class="flex items-center justify-between text-xs font-bold text-amber-400 mb-2">
               <span class="flex items-center gap-1.5">
                 <span class="w-1.5 h-3 bg-amber-400 rounded-sm"></span>
-                Inner Loop: Attitude θ(t) ➔ Moment M_y
+                <span>Inner Loop: Attitude <span class="math"><i>&theta;</i>(<i>t</i>)</span> &#10132; Moment <span class="math"><i>M</i><sub><i>y</i></sub></span></span>
               </span>
               <span class="text-[10px] text-slate-400 font-mono">Fast: ~12-25 rad/s</span>
             </div>
@@ -291,7 +308,7 @@
             <!-- Kp Att -->
             <div class="mb-2">
               <div class="flex justify-between text-xs font-mono text-slate-300 mb-1">
-                <span>k_p,θ (Attitude Natural Freq):</span>
+                <span><span class="math"><i>k</i><sub><i>p</i>,&theta;</sub></span> (Attitude Natural Freq):</span>
                 <span id="val_kp_att" class="text-amber-400 font-bold">144.0</span>
               </div>
               <input id="slider_kp_att" type="range" min="10.0" max="400.0" step="5.0" value="144.0" class="custom-slider">
@@ -300,7 +317,7 @@
             <!-- Kd Att -->
             <div class="mb-2">
               <div class="flex justify-between text-xs font-mono text-slate-300 mb-1">
-                <span>k_d,θ (Rate Gyro Damping):</span>
+                <span><span class="math"><i>k</i><sub><i>d</i>,&theta;</sub></span> (Rate Gyro Damping):</span>
                 <span id="val_kd_att" class="text-amber-400 font-bold">19.2</span>
               </div>
               <input id="slider_kd_att" type="range" min="1.0" max="45.0" step="0.5" value="19.2" class="custom-slider">
@@ -308,7 +325,7 @@
 
             <!-- Motor Lag Check Status Bar -->
             <div id="lagCheckBanner" class="mt-1 px-2.5 py-1 rounded text-[11px] font-mono flex items-center justify-between bg-emerald-950/80 text-emerald-300 border border-emerald-700/50">
-              <span>Motor Lag: k_d > τ_m k_p</span>
+              <span>Motor Lag: <span class="math"><i>k</i><sub><i>d</i></sub> &gt; <i>&tau;</i><sub><i>m</i></sub><i>k</i><sub><i>p</i></sub></span></span>
               <span id="lagCheckVal" class="font-bold">19.2 > 3.6 ✓</span>
             </div>
           </div>
@@ -318,21 +335,21 @@
             <div class="flex items-center justify-between text-xs font-bold text-emerald-400 mb-2">
               <span class="flex items-center gap-1.5">
                 <span class="w-1.5 h-3 bg-emerald-400 rounded-sm"></span>
-                Altitude Channel z(t) ➔ Thrust T
+                <span>Altitude Channel <span class="math"><i>z</i>(<i>t</i>)</span> &#10132; Thrust <span class="math"><i>T</i></span></span>
               </span>
               <span class="text-[10px] text-slate-400 font-mono">Double Integrator</span>
             </div>
             <div class="grid grid-cols-2 gap-2">
               <div>
                 <div class="flex justify-between text-[11px] font-mono text-slate-300 mb-0.5">
-                  <span>K_p,z:</span>
+                  <span><span class="math"><i>K</i><sub><i>p</i>,<i>z</i></sub></span>:</span>
                   <span id="val_kp_z" class="text-emerald-400 font-bold">9.0</span>
                 </div>
                 <input id="slider_kp_z" type="range" min="1.0" max="25.0" step="1.0" value="9.0" class="custom-slider">
               </div>
               <div>
                 <div class="flex justify-between text-[11px] font-mono text-slate-300 mb-0.5">
-                  <span>K_d,z:</span>
+                  <span><span class="math"><i>K</i><sub><i>d</i>,<i>z</i></sub></span>:</span>
                   <span id="val_kd_z" class="text-emerald-400 font-bold">4.8</span>
                 </div>
                 <input id="slider_kd_z" type="range" min="0.5" max="12.0" step="0.2" value="4.8" class="custom-slider">
@@ -352,10 +369,10 @@
               <span class="px-1.5 py-0.5 rounded bg-cyan-950 text-[10px] font-mono text-cyan-400 border border-cyan-800">Newton-Kleinman</span>
             </div>
             <div class="text-[11px] font-mono text-slate-400 mb-1.5">
-              Cost: J = ∫ (xᵀ Q x + uᵀ R u) dt ➔ u = -K_LQR x
+              Cost: <span class="math"><i>J</i> = &int; (<span class="vec">x</span><sup><i>T</i></sup><i>Q</i><span class="vec">x</span> + <span class="vec">u</span><sup><i>T</i></sup><i>R</i><span class="vec">u</span>) d<i>t</i></span> &#10132; <span class="math"><span class="vec">u</span> = &minus;<i>K</i><sub>LQR</sub><span class="vec">x</span></span>
             </div>
             <div class="p-2 bg-slate-900 rounded font-mono text-xs text-slate-200 border border-slate-800 flex flex-col gap-1">
-              <div class="text-slate-400 text-[10px]">Optimal Gain Vector K = [k_x, k_v, k_θ, k_q]:</div>
+              <div class="text-slate-400 text-[10px]">Optimal Gain Vector <span class="math"><i>K</i> = [<i>k</i><sub><i>x</i></sub>, <i>k</i><sub><i>v</i></sub>, <i>k</i><sub><i>&theta;</i></sub>, <i>k</i><sub><i>q</i></sub>]</span>:</div>
               <div id="lqrGainVector" class="text-cyan-300 font-bold tracking-tight">[-1.41, -1.36, 4.68, 0.70]</div>
               <div class="text-slate-400 text-[10px] mt-0.5">Closed-Loop Eigenvalues:</div>
               <div id="lqrPoles" class="text-emerald-400 text-[11px]">-1.84 ± 1.62j, -6.12 ± 4.35j</div>
@@ -366,13 +383,13 @@
           <div class="p-3 bg-slate-950/70 rounded-lg border border-slate-800/80 flex flex-col gap-2.5">
             <div class="text-xs font-bold text-slate-200 flex items-center justify-between">
               <span>Bryson's Tuning Penalty Sliders</span>
-              <span class="text-[10px] text-slate-500 font-mono">Q ⪰ 0, R > 0</span>
+              <span class="text-[10px] text-slate-500 font-mono"><span class="math"><i>Q</i> &succeq; 0, <i>R</i> &gt; 0</span></span>
             </div>
 
             <!-- Q_x -->
             <div>
               <div class="flex justify-between text-xs font-mono text-slate-300 mb-1">
-                <span>q_x (Position Error Penalty):</span>
+                <span><span class="math"><i>q</i><sub><i>x</i></sub></span> (Position Error Penalty):</span>
                 <span id="val_qx" class="text-cyan-400 font-bold">4.0</span>
               </div>
               <input id="slider_qx" type="range" min="0.1" max="50.0" step="0.5" value="4.0" class="custom-slider">
@@ -381,7 +398,7 @@
             <!-- Q_v -->
             <div>
               <div class="flex justify-between text-xs font-mono text-slate-300 mb-1">
-                <span>q_v (Velocity Error Penalty):</span>
+                <span><span class="math"><i>q</i><sub><i>v</i></sub></span> (Velocity Error Penalty):</span>
                 <span id="val_qv" class="text-cyan-400 font-bold">1.0</span>
               </div>
               <input id="slider_qv" type="range" min="0.1" max="25.0" step="0.2" value="1.0" class="custom-slider">
@@ -390,7 +407,7 @@
             <!-- Q_theta -->
             <div>
               <div class="flex justify-between text-xs font-mono text-slate-300 mb-1">
-                <span>q_θ (Attitude Tilt Penalty):</span>
+                <span><span class="math"><i>q</i><sub><i>&theta;</i></sub></span> (Attitude Tilt Penalty):</span>
                 <span id="val_qtheta" class="text-amber-400 font-bold">8.0</span>
               </div>
               <input id="slider_qtheta" type="range" min="0.1" max="50.0" step="0.5" value="8.0" class="custom-slider">
@@ -399,7 +416,7 @@
             <!-- Q_q -->
             <div>
               <div class="flex justify-between text-xs font-mono text-slate-300 mb-1">
-                <span>q_q (Pitch Rate Penalty):</span>
+                <span><span class="math"><i>q</i><sub><i>q</i></sub></span> (Pitch Rate Penalty):</span>
                 <span id="val_qq" class="text-amber-400 font-bold">0.5</span>
               </div>
               <input id="slider_qq" type="range" min="0.05" max="10.0" step="0.1" value="0.5" class="custom-slider">
@@ -408,7 +425,7 @@
             <!-- R_u -->
             <div>
               <div class="flex justify-between text-xs font-mono text-slate-300 mb-1">
-                <span>r_u (Torque Control Effort Penalty):</span>
+                <span><span class="math"><i>r</i><sub><i>u</i></sub></span> (Torque Control Effort Penalty):</span>
                 <span id="val_ru" class="text-purple-400 font-bold">2.0</span>
               </div>
               <input id="slider_ru" type="range" min="0.1" max="20.0" step="0.2" value="2.0" class="custom-slider">
@@ -428,7 +445,7 @@
           <!-- Wind Disturbance -->
           <div>
             <div class="flex justify-between text-xs font-mono text-slate-300 mb-1">
-              <span>Horizontal Wind Force (F_wind,x):</span>
+              <span>Horizontal Wind Force (<span class="math"><i>F</i><sub>wind,<i>x</i></sub></span>):</span>
               <span id="val_wind" class="text-cyan-400 font-bold">0.0 N</span>
             </div>
             <input id="slider_wind" type="range" min="-5.0" max="5.0" step="0.2" value="0.0" class="custom-slider">
@@ -437,7 +454,7 @@
           <!-- Drone Mass -->
           <div>
             <div class="flex justify-between text-xs font-mono text-slate-300 mb-1">
-              <span>Drone Mass (m):</span>
+              <span>Drone Mass (<span class="math"><i>m</i></span>):</span>
               <span id="val_mass" class="text-slate-300 font-bold">1.50 kg</span>
             </div>
             <input id="slider_mass" type="range" min="0.5" max="3.0" step="0.1" value="1.5" class="custom-slider">
@@ -446,7 +463,7 @@
           <!-- Motor ESC Lag Time Constant -->
           <div>
             <div class="flex justify-between text-xs font-mono text-slate-300 mb-1">
-              <span>ESC Mechanical Time Constant (τ_m):</span>
+              <span>ESC Mechanical Time Constant (<span class="math"><i>&tau;</i><sub><i>m</i></sub></span>):</span>
               <span id="val_taum" class="text-slate-300 font-bold">0.025 s</span>
             </div>
             <input id="slider_taum" type="range" min="0.010" max="0.080" step="0.005" value="0.025" class="custom-slider">

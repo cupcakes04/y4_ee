@@ -39,6 +39,23 @@
       font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
       font-size: 0.75rem;
     }
+    /* Zero-dependency mathematical typography */
+    .math {
+      font-family: "Times New Roman", "Liberation Serif", "DejaVu Serif", Georgia, "Cambria Math", "STIX Two Text", serif;
+      font-style: normal;
+      font-size: 1.05em;
+      line-height: 1.15;
+    }
+    .math i { font-style: italic; }
+    .math .vec { font-weight: 700; font-style: italic; }
+    .math sub, .math sup {
+      font-size: 0.72em;
+      line-height: 0;
+      position: relative;
+      vertical-align: baseline;
+    }
+    .math sup { top: -0.45em; }
+    .math sub { bottom: -0.22em; }
   </style>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col antialiased selection:bg-cyan-500 selection:text-slate-950">
@@ -136,19 +153,19 @@
         <div class="grid grid-cols-2 gap-2 text-xs">
           <button onclick="applyPreset('hover')" class="p-2 rounded bg-slate-950 hover:bg-slate-800 border border-slate-800 text-left transition">
             <div class="font-medium text-slate-200">1. Level Hover</div>
-            <div class="text-[11px] text-slate-400">T = 16.0 N, M = 0</div>
+            <div class="text-[11px] text-slate-400"><span class="math"><i>T</i> = 16.0 N, <i>M</i> = 0</span></div>
           </button>
           <button onclick="applyPreset('pitch')" class="p-2 rounded bg-slate-950 hover:bg-slate-800 border border-slate-800 text-left transition">
             <div class="font-medium text-slate-200">2. Pitch Flare</div>
-            <div class="text-[11px] text-slate-400">M_y = +0.50 Nm</div>
+            <div class="text-[11px] text-slate-400"><span class="math"><i>M</i><sub><i>y</i></sub> = +0.50 N&middot;m</span></div>
           </button>
           <button onclick="applyPreset('roll')" class="p-2 rounded bg-slate-950 hover:bg-slate-800 border border-slate-800 text-left transition">
             <div class="font-medium text-slate-200">3. Aggressive Roll</div>
-            <div class="text-[11px] text-slate-400">M_x = +1.20 Nm</div>
+            <div class="text-[11px] text-slate-400"><span class="math"><i>M</i><sub><i>x</i></sub> = +1.20 N&middot;m</span></div>
           </button>
           <button onclick="applyPreset('sat_climb')" class="p-2 rounded bg-slate-950 hover:bg-slate-800 border border-slate-800 text-left transition">
             <div class="font-medium text-slate-200">4. Saturation Clash</div>
-            <div class="text-[11px] text-rose-400">T = 28 N, M_y = 1.5 Nm</div>
+            <div class="text-[11px] text-rose-400"><span class="math"><i>T</i> = 28 N, <i>M</i><sub><i>y</i></sub> = 1.5 N&middot;m</span></div>
           </button>
           <button onclick="applyPreset('hex_failure')" class="col-span-2 p-2 rounded bg-slate-950 hover:bg-slate-800 border border-slate-800 text-left transition">
             <div class="font-medium text-amber-300">5. Hexarotor Motor #1 Failure Test</div>
@@ -166,7 +183,7 @@
             <svg class="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
             </svg>
-            Virtual Generalized Demands (u_cmd)
+            <span>Virtual Generalized Demands (<span class="math"><span class="vec">u</span><sub>cmd</sub></span>)</span>
           </h2>
           <span class="text-xs text-slate-400 font-mono">From Topic 5</span>
         </div>
@@ -176,7 +193,7 @@
           <!-- Collective Thrust -->
           <div>
             <div class="flex justify-between items-center text-xs mb-1">
-              <span class="font-medium text-slate-300">Collective Thrust $T$ ($-F_z$):</span>
+              <span class="font-medium text-slate-300">Collective Thrust <span class="math"><i>T</i> (&minus;<i>F</i><sub><i>z</i></sub>)</span>:</span>
               <span id="val-thrust" class="font-mono text-cyan-400 font-bold">16.00 N</span>
             </div>
             <input type="range" id="slider-thrust" min="0" max="32" step="0.2" value="16" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none slider-thumb cursor-pointer" oninput="updateControls()">
@@ -190,7 +207,7 @@
           <!-- Roll Moment -->
           <div>
             <div class="flex justify-between items-center text-xs mb-1">
-              <span class="font-medium text-slate-300">Roll Moment $M_x$ ($\tau_\phi$):</span>
+              <span class="font-medium text-slate-300">Roll Moment <span class="math"><i>M</i><sub><i>x</i></sub> (<i>&tau;</i><sub><i>&phi;</i></sub>)</span>:</span>
               <span id="val-roll" class="font-mono text-cyan-400 font-bold">0.000 Nm</span>
             </div>
             <input type="range" id="slider-roll" min="-2.0" max="2.0" step="0.05" value="0" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none slider-thumb cursor-pointer" oninput="updateControls()">
@@ -204,7 +221,7 @@
           <!-- Pitch Moment -->
           <div>
             <div class="flex justify-between items-center text-xs mb-1">
-              <span class="font-medium text-slate-300">Pitch Moment $M_y$ ($\tau_\theta$):</span>
+              <span class="font-medium text-slate-300">Pitch Moment <span class="math"><i>M</i><sub><i>y</i></sub> (<i>&tau;</i><sub><i>&theta;</i></sub>)</span>:</span>
               <span id="val-pitch" class="font-mono text-cyan-400 font-bold">0.000 Nm</span>
             </div>
             <input type="range" id="slider-pitch" min="-2.0" max="2.0" step="0.05" value="0" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none slider-thumb cursor-pointer" oninput="updateControls()">
@@ -218,7 +235,7 @@
           <!-- Yaw Moment -->
           <div>
             <div class="flex justify-between items-center text-xs mb-1">
-              <span class="font-medium text-slate-300">Yaw Moment $M_z$ ($\tau_\psi$):</span>
+              <span class="font-medium text-slate-300">Yaw Moment <span class="math"><i>M</i><sub><i>z</i></sub> (<i>&tau;</i><sub><i>&psi;</i></sub>)</span>:</span>
               <span id="val-yaw" class="font-mono text-cyan-400 font-bold">0.000 Nm</span>
             </div>
             <input type="range" id="slider-yaw" min="-1.0" max="1.0" step="0.02" value="0" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none slider-thumb cursor-pointer" oninput="updateControls()">
@@ -248,25 +265,25 @@
               </thead>
               <tbody class="divide-y divide-slate-800/60">
                 <tr>
-                  <td class="py-1 text-slate-300">$F_z$ (Thrust)</td>
+                  <td class="py-1 text-slate-300"><span class="math"><i>F</i><sub><i>z</i></sub></span> (Thrust)</td>
                   <td id="td-fz-cmd" class="py-1 text-right text-slate-400">-16.0 N</td>
                   <td id="td-fz-act" class="py-1 text-right text-cyan-400 font-semibold">-16.0 N</td>
                   <td id="td-fz-diff" class="py-1 text-right text-emerald-400">100%</td>
                 </tr>
                 <tr>
-                  <td class="py-1 text-slate-300">$M_x$ (Roll)</td>
+                  <td class="py-1 text-slate-300"><span class="math"><i>M</i><sub><i>x</i></sub></span> (Roll)</td>
                   <td id="td-mx-cmd" class="py-1 text-right text-slate-400">0.00 Nm</td>
                   <td id="td-mx-act" class="py-1 text-right text-cyan-400 font-semibold">0.00 Nm</td>
                   <td id="td-mx-diff" class="py-1 text-right text-emerald-400">100%</td>
                 </tr>
                 <tr>
-                  <td class="py-1 text-slate-300">$M_y$ (Pitch)</td>
+                  <td class="py-1 text-slate-300"><span class="math"><i>M</i><sub><i>y</i></sub></span> (Pitch)</td>
                   <td id="td-my-cmd" class="py-1 text-right text-slate-400">0.00 Nm</td>
                   <td id="td-my-act" class="py-1 text-right text-cyan-400 font-semibold">0.00 Nm</td>
                   <td id="td-my-diff" class="py-1 text-right text-emerald-400">100%</td>
                 </tr>
                 <tr>
-                  <td class="py-1 text-slate-300">$M_z$ (Yaw)</td>
+                  <td class="py-1 text-slate-300"><span class="math"><i>M</i><sub><i>z</i></sub></span> (Yaw)</td>
                   <td id="td-mz-cmd" class="py-1 text-right text-slate-400">0.00 Nm</td>
                   <td id="td-mz-act" class="py-1 text-right text-cyan-400 font-semibold">0.00 Nm</td>
                   <td id="td-mz-diff" class="py-1 text-right text-emerald-400">100%</td>
@@ -279,7 +296,7 @@
         <!-- Attitude Priority Insight Box -->
         <div id="insight-box" class="mt-4 p-2.5 rounded bg-slate-950/80 border border-slate-800 text-[11px] text-slate-400 leading-relaxed font-sans">
           <strong class="text-cyan-400 font-mono">Pedagogical Insight:</strong>
-          In <span class="text-emerald-400 font-medium">Attitude-Priority Desaturation</span>, when motors hit bounds ($T_{\max}$ or $T_{\min}$), the mixer automatically scales collective thrust $F_z$ down to preserve the differential moments ($M_x, M_y, M_z$). In <span class="text-rose-400 font-medium">Strict Clamping</span>, moments collapse, inducing loss of attitude control!
+          In <span class="text-emerald-400 font-medium">Attitude-Priority Desaturation</span>, when motors hit bounds (<span class="math"><i>T</i><sub>max</sub></span> or <span class="math"><i>T</i><sub>min</sub></span>), the mixer automatically scales collective thrust <span class="math"><i>F</i><sub><i>z</i></sub></span> down to preserve the differential moments (<span class="math"><i>M</i><sub><i>x</i></sub>, <i>M</i><sub><i>y</i></sub>, <i>M</i><sub><i>z</i></sub></span>). In <span class="text-rose-400 font-medium">Strict Clamping</span>, moments collapse, inducing loss of attitude control!
         </div>
       </div>
     </section>
@@ -297,7 +314,7 @@
         <div id="gauges-container" class="grid grid-flow-col auto-cols-fr gap-2 h-44 items-end bg-slate-950 rounded-lg p-2 border border-slate-800 relative">
           <!-- Reference saturation line -->
           <div class="absolute inset-x-2 top-4 border-b border-dashed border-rose-500/50 flex justify-end">
-            <span class="text-[9px] font-mono text-rose-400 bg-slate-950 px-1">T_max (8.0 N)</span>
+            <span class="text-[9px] font-mono text-rose-400 bg-slate-950 px-1"><span class="math"><i>T</i><sub>max</sub></span> (8.0 N)</span>
           </div>
           <div class="absolute inset-x-2 top-1/2 border-b border-dashed border-cyan-500/30 flex justify-end">
             <span class="text-[9px] font-mono text-cyan-400 bg-slate-950 px-1">Hover (4.0 N)</span>
@@ -315,10 +332,10 @@
         <div class="flex items-center justify-between pb-2 border-b border-slate-800 mb-2">
           <div class="flex gap-2 text-xs font-mono">
             <button id="tab-mat-inv" onclick="setMatrixTab('inv')" class="px-2 py-0.5 rounded font-semibold bg-cyan-950 text-cyan-400 border border-cyan-800">
-              Alloc Matrix A⁺
+              Alloc Matrix <span class="math"><i>A</i><sup>+</sup></span>
             </button>
             <button id="tab-mat-fwd" onclick="setMatrixTab('fwd')" class="px-2 py-0.5 rounded text-slate-400 hover:text-slate-200">
-              Mixer Matrix A
+              Mixer Matrix <span class="math"><i>A</i></span>
             </button>
           </div>
           <span class="text-[10px] font-mono text-slate-500">Live Solved</span>
@@ -331,7 +348,7 @@
         </div>
 
         <p class="text-[10px] text-slate-500 font-mono mt-2">
-          * A⁺ computed via Moore-Penrose pseudo-inverse $A^T (A A^T)^{-1}$ with active health masking.
+          * <span class="math"><i>A</i><sup>+</sup></span> computed via Moore-Penrose pseudo-inverse <span class="math"><i>A</i><sup><i>T</i></sup>(<i>AA</i><sup><i>T</i></sup>)<sup>&minus;1</sup></span> with active health masking.
         </p>
       </div>
 
@@ -996,14 +1013,14 @@
         } else {
           html = `<table class="border-collapse"><thead><tr class="text-slate-500 border-b border-slate-800">`;
           html += `<th class="px-2 py-0.5 text-left">Rotor</th>`;
-          html += `<th class="px-2 py-0.5 text-right">F_z</th>`;
-          html += `<th class="px-2 py-0.5 text-right">M_x</th>`;
-          html += `<th class="px-2 py-0.5 text-right">M_y</th>`;
-          html += `<th class="px-2 py-0.5 text-right">M_z</th></tr></thead><tbody>`;
+          html += `<th class="px-2 py-0.5 text-right"><span class="math"><i>F</i><sub><i>z</i></sub></span></th>`;
+          html += `<th class="px-2 py-0.5 text-right"><span class="math"><i>M</i><sub><i>x</i></sub></span></th>`;
+          html += `<th class="px-2 py-0.5 text-right"><span class="math"><i>M</i><sub><i>y</i></sub></span></th>`;
+          html += `<th class="px-2 py-0.5 text-right"><span class="math"><i>M</i><sub><i>z</i></sub></span></th></tr></thead><tbody>`;
 
           for (let i = 0; i < N; i++) {
             html += `<tr class="border-b border-slate-900 ${motorHealth[i] === 0 ? 'opacity-40 text-rose-400' : ''}">`;
-            html += `<td class="px-2 py-0.5 text-slate-400 font-semibold">T_${i + 1}</td>`;
+            html += `<td class="px-2 py-0.5 text-slate-400 font-semibold"><span class="math"><i>T</i><sub>${i + 1}</sub></span></td>`;
             for (let j = 0; j < 4; j++) {
               const val = sol.A_pinv[i][j];
               html += `<td class="matrix-cell">${val.toFixed(3)}</td>`;
@@ -1014,11 +1031,16 @@
         }
       } else {
         // Forward matrix A [4 x N]
-        const rows = ["F_z", "M_x", "M_y", "M_z"];
+        const rows = [
+          `<span class="math"><i>F</i><sub><i>z</i></sub></span>`,
+          `<span class="math"><i>M</i><sub><i>x</i></sub></span>`,
+          `<span class="math"><i>M</i><sub><i>y</i></sub></span>`,
+          `<span class="math"><i>M</i><sub><i>z</i></sub></span>`
+        ];
         html = `<table class="border-collapse"><thead><tr class="text-slate-500 border-b border-slate-800">`;
         html += `<th class="px-2 py-0.5 text-left">Wrench</th>`;
         for (let i = 0; i < N; i++) {
-          html += `<th class="px-2 py-0.5 text-right">T_${i + 1}</th>`;
+          html += `<th class="px-2 py-0.5 text-right"><span class="math"><i>T</i><sub>${i + 1}</sub></span></th>`;
         }
         html += `</tr></thead><tbody>`;
 

@@ -31,6 +31,79 @@
     .gimbal-lock-pulse {
       animation: pulse-red 1s infinite;
     }
+    /* Zero-dependency mathematical typography */
+    .math {
+      font-family: "Times New Roman", "Liberation Serif", "DejaVu Serif", Georgia, "Cambria Math", "STIX Two Text", serif;
+      font-style: normal;
+      font-size: 1.05em;
+      line-height: 1.15;
+    }
+    .math i { font-style: italic; }
+    .math .vec { font-weight: 700; font-style: italic; }
+    .math .vec-rm { font-weight: 700; font-style: normal; }
+    .math sub, .math sup {
+      font-size: 0.72em;
+      line-height: 0;
+      position: relative;
+      vertical-align: baseline;
+    }
+    .math sup { top: -0.45em; }
+    .math sub { bottom: -0.22em; }
+    .math .msubsup {
+      display: inline-flex;
+      flex-direction: column;
+      vertical-align: middle;
+      line-height: 1;
+      font-size: 0.68em;
+      margin-left: 0.06em;
+      margin-right: 0.04em;
+      text-align: left;
+      position: relative;
+      top: -0.04em;
+    }
+    .math .msubsup > sup,
+    .math .msubsup > sub {
+      position: static;
+      font-size: 1em;
+      line-height: 1.08;
+    }
+    .math .overdot {
+      position: relative;
+      display: inline-block;
+      line-height: 1;
+    }
+    .math .overdot::before {
+      content: "\2022";
+      position: absolute;
+      top: -0.22em;
+      left: 55%;
+      transform: translateX(-50%);
+      font-size: 0.42em;
+      font-style: normal;
+      font-weight: 700;
+      line-height: 1;
+      pointer-events: none;
+    }
+    .math .overdot-x::before {
+      top: 0.04em;
+      left: 54%;
+    }
+    .math .sqrt {
+      display: inline-flex;
+      align-items: stretch;
+      vertical-align: baseline;
+    }
+    .math .sqrt-radic {
+      font-style: normal;
+      font-size: 1.08em;
+      line-height: 1;
+      margin-right: 0.04em;
+    }
+    .math .sqrt-body {
+      border-top: 1px solid currentColor;
+      padding: 0.08em 0.12em 0;
+      line-height: 1.08;
+    }
   </style>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans selection:bg-cyan-500 selection:text-white">
@@ -56,11 +129,11 @@
     <div class="flex items-center gap-2 text-xs font-mono">
       <div id="statusDCM" class="px-2.5 py-1 rounded bg-slate-800 border border-slate-700 text-emerald-400 flex items-center gap-1.5">
         <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-        det(R) = +1.0000
+        <span><span class="math">det(<i>R</i>)</span> = +1.0000</span>
       </div>
       <div id="statusQuat" class="px-2.5 py-1 rounded bg-slate-800 border border-slate-700 text-cyan-400 flex items-center gap-1.5">
         <span class="w-2 h-2 rounded-full bg-cyan-400"></span>
-        ||q|| = 1.0000
+        <span><span class="math">&#x2016;<span class="vec">q</span>&#x2016;</span> = 1.0000</span>
       </div>
       <div id="statusSingularity" class="px-2.5 py-1 rounded bg-slate-800 border border-slate-700 text-emerald-400 font-semibold">
         Regime: Nominal
@@ -89,7 +162,7 @@
           <div class="flex justify-between items-center text-xs">
             <label for="sliderYaw" class="font-medium text-cyan-300 flex items-center gap-1">
               <span class="w-2.5 h-2.5 rounded-full bg-cyan-400 inline-block"></span>
-              Yaw $\psi$ (Heading about $Z_v$)
+              <span>Yaw <span class="math"><i>&psi;</i></span> (Heading about <span class="math"><i>Z</i><sub><i>v</i></sub></span>)</span>
             </label>
             <div class="flex items-center gap-1">
               <input type="number" id="numYaw" min="-180" max="180" step="1" value="0" class="w-16 bg-slate-900 border border-slate-700 rounded px-1.5 py-0.5 text-right font-mono text-xs text-cyan-300 focus:outline-none focus:border-cyan-500">
@@ -109,7 +182,7 @@
           <div class="flex justify-between items-center text-xs">
             <label for="sliderPitch" class="font-medium text-emerald-300 flex items-center gap-1">
               <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 inline-block"></span>
-              Pitch $\theta$ (Elevation about $Y_{v1}$)
+              <span>Pitch <span class="math"><i>&theta;</i></span> (Elevation about <span class="math"><i>Y</i><sub><i>v</i>1</sub></span>)</span>
             </label>
             <div class="flex items-center gap-1">
               <input type="number" id="numPitch" min="-90" max="90" step="0.5" value="0" class="w-16 bg-slate-900 border border-slate-700 rounded px-1.5 py-0.5 text-right font-mono text-xs text-emerald-300 focus:outline-none focus:border-emerald-500">
@@ -129,7 +202,7 @@
           <div class="flex justify-between items-center text-xs">
             <label for="sliderRoll" class="font-medium text-amber-300 flex items-center gap-1">
               <span class="w-2.5 h-2.5 rounded-full bg-amber-400 inline-block"></span>
-              Roll $\phi$ (Bank about $X_{v2} = X_b$)
+              <span>Roll <span class="math"><i>&phi;</i></span> (Bank about <span class="math"><i>X</i><sub><i>v</i>2</sub> = <i>X</i><sub><i>b</i></sub></span>)</span>
             </label>
             <div class="flex items-center gap-1">
               <input type="number" id="numRoll" min="-180" max="180" step="1" value="0" class="w-16 bg-slate-900 border border-slate-700 rounded px-1.5 py-0.5 text-right font-mono text-xs text-amber-300 focus:outline-none focus:border-amber-500">
@@ -213,33 +286,33 @@
       <section class="hud-panel rounded-xl p-4 shadow-xl border border-slate-800 flex flex-col gap-2.5">
         <h2 class="text-sm font-semibold text-cyan-400 uppercase tracking-wider flex items-center gap-2 border-b border-slate-800 pb-2">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
-          Body $\to$ NED Velocity Projector
+          <span>Body &rarr; NED Velocity Projector</span>
         </h2>
         <div class="grid grid-cols-3 gap-2 text-xs">
           <div>
-            <label class="text-[10px] text-slate-400 font-mono">u (Forward):</label>
+            <label class="text-[10px] text-slate-400 font-mono"><span class="math"><i>u</i></span> (Forward):</label>
             <input type="number" id="inputU" value="4.0" step="0.5" class="w-full bg-slate-900 border border-slate-700 rounded px-1.5 py-0.5 font-mono text-cyan-300 text-right">
           </div>
           <div>
-            <label class="text-[10px] text-slate-400 font-mono">v (Right):</label>
+            <label class="text-[10px] text-slate-400 font-mono"><span class="math"><i>v</i></span> (Right):</label>
             <input type="number" id="inputV" value="0.0" step="0.5" class="w-full bg-slate-900 border border-slate-700 rounded px-1.5 py-0.5 font-mono text-cyan-300 text-right">
           </div>
           <div>
-            <label class="text-[10px] text-slate-400 font-mono">w (Down):</label>
+            <label class="text-[10px] text-slate-400 font-mono"><span class="math"><i>w</i></span> (Down):</label>
             <input type="number" id="inputW" value="0.0" step="0.5" class="w-full bg-slate-900 border border-slate-700 rounded px-1.5 py-0.5 font-mono text-cyan-300 text-right">
           </div>
         </div>
         <div class="bg-slate-900/90 rounded p-2 border border-slate-800 font-mono text-xs space-y-1">
           <div class="flex justify-between">
-            <span class="text-rose-400">ṗ_n (North):</span>
+            <span class="text-rose-400"><span class="math"><span class="overdot overdot-x"><i>p</i></span><sub><i>n</i></sub></span> (North):</span>
             <span id="resPn" class="font-bold text-white">+3.464 m/s</span>
           </div>
           <div class="flex justify-between">
-            <span class="text-emerald-400">ṗ_e (East):</span>
+            <span class="text-emerald-400"><span class="math"><span class="overdot overdot-x"><i>p</i></span><sub><i>e</i></sub></span> (East):</span>
             <span id="resPe" class="font-bold text-white">+2.000 m/s</span>
           </div>
           <div class="flex justify-between">
-            <span class="text-blue-400">ṗ_d (Down):</span>
+            <span class="text-blue-400"><span class="math"><span class="overdot overdot-x"><i>p</i></span><sub><i>d</i></sub></span> (Down):</span>
             <span id="resPd" class="font-bold text-white">0.000 m/s</span>
           </div>
         </div>
@@ -254,15 +327,15 @@
       <div id="gimbalAlertBanner" class="hidden rounded-xl border p-3.5 bg-rose-950/70 text-rose-200 border-rose-500/80 gimbal-lock-pulse flex items-start gap-3 shadow-xl">
         <div class="text-xl">⚠️</div>
         <div class="text-xs space-y-1">
-          <div class="font-bold text-sm tracking-wide text-rose-100 flex items-center gap-2">
-            GIMBAL LOCK SINGULARITY ACTIVE ($|\theta| \ge 85^\circ$)
-            <span class="px-1.5 py-0.2 rounded bg-rose-800 text-[10px] font-mono">det(W_η⁻¹) ≈ 0</span>
+          <div class="font-bold text-sm tracking-wide text-rose-100 flex flex-wrap items-center gap-2">
+            <span>GIMBAL LOCK SINGULARITY ACTIVE (<span class="math">|<i>&theta;</i>| &ge; 85&deg;</span>)</span>
+            <span class="px-1.5 py-0.2 rounded bg-rose-800 text-[10px] font-mono"><span class="math">det(<i>W</i><span class="msubsup"><sup>&minus;1</sup><sub><i>&eta;</i></sub></span>) &approx; 0</span></span>
           </div>
           <p>
-            Pitch is vertical ($\theta = \pm 90^\circ$). The <strong>Roll ($X_b$)</strong> and <strong>Yaw ($Z_v$)</strong> gimbal rings have become strictly <strong>collinear</strong> in space! One rotational degree of freedom is physically and mathematically lost.
+            Pitch is vertical (<span class="math"><i>&theta;</i> = &plusmn;90&deg;</span>). The <strong>Roll (<span class="math"><i>X</i><sub><i>b</i></sub></span>)</strong> and <strong>Yaw (<span class="math"><i>Z</i><sub><i>v</i></sub></span>)</strong> gimbal rings have become strictly <strong>collinear</strong> in space! One rotational degree of freedom is physically and mathematically lost.
           </p>
           <p class="font-mono text-[11px] text-rose-300">
-            &bull; $R_v^b$ collapses to dependence purely on difference $(\phi - \psi)$ &bull; Euler rates $[\dot{\phi}, \dot{\psi}] \to \infty$ &bull; Quaternion attitude propagation remains valid and smooth.
+            &bull; <span class="math"><i>R</i><span class="msubsup"><sup><i>b</i></sup><sub><i>v</i></sub></span></span> collapses to dependence purely on difference <span class="math">(<i>&phi;</i> &minus; <i>&psi;</i>)</span> &bull; Euler rates <span class="math">[<span class="overdot"><i>&phi;</i></span>, <span class="overdot"><i>&psi;</i></span>] &rarr; &infin;</span> &bull; Quaternion attitude propagation remains valid and smooth.
           </p>
         </div>
       </div>
@@ -274,7 +347,7 @@
         <div class="absolute top-3 left-3 z-10 pointer-events-none flex flex-col gap-1.5 font-mono text-xs">
           <div class="px-2.5 py-1 rounded-md bg-slate-950/80 backdrop-blur border border-slate-800 text-slate-300 flex items-center gap-2">
             <span class="text-cyan-400 font-semibold">Tait-Bryan ZYX:</span>
-            <span>$\psi$</span> &rarr; <span>$\theta$</span> &rarr; <span>$\phi$</span>
+            <span class="math"><i>&psi;</i></span> &rarr; <span class="math"><i>&theta;</i></span> &rarr; <span class="math"><i>&phi;</i></span>
           </div>
           <div class="px-2.5 py-1 rounded-md bg-slate-950/80 backdrop-blur border border-slate-800 text-slate-400 flex items-center gap-2">
             <span class="text-rose-400 font-semibold">Red:</span> Forward/North &bull;
@@ -296,9 +369,9 @@
         <!-- Live Legend Bottom Bar -->
         <div class="bg-slate-950/90 border-t border-slate-800/80 px-4 py-2 flex flex-wrap items-center justify-between gap-3 text-xs font-mono text-slate-400">
           <div class="flex items-center gap-4">
-            <span class="flex items-center gap-1.5"><span class="w-3 h-0.5 bg-cyan-400 inline-block"></span> Yaw Ring (ψ)</span>
-            <span class="flex items-center gap-1.5"><span class="w-3 h-0.5 bg-emerald-400 inline-block"></span> Pitch Ring (θ)</span>
-            <span class="flex items-center gap-1.5"><span class="w-3 h-0.5 bg-amber-400 inline-block"></span> Roll Ring (ϕ)</span>
+            <span class="flex items-center gap-1.5"><span class="w-3 h-0.5 bg-cyan-400 inline-block"></span><span>Yaw Ring (<span class="math"><i>&psi;</i></span>)</span></span>
+            <span class="flex items-center gap-1.5"><span class="w-3 h-0.5 bg-emerald-400 inline-block"></span><span>Pitch Ring (<span class="math"><i>&theta;</i></span>)</span></span>
+            <span class="flex items-center gap-1.5"><span class="w-3 h-0.5 bg-amber-400 inline-block"></span><span>Roll Ring (<span class="math"><i>&phi;</i></span>)</span></span>
           </div>
           <div class="flex items-center gap-2">
             <span class="text-slate-500">Coordinate Convention:</span>
@@ -316,13 +389,13 @@
         <div class="flex items-center justify-between border-b border-slate-800 pb-2">
           <h2 class="text-sm font-semibold text-cyan-400 uppercase tracking-wider flex items-center gap-2">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-            Direction Cosine Matrix $R_b^n$
+            <span>Direction Cosine Matrix <span class="math"><i>R</i><span class="msubsup"><sup><i>n</i></sup><sub><i>b</i></sub></span></span></span>
           </h2>
           <span class="text-xs font-mono text-emerald-400">SO(3)</span>
         </div>
 
         <p class="text-[11px] text-slate-400">
-          Transforms body vectors into inertial NED coordinates ($\mathbf{p}^n = R_b^n \mathbf{p}^b$):
+          Transforms body vectors into inertial NED coordinates (<span class="math"><span class="vec">p</span><sup><i>n</i></sup> = <i>R</i><span class="msubsup"><sup><i>n</i></sup><sub><i>b</i></sub></span><span class="vec">p</span><sup><i>b</i></sup></span>):
         </p>
 
         <!-- 3x3 Matrix Grid -->
@@ -341,11 +414,11 @@
         </div>
 
         <div class="flex items-center justify-between text-xs font-mono text-slate-400">
-          <span>Determinant $\det(R_b^n)$:</span>
+          <span>Determinant <span class="math">det(<i>R</i><span class="msubsup"><sup><i>n</i></sup><sub><i>b</i></sub></span>)</span>:</span>
           <span id="valDet" class="text-emerald-400 font-bold">+1.0000</span>
         </div>
         <div class="flex items-center justify-between text-xs font-mono text-slate-400">
-          <span>Orthogonality $(R^T R = I)$:</span>
+          <span>Orthogonality <span class="math">(<i>R</i><sup><i>T</i></sup><i>R</i> = <i>I</i>)</span>:</span>
           <span class="text-emerald-400 font-semibold">Strictly Preserved</span>
         </div>
       </section>
@@ -355,32 +428,32 @@
         <div class="flex items-center justify-between border-b border-slate-800 pb-2">
           <h2 class="text-sm font-semibold text-cyan-400 uppercase tracking-wider flex items-center gap-2">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
-            Unit Quaternion $\mathbf{q} \in \mathbb{S}^3$
+            <span>Unit Quaternion <span class="math"><span class="vec">q</span> &isin; &#x1D54A;<sup>3</sup></span></span>
           </h2>
           <span class="text-xs font-mono text-cyan-400">Singularity-Free</span>
         </div>
 
         <div class="grid grid-cols-2 gap-2 text-xs font-mono">
           <div class="bg-slate-900/90 p-2 rounded border border-slate-800 flex justify-between">
-            <span class="text-slate-400">q₀ (Scalar):</span>
+            <span class="text-slate-400"><span class="math"><i>q</i><sub>0</sub></span> (Scalar):</span>
             <span id="quatQ0" class="font-bold text-white">1.0000</span>
           </div>
           <div class="bg-slate-900/90 p-2 rounded border border-slate-800 flex justify-between">
-            <span class="text-rose-400">q₁ (i / Roll):</span>
+            <span class="text-rose-400"><span class="math"><i>q</i><sub>1</sub></span> (<i>i</i> / Roll):</span>
             <span id="quatQ1" class="font-bold text-white">0.0000</span>
           </div>
           <div class="bg-slate-900/90 p-2 rounded border border-slate-800 flex justify-between">
-            <span class="text-emerald-400">q₂ (j / Pitch):</span>
+            <span class="text-emerald-400"><span class="math"><i>q</i><sub>2</sub></span> (<i>j</i> / Pitch):</span>
             <span id="quatQ2" class="font-bold text-white">0.0000</span>
           </div>
           <div class="bg-slate-900/90 p-2 rounded border border-slate-800 flex justify-between">
-            <span class="text-blue-400">q₃ (k / Yaw):</span>
+            <span class="text-blue-400"><span class="math"><i>q</i><sub>3</sub></span> (<i>k</i> / Yaw):</span>
             <span id="quatQ3" class="font-bold text-white">0.0000</span>
           </div>
         </div>
 
         <div class="flex items-center justify-between text-xs font-mono text-slate-400 pt-1">
-          <span>Norm $\|\mathbf{q}\| = \sqrt{\sum q_i^2}$:</span>
+          <span>Norm <span class="math">&#x2016;<span class="vec">q</span>&#x2016; = <span class="sqrt"><span class="sqrt-radic">&radic;</span><span class="sqrt-body">&sum; <i>q</i><span class="msubsup"><sup>2</sup><sub><i>i</i></sub></span></span></span></span>:</span>
           <span id="quatNorm" class="text-cyan-400 font-bold">1.0000</span>
         </div>
       </section>
@@ -392,12 +465,12 @@
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
             Euler Rate Kinematic Meter
           </h2>
-          <span class="text-xs font-mono text-amber-400">$W_\eta(\boldsymbol{\eta})$</span>
+          <span class="text-xs font-mono text-amber-400"><span class="math"><i>W</i><sub><i>&eta;</i></sub>(<span class="vec">&eta;</span>)</span></span>
         </div>
 
         <div class="space-y-1.5">
           <div class="flex justify-between text-xs font-mono">
-            <span class="text-slate-400">Condition $\det(W_\eta^{-1}) = \cos\theta$:</span>
+            <span class="text-slate-400">Condition <span class="math">det(<i>W</i><span class="msubsup"><sup>&minus;1</sup><sub><i>&eta;</i></sub></span>) = cos<i>&theta;</i></span>:</span>
             <span id="valCosTheta" class="font-bold text-emerald-400">1.0000</span>
           </div>
           <!-- Visual condition bar -->
@@ -424,7 +497,7 @@
             <span id="recYaw" class="text-cyan-300">0.0°</span>
           </div>
           <div id="recDiffRow" class="hidden flex justify-between text-rose-300 border-t border-rose-900/60 pt-1">
-            <span>Observable (ϕ - ψ):</span>
+            <span>Observable (<span class="math"><i>&phi;</i> &minus; <i>&psi;</i></span>):</span>
             <span id="recDiffVal" class="font-bold">0.0°</span>
           </div>
         </div>
@@ -978,7 +1051,7 @@
         // Observable is atan2(R21, R22)
         const diffRad = Math.atan2(Rvb[1][0], Rvb[1][1]);
         const diffDeg = diffRad * RAD2DEG;
-        recDiffVal.textContent = `${diffDeg >= 0 ? "+" : ""}${diffDeg.toFixed(1)}° (ϕ - ψ)`;
+        recDiffVal.innerHTML = `${diffDeg >= 0 ? "+" : ""}${diffDeg.toFixed(1)}° (<span class="math"><i>&phi;</i> &minus; <i>&psi;</i></span>)`;
       } else {
         recDiffRow.classList.add('hidden');
         const recoveredTheta = Math.atan2(-Rvb[0][2], Math.sqrt(Rvb[0][0]*Rvb[0][0] + Rvb[0][1]*Rvb[0][1])) * RAD2DEG;
