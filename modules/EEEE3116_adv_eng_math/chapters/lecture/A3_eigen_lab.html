@@ -1,0 +1,522 @@
+<title>A3 Eigen Lab</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=Space+Grotesk:wght@500;600&display=swap">
+<style>
+/* Layout: graph-paper lab bench — one matrix bar on top, two experiment panels (plot + controls) below */
+:root{
+  --bg:#f3f6f7; --panel:#ffffff; --ink:#18222b; --muted:#5b6872; --rule:#d9e1e5; --grid:#e8eef1;
+  --in:#0f8a7e;      /* input x / result x */
+  --out:#d0661b;     /* output Ax / b */
+  --eig:#6b4fc8;     /* eigen axes, components */
+  --ok:#1d8a3a; --warn:#b42318;
+  --f-display:"Space Grotesk",system-ui,sans-serif;
+  --f-body:"IBM Plex Sans",system-ui,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#11171c; --panel:#182027; --ink:#e4ecf0; --muted:#93a3ad; --rule:#2a353e; --grid:#1f2930;
+  --in:#3cc7b8; --out:#f39a52; --eig:#a993f5; --ok:#4cc46c; --warn:#ff7b6b; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#11171c; --panel:#182027; --ink:#e4ecf0; --muted:#93a3ad; --rule:#2a353e; --grid:#1f2930;
+  --in:#3cc7b8; --out:#f39a52; --eig:#a993f5; --ok:#4cc46c; --warn:#ff7b6b; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.5;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:24px 48px}
+.wrap{max-width:1060px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+h1{font-family:var(--f-display);font-weight:600;font-size:1.7rem;margin:0;text-wrap:balance}
+h2{font-family:var(--f-display);font-weight:600;font-size:1.2rem;margin:0;text-wrap:balance}
+.lede{color:var(--muted);max-width:68ch;margin:4px 0 0}
+.src{font-family:var(--f-mono);font-size:.75rem;color:var(--muted);letter-spacing:.02em}
+.bar,.panel{background:var(--panel);border:1px solid var(--rule);border-radius:8px;padding:16px}
+.bar{display:flex;flex-wrap:wrap;gap:16px 28px;align-items:center}
+.matrix{font-family:var(--f-mono);font-size:1.05rem;display:flex;align-items:center;gap:8px}
+.mat{display:grid;grid-template-columns:auto auto;gap:2px 14px;padding:2px 10px;border-left:2px solid var(--ink);border-right:2px solid var(--ink);text-align:right;font-variant-numeric:tabular-nums}
+.sliders{display:grid;grid-template-columns:auto minmax(120px,220px) 4ch;gap:4px 10px;align-items:center;font-family:var(--f-mono);font-size:.85rem}
+.sliders output{text-align:right;font-variant-numeric:tabular-nums}
+.presets{display:flex;flex-wrap:wrap;gap:6px}
+button{font:inherit;font-size:.82rem;padding:5px 10px;border-radius:5px;border:1px solid var(--rule);background:var(--bg);color:var(--ink);cursor:pointer}
+button:hover{border-color:var(--muted)}
+button:focus-visible,input:focus-visible{outline:2px solid var(--eig);outline-offset:2px}
+button.primary{background:var(--ink);color:var(--panel);border-color:var(--ink)}
+.panel{display:grid;grid-template-columns:minmax(0,440px) minmax(0,1fr);gap:20px}
+@media (max-width:760px){.panel{grid-template-columns:minmax(0,1fr)}}
+.plot{position:relative;width:100%;aspect-ratio:1;max-width:100%}
+canvas{width:100%;height:100%;display:block;border-radius:6px;background:var(--bg)}
+.side{display:flex;flex-direction:column;gap:12px;min-width:0}
+.ctrl{display:flex;flex-direction:column;gap:4px}
+.ctrl label{font-size:.85rem;color:var(--muted)}
+input[type=range]{width:100%;accent-color:var(--eig)}
+.read{font-family:var(--f-mono);font-size:.85rem;font-variant-numeric:tabular-nums;display:grid;grid-template-columns:auto 1fr;gap:3px 14px}
+.read dt{color:var(--muted)}
+.read dd{margin:0}
+.pill{display:inline-block;font-family:var(--f-mono);font-size:.78rem;padding:3px 9px;border-radius:99px;border:1px solid currentColor}
+.pill.on{color:var(--ok)} .pill.off{color:var(--muted)} .pill.bad{color:var(--warn)}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:.8rem;color:var(--muted)}
+.sw{display:inline-block;width:14px;height:3px;border-radius:2px;vertical-align:middle;margin-right:5px}
+.note{font-size:.88rem;color:var(--muted);max-width:62ch}
+.note b{color:var(--ink);font-weight:600}
+.steps,.fsel{display:flex;gap:6px;flex-wrap:wrap}
+.steps button[aria-pressed="true"],.fsel button[aria-pressed="true"]{background:var(--eig);color:#fff;border-color:var(--eig)}
+.stepText{min-height:4.5em;font-size:.92rem}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.tag{font-family:var(--f-mono);font-size:.7rem;color:var(--muted);border:1px dashed var(--rule);padding:1px 6px;border-radius:4px}
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>A3 eigen lab</h1>
+    <p class="lede">Every symmetric 2×2 matrix has two perpendicular directions along which it only stretches. Find them by sweeping the input, then use them to solve Ax = b with three easy moves instead of one hard one.</p>
+    <p class="src">Source: EEEE3116 A3 “Representing hard problems as collections of easy ones”, slides 3–8, 13–15, 22–26. Anything not from the slides is tagged.</p>
+    <p class="src">Next: practise by hand in <a href="../../drills/eigen/eigen.md" style="color:var(--eig)">drills/eigen/eigen.md</a> · Section A progress: <a href="section_A_progress.md" style="color:var(--eig)">chapters/lecture/section_A_progress.md</a> (links work when opened from the repo).</p>
+  </header>
+
+  <section class="bar" aria-label="Matrix">
+    <div class="matrix">A =
+      <div class="mat"><span id="m00">19</span><span id="m01">-2</span><span id="m10">-2</span><span id="m11">16</span></div>
+    </div>
+    <div class="sliders">
+      <label for="sa">a₀₀</label><input id="sa" type="range" min="-20" max="20" step="0.5" value="19"><output id="oa">19</output>
+      <label for="sb">a₀₁ = a₁₀</label><input id="sb" type="range" min="-10" max="10" step="0.5" value="-2"><output id="ob">-2</output>
+      <label for="sd">a₁₁</label><input id="sd" type="range" min="-20" max="20" step="0.5" value="16"><output id="od">16</output>
+    </div>
+    <div class="ctrl">
+      <span class="note">Presets</span>
+      <div class="presets">
+        <button data-p="19,-2,16">A3 sl.15 example</button>
+        <button data-p="3,1,2">gentle <span class="tag">invented</span></button>
+        <button data-p="3,0,1">diagonal <span class="tag">invented</span></button>
+        <button data-p="1,2,1">one negative k <span class="tag">invented</span></button>
+        <button data-p="2,1,0.5">k = 0 (singular) <span class="tag">invented</span></button>
+        <button data-p="2,0,2">2·I <span class="tag">invented</span></button>
+      </div>
+    </div>
+    <div class="read" style="grid-template-columns:auto auto auto;gap:3px 16px">
+      <dt>k₀ =</dt><dd id="k0"></dd><dd id="e0" style="color:var(--eig)"></dd>
+      <dt>k₁ =</dt><dd id="k1"></dd><dd id="e1" style="color:var(--eig)"></dd>
+    </div>
+  </section>
+
+  <!-- PANEL 1 -->
+  <section class="panel" aria-label="Sweep the input">
+    <div class="plot"><canvas id="c1" aria-label="Input arrow x on the unit circle and output arrow Ax"></canvas></div>
+    <div class="side">
+      <h2>1 · Sweep the input, watch the output</h2>
+      <p class="note">Turn the input arrow <b>x</b> round the circle. For most directions <b>Ax</b> points somewhere else, so the matrix both turns and stretches. At two directions the arrows line up: A is just an amplifier there. Those are the eigenvectors, and the stretch is k. <span class="src">(A3 sl.5–7, 13)</span></p>
+      <div class="ctrl">
+        <label for="phi">Input direction: <span id="phiv"></span></label>
+        <input id="phi" type="range" min="0" max="360" step="0.5" value="30">
+      </div>
+      <div class="row">
+        <button id="snap0">Snap to eigen axis 0</button>
+        <button id="snap1">Snap to eigen axis 1</button>
+      </div>
+      <div><span id="pill" class="pill off">not aligned</span></div>
+      <dl class="read">
+        <dt>x</dt><dd id="rx"></dd>
+        <dt>Ax</dt><dd id="rax"></dd>
+        <dt>angle x→Ax</dt><dd id="rang"></dd>
+        <dt>|Ax| / |x|</dt><dd id="rgain"></dd>
+        <dt>x in eigen axes</dt><dd id="rxe"></dd>
+      </dl>
+      <p class="note">The last line is the <b>basis</b> idea. It is the same arrow written as “how much of eigen axis 0, how much of eigen axis 1” instead of “how much x, how much y”. At an eigen axis one of those numbers drops to 0.</p>
+      <div class="row">
+        <button id="loop" class="primary">Go round the feedback loop ×8</button>
+        <button id="clear">Clear trail</button>
+        <span class="tag">AI-added: repeated multiply (power iteration), not named in slides</span>
+      </div>
+      <p class="note">Feed the output back in as the next input, rescaling each time. Any start gets pulled onto the axis with the largest |k|, which is why guitar feedback settles on one pure note. <span class="src">(A3 sl.3–8)</span></p>
+      <div class="legend">
+        <span><i class="sw" style="background:var(--in)"></i>input x</span>
+        <span><i class="sw" style="background:var(--out)"></i>output Ax (scaled to fit)</span>
+        <span><i class="sw" style="background:var(--eig)"></i>eigen axes</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- PANEL 2 -->
+  <section class="panel" aria-label="Solve in eigen axes">
+    <div class="plot"><canvas id="c2" aria-label="Solving Ax=b by splitting b along eigen axes"></canvas></div>
+    <div class="side">
+      <h2>2 · Solve Ax = b in eigen axes</h2>
+      <p class="note">Solving Ax = b directly is the hard direction. In eigen axes A is diagonal, so solving it is just division. <span class="src">(A3 sl.24–26; works because X is orthogonal for symmetric A, sl.26)</span></p>
+      <div class="ctrl">
+        <label for="b0">b₀ = <span id="b0v"></span></label>
+        <input id="b0" type="range" min="-10" max="10" step="0.5" value="5">
+      </div>
+      <div class="ctrl">
+        <label for="b1">b₁ = <span id="b1v"></span></label>
+        <input id="b1" type="range" min="-10" max="10" step="0.5" value="0">
+      </div>
+      <div class="steps" role="group" aria-label="Step">
+        <button data-s="0" aria-pressed="true">0 · b</button>
+        <button data-s="1" aria-pressed="false">1 · split</button>
+        <button data-s="2" aria-pressed="false">2 · ÷ k</button>
+        <button data-s="3" aria-pressed="false">3 · add up</button>
+      </div>
+      <p id="stepText" class="stepText"></p>
+      <dl class="read">
+        <dt>d = Xᵀb</dt><dd id="rd"></dd>
+        <dt>c = d ÷ k</dt><dd id="rc"></dd>
+        <dt>x = Xc</dt><dd id="rxx"></dd>
+        <dt>check Ax</dt><dd id="rchk"></dd>
+      </dl>
+      <div class="legend">
+        <span><i class="sw" style="background:var(--out)"></i>b (target)</span>
+        <span><i class="sw" style="background:var(--eig)"></i>components along eigen axes</span>
+        <span><i class="sw" style="background:var(--in)"></i>x (answer)</span>
+      </div>
+      <p class="src">b default (5, 0) is invented.</p>
+    </div>
+  </section>
+
+  <!-- PANEL 3 -->
+  <section class="panel" aria-label="Where d = X transpose b comes from">
+    <div class="plot"><canvas id="c3" aria-label="Shadows of b on each eigen axis"></canvas></div>
+    <div class="side">
+      <h2>3 · Zoom into move 1: why d = Xᵀb</h2>
+      <p class="note"><b>Question:</b> how much of b is along axis 0? <b>Answer:</b> drop a line from the tip of b straight onto the axis, meeting it at a right angle, like a shadow. Where it lands is d₀. Do the same for axis 1 to get d₁.</p>
+      <p class="note">For a length-1 axis, that shadow length is exactly the dot product: d₀ = e₀·b. <b>Xᵀ has the axes as its rows</b>, so Xᵀb is both dot products done in one multiply. Drag the tip of b and watch the numbers.</p>
+      <dl class="read">
+        <dt>Xᵀ</dt><dd id="xt"></dd>
+        <dt>d₀ = e₀·b</dt><dd id="d0x"></dd>
+        <dt>d₁ = e₁·b</dt><dd id="d1x"></dd>
+        <dt>d₀e₀ + d₁e₁</dt><dd id="rbx"></dd>
+        <dt>coordinates</dt><dd id="tc"></dd>
+      </dl>
+      <div class="ctrl">
+        <label for="skew">What if the axes weren’t perpendicular? Tilt axis 1: <span id="skv"></span></label>
+        <input id="skew" type="range" min="0" max="60" step="1" value="0">
+      </div>
+      <p class="note">Tilt it and the shadows stop adding back up to b (red arrow). Shadows only work as coordinates when the axes are perpendicular, and a symmetric A guarantees that <span class="src">(A3 sl.26)</span>. Otherwise you need the real X⁻¹, which means solving, and that's the hard direction again. <span class="tag">tilt slider: AI-added what-if</span></p>
+      <div class="legend">
+        <span><i class="sw" style="background:var(--out)"></i>b (drag the tip)</span>
+        <span><i class="sw" style="background:var(--eig)"></i>shadows d₀e₀, d₁e₁</span>
+        <span><i class="sw" style="background:var(--warn)"></i>shadows added (only when they miss b)</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- PANEL 4 -->
+  <section class="panel" aria-label="Functions of A">
+    <div class="plot"><canvas id="c4" aria-label="Unit circle mapped by a function of A"></canvas></div>
+    <div class="side">
+      <h2>4 · The end of A3: change k, keep the axes</h2>
+      <p class="note">One idea covers the whole end of A3. Apply any function to A and the <b>eigen axes stay exactly the same</b>. Only the stretches change, from kᵢ to f(kᵢ) <span class="src">(A3 sl.40)</span>. The purple bars are the two stretches, and the shape is what the new matrix does to a circle.</p>
+      <div class="fsel" role="group" aria-label="Function of A">
+        <button data-f="shift" aria-pressed="true">A − sI</button>
+        <button data-f="pow" aria-pressed="false">Aᴹ</button>
+        <button data-f="inv" aria-pressed="false">A⁻¹</button>
+        <button data-f="fb" aria-pressed="false">feedback</button>
+      </div>
+      <div class="ctrl" id="fpbox">
+        <label for="fp" id="fpl"></label>
+        <input id="fp" type="range">
+      </div>
+      <div class="row" id="snaps4">
+        <button id="sn0">Snap to axis 0 danger point</button>
+        <button id="sn1">Snap to axis 1 danger point</button>
+      </div>
+      <div><span id="pill4" class="pill off"></span></div>
+      <dl class="read">
+        <dt>f(A)</dt><dd id="f4"></dd>
+        <dt>axis 0</dt><dd id="fk0"></dd>
+        <dt>axis 1</dt><dd id="fk1"></dd>
+        <dt>det = product</dt><dd id="fdet"></dd>
+      </dl>
+      <p id="fnote" class="note"></p>
+    </div>
+  </section>
+</div>
+
+<script>
+(function(){
+const $=id=>document.getElementById(id);
+const S={a:19,b:-2,d:16,phi:30,trail:[],b0:5,b1:0,step:0,anim:null,skew:0};
+const f=(v,n=3)=>{if(!isFinite(v))return'∞';const r=Math.abs(v)<5e-10?0:v;if(Math.abs(r)>=1e6)return r.toExponential(2);return (+r.toFixed(n)).toString()};
+const vec=(v,n=3)=>'('+f(v[0],n)+', '+f(v[1],n)+')';
+const col=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+
+function eig(a,b,d){
+  const m=(a+d)/2, r=Math.hypot((a-d)/2,b);
+  const k0=m+r, k1=m-r; let e0;
+  if(Math.abs(b)>1e-12){e0=[b,k0-a];}
+  else e0 = a>=d ? [1,0] : [0,1];
+  const n=Math.hypot(e0[0],e0[1]); e0=[e0[0]/n,e0[1]/n];
+  const e1=[-e0[1],e0[0]];
+  return {k:[k0,k1],e:[e0,e1],repeated:r<1e-12};
+}
+const mul=(v)=>[S.a*v[0]+S.b*v[1], S.b*v[0]+S.d*v[1]];
+const dot=(u,v)=>u[0]*v[0]+u[1]*v[1];
+
+/* ---- canvas helpers ---- */
+function setup(cv){
+  const r=cv.getBoundingClientRect(), dpr=window.devicePixelRatio||1;
+  cv.width=Math.round(r.width*dpr); cv.height=Math.round(r.height*dpr);
+  const g=cv.getContext('2d'); g.setTransform(dpr,0,0,dpr,0,0);
+  return {g,W:r.width,H:r.height};
+}
+function frame(c,R){ // world radius R visible
+  const s=Math.min(c.W,c.H)/(2*R);
+  const P=v=>[c.W/2+v[0]*s, c.H/2-v[1]*s];
+  const g=c.g; g.clearRect(0,0,c.W,c.H);
+  // grid
+  const step=niceStep(R/4); g.lineWidth=1; g.strokeStyle=col('--grid');
+  for(let t=-Math.ceil(R/step)*step;t<=R;t+=step){
+    let p=P([t,0]); g.beginPath(); g.moveTo(p[0],0); g.lineTo(p[0],c.H); g.stroke();
+    p=P([0,t]); g.beginPath(); g.moveTo(0,p[1]); g.lineTo(c.W,p[1]); g.stroke();
+  }
+  g.strokeStyle=col('--rule'); g.lineWidth=1.2;
+  let p=P([-R,0]),q=P([R,0]); g.beginPath();g.moveTo(...p);g.lineTo(...q);g.stroke();
+  p=P([0,-R]);q=P([0,R]); g.beginPath();g.moveTo(...p);g.lineTo(...q);g.stroke();
+  return {P,s,g};
+}
+function niceStep(x){const p=Math.pow(10,Math.floor(Math.log10(x)));const m=x/p;return (m<1.5?1:m<3.5?2:m<7.5?5:10)*p}
+function arrow(F,from,to,color,w=2.5,dash){
+  const g=F.g,a=F.P(from),b=F.P(to); const dx=b[0]-a[0],dy=b[1]-a[1],L=Math.hypot(dx,dy);
+  g.strokeStyle=color; g.fillStyle=color; g.lineWidth=w; g.setLineDash(dash||[]);
+  g.beginPath(); g.moveTo(...a); g.lineTo(...b); g.stroke(); g.setLineDash([]);
+  if(L<3) return; const ux=dx/L,uy=dy/L,h=Math.min(11,L*0.4);
+  g.beginPath(); g.moveTo(...b); g.lineTo(b[0]-h*ux+h*0.45*uy,b[1]-h*uy-h*0.45*ux); g.lineTo(b[0]-h*ux-h*0.45*uy,b[1]-h*uy+h*0.45*ux); g.closePath(); g.fill();
+}
+function line(F,from,to,color,w=1,dash){const g=F.g,a=F.P(from),b=F.P(to);g.strokeStyle=color;g.lineWidth=w;g.setLineDash(dash||[]);g.beginPath();g.moveTo(...a);g.lineTo(...b);g.stroke();g.setLineDash([])}
+function label(F,v,txt,color,dx=6,dy=-6){const p=F.P(v);F.g.fillStyle=color;F.g.font='500 12px "IBM Plex Mono", ui-monospace, monospace';F.g.fillText(txt,p[0]+dx,p[1]+dy)}
+function axes(F,E,R){
+  E.e.forEach((e,i)=>{line(F,[-e[0]*R,-e[1]*R],[e[0]*R,e[1]*R],col('--eig'),1.3,[6,5]);
+    label(F,[e[0]*R*0.86,e[1]*R*0.86],'axis '+i+' (k='+f(E.k[i],2)+')',col('--eig'),-40,-8);});
+}
+
+/* ---- panel 1 ---- */
+function draw1(){
+  const E=eig(S.a,S.b,S.d), c=setup($('c1'));
+  const sc=Math.max(Math.abs(E.k[0]),Math.abs(E.k[1]))||1;
+  const F=frame(c,1.3); axes(F,E,1.3);
+  // unit circle + ellipse image
+  const g=F.g; g.lineWidth=1.2;
+  g.strokeStyle=col('--in'); g.globalAlpha=.35; g.beginPath();
+  for(let t=0;t<=360;t+=3){const p=F.P([Math.cos(t*Math.PI/180),Math.sin(t*Math.PI/180)]); t?g.lineTo(...p):g.moveTo(...p)} g.stroke();
+  g.strokeStyle=col('--out'); g.beginPath();
+  for(let t=0;t<=360;t+=3){const v=mul([Math.cos(t*Math.PI/180),Math.sin(t*Math.PI/180)]);const p=F.P([v[0]/sc,v[1]/sc]); t?g.lineTo(...p):g.moveTo(...p)} g.stroke();
+  g.globalAlpha=1;
+  // trail
+  S.trail.forEach((v,i)=>{const p=F.P(v);g.fillStyle=col('--in');g.globalAlpha=.25+.75*(i+1)/S.trail.length;g.beginPath();g.arc(p[0],p[1],3.2,0,7);g.fill();});
+  g.globalAlpha=1;
+  const ph=S.phi*Math.PI/180, x=[Math.cos(ph),Math.sin(ph)], ax=mul(x);
+  arrow(F,[0,0],[ax[0]/sc,ax[1]/sc],col('--out'),3);
+  arrow(F,[0,0],x,col('--in'),3);
+  label(F,x,'x',col('--in')); label(F,[ax[0]/sc,ax[1]/sc],'Ax',col('--out'));
+  // readouts
+  $('phiv').textContent=f(S.phi,1)+'°';
+  $('rx').textContent=vec(x); $('rax').textContent=vec(ax);
+  const nAx=Math.hypot(ax[0],ax[1]);
+  let ang = nAx<1e-12 ? NaN : Math.atan2(x[0]*ax[1]-x[1]*ax[0], dot(x,ax))*180/Math.PI;
+  $('rang').textContent = isNaN(ang)?'Ax = 0 (squashed flat)':f(ang,1)+'°';
+  $('rgain').textContent=f(nAx);
+  $('rxe').textContent='('+f(dot(E.e[0],x))+', '+f(dot(E.e[1],x))+')  ← (amount of axis 0, amount of axis 1)';
+  const p=$('pill'), aligned = nAx<1e-9 || Math.abs(Math.sin(ang*Math.PI/180))<0.012;
+  if(E.repeated){p.className='pill on';p.textContent='every direction is an eigenvector (A = k·I)';}
+  else if(aligned){const k=nAx<1e-9?0:dot(x,ax);p.className='pill on';
+    p.textContent='aligned → eigenvector, k = '+f(k,2)+(k<0?' (flipped)':k===0||Math.abs(k)<1e-9?' (squashed to 0)':'');}
+  else {p.className='pill off';p.textContent='not aligned: A turns x as well as stretching it';}
+}
+$('phi').addEventListener('input',e=>{S.phi=+e.target.value;S.trail=[];draw1()});
+function snap(i){const E=eig(S.a,S.b,S.d);let ph=Math.atan2(E.e[i][1],E.e[i][0])*180/Math.PI;if(ph<0)ph+=360;S.phi=Math.round(ph*2)/2;$('phi').value=S.phi;S.phi=+$('phi').value;
+  // exact angle for readout (slider rounds); keep exact
+  S.phi=ph; S.trail=[]; draw1();}
+$('snap0').onclick=()=>snap(0); $('snap1').onclick=()=>snap(1);
+$('clear').onclick=()=>{S.trail=[];draw1()};
+$('loop').onclick=()=>{
+  if(S.anim) return; let n=0; S.trail=[];
+  const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const tick=()=>{
+    const ph=S.phi*Math.PI/180; let x=[Math.cos(ph),Math.sin(ph)]; S.trail.push(x);
+    let y=mul(x); const L=Math.hypot(y[0],y[1]);
+    if(L<1e-12){S.anim=null;draw1();return}
+    y=[y[0]/L,y[1]/L]; let p=Math.atan2(y[1],y[0])*180/Math.PI; if(p<0)p+=360;
+    S.phi=p; $('phi').value=p; draw1(); n++;
+    if(n<8) S.anim=setTimeout(tick,reduce?0:450); else S.anim=null;
+  }; tick();
+};
+
+/* ---- panel 2 ---- */
+const STEP_TEXT=[
+ '<b>Start.</b> b is written in the normal x–y axes. Finding x from it directly is the “hard” direction (A2 sl.2).',
+ '<b>Move 1: rewrite b in eigen axes.</b> Project b onto each eigen axis: dᵢ = eᵢ·b. Because the axes are perpendicular, d = Xᵀb, a plain multiply with no solving (A3 sl.26).',
+ '<b>Move 2: divide each piece by its own k.</b> Along axis i, A only multiplies by kᵢ, so undoing it means cᵢ = dᵢ / kᵢ. This is the diagonal, “nice” solve (A3 sl.24).',
+ '<b>Move 3: add the pieces back up.</b> x = c₀e₀ + c₁e₁ = Xc. This is the answer in normal axes. Check: Ax lands exactly on b.'];
+function draw2(){
+  const E=eig(S.a,S.b,S.d), b=[S.b0,S.b1];
+  const d=[dot(E.e[0],b),dot(E.e[1],b)];
+  const sing=E.k.map(k=>Math.abs(k)<1e-9);
+  const c=d.map((v,i)=>sing[i]?NaN:v/E.k[i]);
+  const ok=!sing[0]&&!sing[1];
+  const x= ok?[c[0]*E.e[0][0]+c[1]*E.e[1][0], c[0]*E.e[0][1]+c[1]*E.e[1][1]]:[NaN,NaN];
+  const comp=i=>[d[i]*E.e[i][0],d[i]*E.e[i][1]];
+  const ccomp=i=>[c[i]*E.e[i][0],c[i]*E.e[i][1]];
+  // per-step zoom
+  const nb=Math.hypot(...b)||1;
+  let R=nb*1.3, zoom=1;
+  if(S.step>=2 && ok){const m=Math.max(Math.hypot(...x),Math.hypot(...ccomp(0)),Math.hypot(...ccomp(1)))||1; R=m*1.3; zoom=nb/m;}
+  const cv=setup($('c2')), F=frame(cv,R); axes(F,E,R);
+  const st=S.step, faint=.28;
+  if(st===0){arrow(F,[0,0],b,col('--out'),3);label(F,b,'b',col('--out'));}
+  if(st===1){
+    arrow(F,[0,0],b,col('--out'),3);label(F,b,'b',col('--out'));
+    [0,1].forEach(i=>{const v=comp(i);arrow(F,[0,0],v,col('--eig'),3);label(F,v,'d'+i+'·e'+i,col('--eig'));line(F,v,b,col('--eig'),1,[3,4]);});
+  }
+  if(st>=2 && ok){
+    F.g.globalAlpha=faint; [0,1].forEach(i=>arrow(F,[0,0],comp(i),col('--eig'),2)); arrow(F,[0,0],b,col('--out'),2); F.g.globalAlpha=1;
+    [0,1].forEach(i=>{const v=ccomp(i);arrow(F,[0,0],v,st===2?col('--eig'):col('--in'),st===2?3:1.5,st===3?[4,3]:null);label(F,v,'c'+i+'·e'+i,st===2?col('--eig'):col('--in'));});
+    if(st===3){arrow(F,[0,0],x,col('--in'),3.2);label(F,x,'x',col('--in'));
+      line(F,ccomp(0),x,col('--in'),1,[3,4]);line(F,ccomp(1),x,col('--in'),1,[3,4]);}
+  }
+  if(st>=2 && !ok){label(F,[-R*0.9,-R*0.85],'k = 0 → cannot divide: no unique x',col('--warn'),0,0);}
+  if(zoom>1.05&&st>=2){F.g.fillStyle=col('--muted');F.g.font='500 12px "IBM Plex Mono", monospace';F.g.fillText('view zoomed ×'+f(zoom,1)+' (faint b is off-scale)',10,cv.H-12);}
+  // readouts
+  $('b0v').textContent=f(S.b0);$('b1v').textContent=f(S.b1);
+  $('stepText').innerHTML=STEP_TEXT[st]+(st>=2&&!ok?' <b style="color:var(--warn)">Here one k is 0: that axis gets squashed to nothing, so dividing is impossible and Ax = b has no unique solution (A2 sl.3).</b>':'');
+  $('rd').textContent=vec(d);
+  $('rc').textContent= ok? vec(c) : '('+(sing[0]?'÷0':f(c[0]))+', '+(sing[1]?'÷0':f(c[1]))+')';
+  $('rxx').textContent= ok? vec(x) : 'no unique solution';
+  if(ok){const ax=mul(x);const good=Math.hypot(ax[0]-b[0],ax[1]-b[1])<1e-9;$('rchk').innerHTML=vec(ax)+(good?' <span style="color:var(--ok)">= b ✓</span>':'');}
+  else $('rchk').textContent='—';
+  document.querySelectorAll('.steps button').forEach(bt=>bt.setAttribute('aria-pressed',+bt.dataset.s===st));
+  draw3(); draw4();
+}
+['b0','b1'].forEach(id=>$(id).addEventListener('input',e=>{S[id]=+e.target.value;draw2()}));
+document.querySelectorAll('.steps button').forEach(bt=>bt.onclick=()=>{S.step=+bt.dataset.s;draw2()});
+
+/* ---- panel 3 ---- */
+let F3=null, dragR=null, dragging=false;
+function draw3(){
+  const E=eig(S.a,S.b,S.d), b=[S.b0,S.b1], sk=S.skew*Math.PI/180;
+  const e0=E.e[0], eb=E.e[1], cs=Math.cos(sk), sn=Math.sin(sk);
+  const e1=[cs*eb[0]+sn*e0[0], cs*eb[1]+sn*e0[1]]; // axis 1 tilted toward axis 0, still length 1
+  const d0=dot(e0,b), d1=dot(e1,b);
+  const p0=[d0*e0[0],d0*e0[1]], p1=[d1*e1[0],d1*e1[1]];
+  const rb=[p0[0]+p1[0],p0[1]+p1[1]], gap=Math.hypot(rb[0]-b[0],rb[1]-b[1]);
+  const det=e0[0]*e1[1]-e1[0]*e0[1];
+  const tc=[(b[0]*e1[1]-e1[0]*b[1])/det,(e0[0]*b[1]-b[0]*e0[1])/det];
+  const R=dragR||Math.max(Math.hypot(...b),Math.hypot(...rb),1)*1.35;
+  const cv=setup($('c3')), F=frame(cv,R); F3={F,cv,R};
+  [e0,e1].forEach((e,i)=>{line(F,[-e[0]*R,-e[1]*R],[e[0]*R,e[1]*R],col('--eig'),1.3,[6,5]);label(F,[e[0]*R*0.8,e[1]*R*0.8],'axis '+i,col('--eig'),-18,-8)});
+  // drop lines + right-angle marks
+  [[p0,e0],[p1,e1]].forEach(([p,u])=>{
+    line(F,b,p,col('--muted'),1.2,[3,4]);
+    const w=[b[0]-p[0],b[1]-p[1]], L=Math.hypot(...w); if(L<1e-9) return;
+    const dl=9/F.s, wu=[w[0]/L*dl,w[1]/L*dl], uu=[u[0]*dl,u[1]*dl];
+    const sg=dot(u,p)>=0?-1:1; // put mark on the origin side
+    const a=[p[0]+sg*uu[0],p[1]+sg*uu[1]];
+    line(F,a,[a[0]+wu[0],a[1]+wu[1]],col('--muted'),1); line(F,[a[0]+wu[0],a[1]+wu[1]],[p[0]+wu[0],p[1]+wu[1]],col('--muted'),1);
+  });
+  arrow(F,[0,0],p0,col('--eig'),3); label(F,p0,'d₀e₀',col('--eig'));
+  arrow(F,[0,0],p1,col('--eig'),3); label(F,p1,'d₁e₁',col('--eig'));
+  if(gap>1e-6){arrow(F,[0,0],rb,col('--warn'),2,[5,4]); label(F,rb,'d₀e₀+d₁e₁',col('--warn'));}
+  arrow(F,[0,0],b,col('--out'),3); label(F,b,'b',col('--out'),9,-9);
+  const pb=F.P(b); F.g.fillStyle=col('--out'); F.g.beginPath(); F.g.arc(pb[0],pb[1],dragging?8:6,0,7); F.g.fill();
+  $('skv').textContent=f(S.skew,0)+'°'+(S.skew?' (no longer perpendicular)':'');
+  $('xt').innerHTML='[ '+f(e0[0])+'   '+f(e0[1])+' ]  ← e₀ as a row<br>[ '+f(e1[0])+'   '+f(e1[1])+' ]  ← e₁ as a row';
+  $('d0x').textContent='('+f(e0[0])+')('+f(b[0],2)+') + ('+f(e0[1])+')('+f(b[1],2)+') = '+f(d0);
+  $('d1x').textContent='('+f(e1[0])+')('+f(b[0],2)+') + ('+f(e1[1])+')('+f(b[1],2)+') = '+f(d1);
+  $('rbx').innerHTML=vec(rb)+(gap<1e-6?' <span style="color:var(--ok)">= b ✓</span>':' <span style="color:var(--warn)">≠ b, misses by '+f(gap)+'</span>');
+  $('tc').textContent= gap<1e-6 ? 'shadows = the coordinates (Xᵀ works as X⁻¹)' : 'real amounts need X⁻¹: '+vec(tc)+', not the shadows';
+}
+$('skew').addEventListener('input',e=>{S.skew=+e.target.value;draw3()});
+(function(){
+  const c3=$('c3'); c3.style.touchAction='none'; c3.style.cursor='grab';
+  const to=ev=>{if(!F3)return; const r=c3.getBoundingClientRect(), s=F3.F.s;
+    const cl=v=>Math.max(-10,Math.min(10,Math.round(v*10)/10));
+    S.b0=cl((ev.clientX-r.left-F3.cv.W/2)/s); S.b1=cl(-(ev.clientY-r.top-F3.cv.H/2)/s);
+    $('b0').value=S.b0; $('b1').value=S.b1; draw2();};
+  c3.addEventListener('pointerdown',ev=>{dragging=true; dragR=F3?F3.R:null; c3.setPointerCapture(ev.pointerId); c3.style.cursor='grabbing'; to(ev)});
+  c3.addEventListener('pointermove',ev=>{if(dragging) to(ev)});
+  const up=()=>{if(!dragging)return; dragging=false; dragR=null; c3.style.cursor='grab'; draw2()};
+  c3.addEventListener('pointerup',up); c3.addEventListener('pointercancel',up);
+})();
+
+/* ---- panel 4 ---- */
+const P4={mode:'shift',s:10,M:1,beta:0};
+const MODES={
+  shift:{lab:()=>'Shift s = '+f(P4.s,2),min:-25,max:25,step:0.1,key:'s',
+    fk:k=>k-P4.s, form:()=>'A − '+f(P4.s,2)+'·I',
+    note:'Subtracting s·I lowers every stretch by s. When s equals an eigenvalue, that stretch becomes 0 and the circle flattens to a line, so det = 0. That is exactly why det(A − kI) = 0 finds the eigenvalues <span class="src">(A3 sl.33–34)</span>.'},
+  pow:{lab:()=>'Power M = '+P4.M,min:1,max:10,step:1,key:'M',
+    fk:k=>Math.pow(k,P4.M), form:()=>'A^'+P4.M+' = X·diag(kᵢ^'+P4.M+')·Xᵀ',
+    note:'A cascade of M identical sections (sl.39). The bigger stretch wins by more on every pass, so the shape thins onto the dominant axis. This is the fibre settling to one pattern, single-mode propagation <span class="src">(A3 sl.38–40)</span>. It is also the feedback-loop button in panel 1.'},
+  inv:{lab:()=>'',key:null,
+    fk:k=>Math.abs(k)<1e-9?Infinity:1/k, form:()=>'A⁻¹ = X·diag(1/kᵢ)·Xᵀ',
+    note:'Same axes, with each stretch flipped to 1/k. A big k becomes a small one. If any k = 0 there is no 1/0, so A⁻¹ does not exist <span class="src">(A3 sl.30–31)</span>.'},
+  fb:{lab:()=>'Feedback β = '+f(P4.beta,4),min:-1,max:1,step:0.001,key:'beta',
+    fk:k=>{const den=1+P4.beta*k;return Math.abs(den)<1e-9?Infinity:k/den}, form:()=>'(I+βA)⁻¹A = X·diag(kᵢ/(1+βkᵢ))·Xᵀ',
+    note:'A in a loop with scalar feedback β. I + βA is a function of A, so it has the same axes with stretches 1 + βk. The loop blows up on any axis where 1 + βkᵢ = 0 <span class="src">(A3 sl.41)</span>. Snap to a danger point to see it.'}
+};
+function setMode(m){
+  P4.mode=m; const M=MODES[m], fp=$('fp');
+  $('fpbox').hidden=!M.key; $('snaps4').hidden=!(m==='shift'||m==='fb');
+  if(M.key){fp.min=M.min;fp.max=M.max;fp.step=M.step;fp.value=P4[M.key];}
+  document.querySelectorAll('.fsel button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.f===m));
+  draw4();
+}
+function draw4(){
+  const E=eig(S.a,S.b,S.d), M=MODES[P4.mode];
+  const fv=E.k.map(M.fk), inf=fv.map(v=>!isFinite(v));
+  const fin=fv.filter(isFinite).map(Math.abs), sc=Math.max(...fin,0)||1;
+  const cv=setup($('c4')), R=1.3, F=frame(cv,R); axes(F,E,R);
+  const g=F.g;
+  // unit circle (faint)
+  g.strokeStyle=col('--in');g.globalAlpha=.3;g.lineWidth=1.2;g.beginPath();
+  for(let t=0;t<=360;t+=3){const p=F.P([Math.cos(t*Math.PI/180),Math.sin(t*Math.PI/180)]);t?g.lineTo(...p):g.moveTo(...p)}g.stroke();g.globalAlpha=1;
+  // image of circle under f(A), scaled to fit
+  if(!inf[0]&&!inf[1]){
+    g.strokeStyle=col('--out');g.lineWidth=2.2;g.beginPath();
+    for(let t=0;t<=360;t+=2){const u=[Math.cos(t*Math.PI/180),Math.sin(t*Math.PI/180)];
+      const a0=dot(E.e[0],u)*fv[0]/sc, a1=dot(E.e[1],u)*fv[1]/sc;
+      const p=F.P([a0*E.e[0][0]+a1*E.e[1][0], a0*E.e[0][1]+a1*E.e[1][1]]);t?g.lineTo(...p):g.moveTo(...p)}
+    g.stroke();
+  }
+  // stretch bars
+  [0,1].forEach(i=>{const e=E.e[i];
+    if(inf[i]){line(F,[-e[0]*R,-e[1]*R],[e[0]*R,e[1]*R],col('--warn'),3);label(F,[e[0]*R*0.6,e[1]*R*0.6],'∞',col('--warn'),6,-6);return}
+    const L=fv[i]/sc; arrow(F,[0,0],[e[0]*L,e[1]*L],col('--eig'),3.5);
+    label(F,[e[0]*L,e[1]*L],'f(k'+i+')='+f(fv[i],2),col('--eig'));});
+  if(sc!==1&&fin.length){g.fillStyle=col('--muted');g.font='500 12px "IBM Plex Mono", monospace';g.fillText('scaled ÷'+f(sc,2)+' to fit',10,cv.H-12);}
+  // readouts
+  $('fpl').textContent=M.lab();
+  $('f4').textContent=M.form();
+  $('fk0').textContent='k₀ = '+f(E.k[0],3)+'  →  f(k₀) = '+f(fv[0]);
+  $('fk1').textContent='k₁ = '+f(E.k[1],3)+'  →  f(k₁) = '+f(fv[1]);
+  $('fdet').textContent=(inf[0]||inf[1])?'∞':f(fv[0]*fv[1]);
+  $('fnote').innerHTML=M.note;
+  const p=$('pill4'), mn=Math.min(...fv.map(Math.abs)), mx=Math.max(...fv.map(Math.abs));
+  if(P4.mode==='shift'){ if(mn<0.051){p.className='pill on';p.textContent='flattened → det = 0 → s = '+f(P4.s,2)+' is an eigenvalue';} else {p.className='pill off';p.textContent='not flat: s is not an eigenvalue';} }
+  else if(P4.mode==='pow'){p.className='pill off';p.textContent='thin axis / fat axis = '+f(mn/mx,4)+(mn/mx<0.02?' → effectively one mode':'');}
+  else if(P4.mode==='inv'){ if(inf[0]||inf[1]){p.className='pill bad';p.textContent='k = 0 → A⁻¹ does not exist';} else {p.className='pill on';p.textContent='inverse exists (no k = 0)';} }
+  else { const den=E.k.map(k=>Math.abs(1+P4.beta*k)); if(inf[0]||inf[1]||Math.min(...den)<0.01){p.className='pill bad';p.textContent='unstable: 1 + βk ≈ 0 on an axis';} else {p.className='pill on';p.textContent='stable: every 1 + βkᵢ ≠ 0';} }
+}
+document.querySelectorAll('.fsel button').forEach(b=>b.onclick=()=>setMode(b.dataset.f));
+$('fp').addEventListener('input',e=>{const k=MODES[P4.mode].key;if(k){P4[k]=+e.target.value;draw4()}});
+function snap4(i){const E=eig(S.a,S.b,S.d),k=E.k[i];
+  if(P4.mode==='shift'){P4.s=k;$('fp').value=k;}
+  else if(P4.mode==='fb'){ if(Math.abs(k)<1e-9) return; P4.beta=-1/k;$('fp').value=P4.beta;}
+  draw4();}
+$('sn0').onclick=()=>snap4(0); $('sn1').onclick=()=>snap4(1);
+setMode('shift');
+
+/* ---- matrix ---- */
+function syncMatrix(){
+  $('oa').textContent=S.a;$('ob').textContent=S.b;$('od').textContent=S.d;
+  $('m00').textContent=S.a;$('m01').textContent=S.b;$('m10').textContent=S.b;$('m11').textContent=S.d;
+  const E=eig(S.a,S.b,S.d);
+  $('k0').textContent=f(E.k[0]);$('k1').textContent=f(E.k[1]);
+  $('e0').textContent='e₀ = '+vec(E.e[0]);$('e1').textContent='e₁ = '+vec(E.e[1]);
+  S.trail=[]; draw1(); draw2();
+}
+[['sa','a'],['sb','b'],['sd','d']].forEach(([id,k])=>$(id).addEventListener('input',e=>{S[k]=+e.target.value;syncMatrix()}));
+document.querySelectorAll('[data-p]').forEach(bt=>bt.onclick=()=>{const [a,b,d]=bt.dataset.p.split(',').map(Number);
+  Object.assign(S,{a,b,d});$('sa').value=a;$('sb').value=b;$('sd').value=d;syncMatrix();});
+
+let rt; addEventListener('resize',()=>{clearTimeout(rt);rt=setTimeout(()=>{draw1();draw2()},80)});
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{draw1();draw2()});
+new MutationObserver(()=>{draw1();draw2()}).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+syncMatrix();
+})();
+</script>

@@ -1,0 +1,339 @@
+<title>State-Space L01–L03</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<style>
+/* Layout: one narrow reading column; per lecture = core picture → key lines → procedure → memorise box.
+   Colour encodes matrix role (A dynamics, B input, C output, D feedthrough) everywhere on the page. */
+:root{
+  --paper:#f5f7f9; --panel:#ffffff; --ink:#18212b; --muted:#566273; --rule:#d7dde5;
+  --A:#1d6a86; --B:#a55a12; --C:#6a4a9c; --D:#3f7631;
+  --added:#8a5a00; --addedbg:#fff4dc;
+  --sans:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --cond:"IBM Plex Sans Condensed","IBM Plex Sans",system-ui,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --paper:#11151b; --panel:#171c24; --ink:#e3e8ee; --muted:#9aa5b4; --rule:#2a323d;
+  --A:#62b6d6; --B:#e3a061; --C:#b79ce8; --D:#8fc479; --added:#f0c46a; --addedbg:#2b2414; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --paper:#11151b; --panel:#171c24; --ink:#e3e8ee; --muted:#9aa5b4; --rule:#2a323d;
+  --A:#62b6d6; --B:#e3a061; --C:#b79ce8; --D:#8fc479; --added:#f0c46a; --addedbg:#2b2414; color-scheme:dark}
+
+body{background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:15.5px;line-height:1.55}
+.wrap{max-width:860px;margin:0 auto;padding-block:28px 64px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  display:flex;flex-direction:column;gap:40px}
+h1,h2,h3{font-family:var(--cond);text-wrap:balance;margin:0;line-height:1.2}
+h1{font-size:2rem;font-weight:600}
+h2{font-size:1.45rem;font-weight:600}
+h3{font-size:1rem;font-weight:600;letter-spacing:.02em}
+p{margin:0}
+.lede{color:var(--muted);max-width:65ch}
+.eyebrow{font-family:var(--mono);font-size:.75rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.ref{font-family:var(--mono);font-size:.72rem;color:var(--muted);white-space:nowrap}
+.add{font-family:var(--mono);font-size:.68rem;letter-spacing:.04em;color:var(--added);background:var(--addedbg);
+  padding:1px 6px;border-radius:3px;white-space:nowrap}
+header{display:flex;flex-direction:column;gap:10px}
+
+/* role legend */
+.legend{display:flex;flex-wrap:wrap;gap:8px 18px;font-size:.88rem}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.sw{width:12px;height:12px;border-radius:2px;display:inline-block}
+.tA{color:var(--A)} .tB{color:var(--B)} .tC{color:var(--C)} .tD{color:var(--D)}
+.bgA{background:var(--A)} .bgB{background:var(--B)} .bgC{background:var(--C)} .bgD{background:var(--D)}
+mjx-container .mA{color:var(--A)} mjx-container .mB{color:var(--B)} mjx-container .mC{color:var(--C)} mjx-container .mD{color:var(--D)}
+
+/* big idea */
+.idea{background:var(--panel);border:1px solid var(--rule);border-radius:8px;padding:18px 20px;display:flex;flex-direction:column;gap:10px}
+.idea .eq{font-size:1.15rem;overflow-x:auto}
+
+/* links strip */
+.strip{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0;border:1px solid var(--rule);border-radius:8px;overflow:hidden;background:var(--panel)}
+.strip > div{padding:14px 16px;display:flex;flex-direction:column;gap:4px;min-width:0;border-right:1px solid var(--rule);position:relative}
+.strip > div:last-child{border-right:0}
+.strip .q{font-weight:600}
+.strip .a{font-size:.88rem;color:var(--muted)}
+.fwd{display:flex;flex-direction:column;gap:6px;font-size:.9rem}
+.fwd ul{margin:0;padding-left:1.1em;display:flex;flex-direction:column;gap:4px}
+@media (max-width:640px){.strip{grid-template-columns:1fr}.strip > div{border-right:0;border-bottom:1px solid var(--rule)}.strip > div:last-child{border-bottom:0}}
+
+/* lecture sections */
+section.lec{display:flex;flex-direction:column;gap:16px;padding-top:28px;border-top:2px solid var(--ink)}
+.lec-head{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 14px}
+.lec-head .num{font-family:var(--mono);font-size:.85rem;color:var(--muted)}
+figure{margin:0;background:var(--panel);border:1px solid var(--rule);border-radius:8px;padding:14px 14px 10px;display:flex;flex-direction:column;gap:8px}
+figure .scroll{overflow-x:auto}
+figure svg{display:block;width:100%;min-width:520px;height:auto}
+figcaption{font-size:.85rem;color:var(--muted)}
+svg text{font-family:var(--mono);font-size:13px;fill:var(--ink)}
+svg .lbl{fill:var(--muted);font-size:12px}
+svg .wire{stroke:var(--ink);stroke-width:1.4;fill:none}
+svg .box{fill:var(--panel);stroke:var(--ink);stroke-width:1.3}
+svg .sA{stroke:var(--A)} svg .sB{stroke:var(--B)} svg .sC{stroke:var(--C)} svg .sD{stroke:var(--D)}
+svg .fA{fill:var(--A)} svg .fB{fill:var(--B)} svg .fC{fill:var(--C)} svg .fD{fill:var(--D)}
+svg .dot{fill:var(--ink)}
+svg .arrowhead{fill:var(--ink)}
+
+.lines{margin:0;padding-left:1.15em;display:flex;flex-direction:column;gap:6px;max-width:68ch}
+.lines li::marker{color:var(--muted)}
+
+/* procedure flow */
+.flow{display:flex;flex-direction:column;gap:0}
+.step{display:grid;grid-template-columns:auto minmax(0,1fr);gap:12px;align-items:start}
+.step .k{font-family:var(--mono);font-size:.75rem;color:var(--paper);background:var(--ink);border-radius:3px;padding:2px 6px;margin-top:3px}
+.step .body{display:flex;flex-direction:column;gap:4px;min-width:0;overflow-x:auto;padding-bottom:4px}
+.branch{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:8px 0 0}
+.branch > div{border:1px solid var(--rule);border-radius:6px;padding:10px 12px;display:flex;flex-direction:column;gap:6px;min-width:0;overflow-x:auto;background:var(--panel)}
+.branch .when{font-family:var(--mono);font-size:.78rem;color:var(--muted)}
+@media (max-width:640px){.branch{grid-template-columns:1fr}}
+
+/* canonical forms grid */
+.forms{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.form{background:var(--panel);border:1px solid var(--rule);border-radius:8px;padding:12px 14px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.form .name{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.form .name b{font-family:var(--cond);font-size:1.05rem}
+.form .use{font-size:.85rem;color:var(--muted)}
+.form .m{overflow-x:auto;font-size:.95rem}
+@media (max-width:640px){.forms{grid-template-columns:1fr}}
+
+/* memorise box */
+.mem{border:1.5px dashed var(--ink);border-radius:8px;padding:12px 16px;display:flex;flex-direction:column;gap:8px}
+.mem h3{font-family:var(--mono);font-size:.78rem;text-transform:uppercase;letter-spacing:.08em}
+.mem ul{margin:0;padding-left:1.1em;display:flex;flex-direction:column;gap:6px}
+.mem li{overflow-x:auto}
+
+/* watch-outs */
+.watch{border-left:3px solid var(--added);padding:6px 0 6px 14px;display:flex;flex-direction:column;gap:6px;font-size:.92rem}
+.watch b{font-family:var(--cond)}
+
+footer{font-size:.82rem;color:var(--muted);display:flex;flex-direction:column;gap:6px;border-top:1px solid var(--rule);padding-top:16px}
+code{font-family:var(--mono);font-size:.85em}
+</style>
+
+<div class="wrap">
+
+<header>
+  <span class="eyebrow">EEEE4064 Advanced Control · recall map · draft 1</span>
+  <h1>State-Space L01–L03</h1>
+  <p class="lede">For revising material you've already been through. Each lecture has one picture to rebuild it from, the procedure as steps, and a dashed box for the few things that can't be rebuilt. References like <span class="ref">L02·s14</span> are slide numbers. <span class="add">added</span> marks framing that isn't on the slides (checked in sympy, not lectured).</p>
+  <div class="legend" aria-label="Colour key">
+    <span><i class="sw bgA"></i><b class="tA">A</b>&nbsp;dynamics (holds the poles)</span>
+    <span><i class="sw bgB"></i><b class="tB">B</b>&nbsp;where u enters</span>
+    <span><i class="sw bgC"></i><b class="tC">C</b>&nbsp;how y is read off</span>
+    <span><i class="sw bgD"></i><b class="tD">D</b>&nbsp;u straight to y</span>
+  </div>
+</header>
+
+<div class="idea">
+  <span class="eyebrow">The one idea behind all three lectures <span class="add">added</span></span>
+  <div class="eq">\[ G(s)=\frac{Y(s)}{U(s)}=\class{mC}{\mathbf C}\,(s\mathbf I-\class{mA}{\mathbf A})^{-1}\class{mB}{\mathbf B}+\class{mD}{D} \]</div>
+  <p>The <b class="tA">denominator</b> always lives in <b class="tA">A</b>; the companion and diagonal forms put the \(a_i\) or the poles there directly. The <b>numerator</b> gets split between <b class="tB">B</b> and <b class="tC">C</b>, and \(b_0\) (only nonzero when the numerator and denominator have equal degree) goes to <b class="tD">D</b>. Every form in L02 and L03 is one way of making that split. The formula is <span class="ref">L03·s16</span>; the "only B and D change" observation is <span class="ref">L02·s21</span>.</p>
+</div>
+
+<div class="fwd">
+  <div class="strip" aria-label="How L01 to L03 connect">
+    <div><span class="ref">L01</span><span class="q">What and why</span><span class="a">Replace one nth-order ODE / TF with n first-order equations in matrix form. Handles MIMO; you work in the time domain.</span></div>
+    <div><span class="ref">L02</span><span class="q">ODE → state space</span><span class="a">Pick the states (y, ẏ, …), read off A, B, C, D. If u has derivatives, use the β trick.</span></div>
+    <div><span class="ref">L03</span><span class="q">TF ⇄ state space</span><span class="a">One TF gives many realisations (CCF, OCF, DCF, JCF). The way back is C(sI−A)⁻¹B+D.</span></div>
+  </div>
+  <span class="eyebrow" style="margin-top:6px">Where L03 points next (lectured, not summarised here)</span>
+  <ul>
+    <li><b>L04 analysis</b>: diagonal/Jordan forms "show the system eigenvalues" <span class="ref">L03·s10</span>. A change of states x = Tz keeps the eigenvalues and G(s) <span class="add">added</span></li>
+    <li><b>L05 controllability</b> and <b>L07–08 pole placement</b>: CCF "represents the controllable system" and is "important in … pole placement" <span class="ref">L03·s5</span></li>
+    <li><b>L06 observability</b>: OCF "represents an observable system" <span class="ref">L03·s7</span>. OCF is CCF transposed, which is the seed of duality <span class="add">added</span></li>
+  </ul>
+</div>
+
+<!-- ============ L01 ============ -->
+<section class="lec" id="l01">
+  <div class="lec-head"><span class="num">L01</span><h2>Introduction: the state-space picture</h2></div>
+  <figure>
+    <div class="scroll">
+    <svg viewBox="0 0 640 210" role="img" aria-label="Vector block diagram: u through B into a summing junction, integrated to give x, x through C into a summing junction to give y; A feeds x back to the first sum; D feeds u forward to the second sum.">
+      <defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="arrowhead"/></marker></defs>
+      <!-- main path -->
+      <text x="8" y="104">u</text>
+      <path class="wire" d="M22 100H78" marker-end="url(#ar)"/>
+      <circle class="dot" cx="44" cy="100" r="3"/>
+      <rect class="box sB" x="80" y="82" width="46" height="36" rx="3"/><text x="96" y="105" class="fB" font-weight="600">B</text>
+      <path class="wire" d="M126 100H162" marker-end="url(#ar)"/>
+      <circle class="box" cx="176" cy="100" r="13"/><text x="170" y="105">+</text>
+      <path class="wire" d="M189 100H232" marker-end="url(#ar)"/>
+      <text x="200" y="92" class="lbl">ẋ</text>
+      <rect class="box" x="234" y="82" width="48" height="36" rx="3"/><text x="247" y="105">∫dt</text>
+      <path class="wire" d="M282 100H378" marker-end="url(#ar)"/>
+      <text x="314" y="92">x</text>
+      <circle class="dot" cx="330" cy="100" r="3"/>
+      <rect class="box sC" x="380" y="82" width="46" height="36" rx="3"/><text x="396" y="105" class="fC" font-weight="600">C</text>
+      <path class="wire" d="M426 100H470" marker-end="url(#ar)"/>
+      <circle class="box" cx="484" cy="100" r="13"/><text x="478" y="105">+</text>
+      <path class="wire" d="M497 100H570" marker-end="url(#ar)"/>
+      <text x="578" y="104">y</text>
+      <!-- A feedback -->
+      <path class="wire" d="M330 100V168H284"/>
+      <rect class="box sA" x="236" y="150" width="46" height="36" rx="3"/><text x="252" y="173" class="fA" font-weight="600">A</text>
+      <path class="wire" d="M236 168H176V115" marker-end="url(#ar)"/>
+      <!-- D feedforward -->
+      <path class="wire" d="M44 100V34H380"/>
+      <rect class="box sD" x="382" y="16" width="46" height="36" rx="3"/><text x="398" y="39" class="fD" font-weight="600">D</text>
+      <path class="wire" d="M428 34H484V85" marker-end="url(#ar)"/>
+      <text x="520" y="196" class="lbl">integrator output = state</text>
+    </svg>
+    </div>
+    <figcaption>The vector block diagram from <span class="ref">L02·s6</span>. Everything left of ∫ is the state equation and everything right of it is the output equation. Each state is the output of an integrator.</figcaption>
+  </figure>
+  <ul class="lines">
+    <li><b>State variables</b> are the smallest set of variables that fix the state of the system <span class="ref">L01·s10</span>. They don't have to be measurable <span class="ref">L02·s7</span>.</li>
+    <li>An nth-order system gives n first-order equations, so A is n×n <span class="ref">L02·s7</span>.</li>
+    <li>Classical = TF, s-domain, SISO, root locus/Bode. Modern = state space, time domain, matrices, MIMO, pole placement, easy to program <span class="ref">L01·s5–9</span>.</li>
+  </ul>
+  <div class="mem">
+    <h3>Can't rebuild: memorise</h3>
+    <ul>
+      <li>\(\dot{\mathbf x}=\class{mA}{\mathbf A}\mathbf x+\class{mB}{\mathbf B}\mathbf u,\quad \mathbf y=\class{mC}{\mathbf C}\mathbf x+\class{mD}{\mathbf D}\mathbf u\)<br>A system, B input, C output, D feedforward matrix <span class="ref">L02·s6</span></li>
+    </ul>
+  </div>
+</section>
+
+<!-- ============ L02 ============ -->
+<section class="lec" id="l02">
+  <div class="lec-head"><span class="num">L02</span><h2>State-space representation: ODE → A, B, C, D</h2></div>
+  <figure>
+    <div class="scroll">
+    <svg viewBox="0 0 640 236" role="img" aria-label="Chain of three integrators for a third-order system: the input enters a sum giving the third derivative of y, integrated three times to give y double-dot, y dot and y. These are states x3, x2, x1. Each is fed back with gain minus a1, minus a2, minus a3 into the sum.">
+      <defs><marker id="ar2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="arrowhead"/></marker></defs>
+      <text x="6" y="64">u</text>
+      <path class="wire sB" d="M20 60H74" marker-end="url(#ar2)" style="stroke:var(--B)"/>
+      <text x="30" y="48" class="lbl fB">enters top</text>
+      <circle class="box" cx="88" cy="60" r="13"/><text x="82" y="65">Σ</text>
+      <path class="wire" d="M101 60H146" marker-end="url(#ar2)"/>
+      <text x="112" y="50" class="lbl">y⃛</text>
+      <rect class="box" x="148" y="44" width="40" height="32" rx="3"/><text x="162" y="65">∫</text>
+      <path class="wire" d="M188 60H286" marker-end="url(#ar2)"/>
+      <circle class="dot" cx="236" cy="60" r="3"/><text x="226" y="48">ÿ</text><text x="222" y="32" class="lbl">x₃</text>
+      <rect class="box" x="288" y="44" width="40" height="32" rx="3"/><text x="302" y="65">∫</text>
+      <path class="wire" d="M328 60H426" marker-end="url(#ar2)"/>
+      <circle class="dot" cx="376" cy="60" r="3"/><text x="368" y="48">ẏ</text><text x="364" y="32" class="lbl">x₂</text>
+      <rect class="box" x="428" y="44" width="40" height="32" rx="3"/><text x="442" y="65">∫</text>
+      <path class="wire" d="M468 60H600" marker-end="url(#ar2)" style="stroke:var(--C)"/>
+      <circle class="dot" cx="516" cy="60" r="3"/><text x="510" y="48">y</text><text x="506" y="32" class="lbl">x₁</text>
+      <text x="606" y="64" class="fC">y</text>
+      <text x="540" y="84" class="lbl fC">C=[1 0 0]</text>
+      <!-- feedback -->
+      <path class="wire" d="M236 60V122H190"/>
+      <rect class="box sA" x="146" y="108" width="44" height="28" rx="3"/><text x="154" y="127" class="fA">−a₁</text>
+      <path class="wire" d="M376 60V164H190"/>
+      <rect class="box sA" x="146" y="150" width="44" height="28" rx="3"/><text x="154" y="169" class="fA">−a₂</text>
+      <path class="wire" d="M516 60V206H190"/>
+      <rect class="box sA" x="146" y="192" width="44" height="28" rx="3"/><text x="154" y="211" class="fA">−a₃</text>
+      <path class="wire" d="M146 122H88"/><path class="wire" d="M146 164H88"/><path class="wire" d="M146 206H88V75" marker-end="url(#ar2)"/>
+    </svg>
+    </div>
+    <figcaption>Phase-variable (Case 1) form, drawn for n = 3 and read straight off the ODE. Solve for the top derivative; integrate down to y. The integrator outputs are the states. Each ẋᵢ = xᵢ₊₁ link gives one "1" on A's superdiagonal, and the <span class="tA">−aᵢ</span> feedbacks give A's bottom row. Same structure as the diagrams on <span class="ref">L02·s9, s11</span>.</figcaption>
+  </figure>
+
+  <div class="flow">
+    <div class="step"><span class="k">1</span><div class="body">
+      <p>Write the ODE as \(y^{(n)}+a_1y^{(n-1)}+\dots+a_ny=\;\)<i>right-hand side</i>. For a physical system, derive this first, e.g. mass-spring-damper \(m\ddot y+b\dot y+ky=u\) <span class="ref">L02·s8–9</span>. Divide through so \(y^{(n)}\) has coefficient 1.</p>
+    </div></div>
+    <div class="step"><span class="k">2</span><div class="body">
+      <p>Does the right-hand side contain derivatives of u?</p>
+      <div class="branch">
+        <div>
+          <span class="when">No: Case 1 <span class="ref">L02·s13–14</span></span>
+          <p>\(x_1=y,\;x_2=\dot y,\dots,x_n=y^{(n-1)}\)</p>
+          <p>\(\class{mA}{\mathbf A}=\begin{bmatrix}0&1&&\\&\ddots&\ddots&\\&&0&1\\-a_n&\cdots&\cdots&-a_1\end{bmatrix}\)</p>
+          <p>\(\class{mB}{\mathbf B}=\begin{bmatrix}0\\\vdots\\0\\1\end{bmatrix},\;\class{mC}{\mathbf C}=[1\;0\cdots0],\;\class{mD}{D}=0\)</p>
+        </div>
+        <div>
+          <span class="when">Yes: Case 2 <span class="ref">L02·s15–17</span></span>
+          <p>Same <b class="tA">A</b>, same <b class="tC">C</b>. The u-derivatives get absorbed into the states (\(x_1=y-\beta_0u\), …), so they only show up in <b class="tB">B</b> and <b class="tD">D</b>:</p>
+          <p>\(\class{mB}{\mathbf B}=\begin{bmatrix}\beta_1\\\vdots\\\beta_n\end{bmatrix},\;\class{mD}{D}=\beta_0\)</p>
+          <p>\(\beta_0=b_0,\;\;\beta_k=b_k-a_1\beta_{k-1}-a_2\beta_{k-2}-\dots-a_k\beta_0\)</p>
+        </div>
+      </div>
+    </div></div>
+    <div class="step"><span class="k">3</span><div class="body">
+      <p>Check with Example 4 <span class="ref">L02·s18–19</span>: \(\dddot y+2\ddot y+3\dot y+4y=5\dddot u+6\ddot u+7\dot u+8u\) gives \(\beta=5,-4,0,0\), so \(\class{mB}{\mathbf B}=[-4\;0\;0]^T\), \(\class{mD}{D}=5\), and A has bottom row \([-4\;-3\;-2]\).</p>
+    </div></div>
+  </div>
+
+  <div class="watch">
+    <p><b>Watch the state ordering.</b> Examples 1, 2 and 4 use \(x_1=y\). Example 3 <span class="ref">L02·s10–11</span> numbers the states the other way round (\(x_1=\ddot y,\;x_3=y\)). The coefficient row then sits at the <i>top</i> of A, and \(\class{mB}{\mathbf B}=[6\;0\;0]^T\), \(\class{mC}{\mathbf C}=[0\;0\;1]\). Both are valid; it's the same chain read in the opposite direction.</p>
+    <p><b>Why Case 1 states aren't always used in practice:</b> higher derivatives of a measured output are noisy <span class="ref">L02·s13</span>.</p>
+  </div>
+
+  <div class="mem">
+    <h3>Can't rebuild: memorise</h3>
+    <ul>
+      <li>Companion A: 1s on the superdiagonal, bottom row \(-a_n\;\dots\;-a_1\) (reversed order) <span class="ref">L02·s14</span></li>
+      <li>β recursion: \(\beta_k=b_k-\sum_{i=1}^{k}a_i\beta_{k-i}\), with \(\beta_0=b_0\) <span class="ref">L02·s16</span></li>
+    </ul>
+  </div>
+</section>
+
+<!-- ============ L03 ============ -->
+<section class="lec" id="l03">
+  <div class="lec-head"><span class="num">L03</span><h2>Transformation of state space: one TF, many realisations</h2></div>
+  <p class="lede">All four forms below are the same system, Example 1 <span class="ref">L03·s11–12</span>: \(G(s)=\dfrac{s+3}{s^2+3s+2}=\dfrac{2}{s+1}-\dfrac{1}{s+2}\). Look at which colour carries the numerator 3, 1 or the residues 2, −1.</p>
+
+  <div class="forms">
+    <div class="form">
+      <div class="name"><b>CCF: controllable</b><span class="ref">L03·s4, s11</span></div>
+      <div class="m">\(\class{mA}{\begin{bmatrix}0&1\\-2&-3\end{bmatrix}}\;\class{mB}{\begin{bmatrix}0\\1\end{bmatrix}}\;\class{mC}{\begin{bmatrix}3&1\end{bmatrix}}\)</div>
+      <span class="use">Numerator in <b class="tC">C</b>. A is the L02 companion. Used for controllability and pole placement.</span>
+    </div>
+    <div class="form">
+      <div class="name"><b>OCF: observable</b><span class="ref">L03·s6, s12</span></div>
+      <div class="m">\(\class{mA}{\begin{bmatrix}0&-2\\1&-3\end{bmatrix}}\;\class{mB}{\begin{bmatrix}3\\1\end{bmatrix}}\;\class{mC}{\begin{bmatrix}0&1\end{bmatrix}}\)</div>
+      <span class="use">CCF transposed: A→Aᵀ, B↔Cᵀ <span class="add">added</span>. Numerator in <b class="tB">B</b>. Used for observability and simulation with initial conditions <span class="ref">L03·s7</span>.</span>
+    </div>
+    <div class="form">
+      <div class="name"><b>DCF: diagonal</b><span class="ref">L03·s8, s12</span></div>
+      <div class="m">\(\class{mA}{\begin{bmatrix}-1&0\\0&-2\end{bmatrix}}\;\class{mB}{\begin{bmatrix}1\\1\end{bmatrix}}\;\class{mC}{\begin{bmatrix}2&-1\end{bmatrix}}\)</div>
+      <span class="use">Poles on A's diagonal, residues in <b class="tC">C</b>. Only for <b>distinct</b> roots. Comes from partial fractions.</span>
+    </div>
+    <div class="form">
+      <div class="name"><b>JCF: Jordan</b><span class="ref">L03·s9</span></div>
+      <div class="m">\(\class{mA}{\begin{bmatrix}-p&1&0\\0&-p&1\\0&0&-p\end{bmatrix}}\;\class{mB}{\begin{bmatrix}0\\0\\1\end{bmatrix}}\;\class{mC}{\begin{bmatrix}c_1&c_2&c_3\end{bmatrix}}\)</div>
+      <span class="use">For <b>repeated</b> roots. A triple pole gives one block with 1s above the diagonal, and \(G=\frac{c_1}{(s+p)^3}+\frac{c_2}{(s+p)^2}+\frac{c_3}{s+p}\). Example 1 has no repeated root, so this one is generic.</span>
+    </div>
+  </div>
+
+  <div class="flow">
+    <div class="step"><span class="k">TF→SS</span><div class="body">
+      <p>Write \(G=\frac{b_0s^n+\dots+b_n}{s^n+a_1s^{n-1}+\dots+a_n}\), then read off a form:</p>
+      <p>CCF: \(\class{mC}{\mathbf C}=[\,b_n-a_nb_0\;\;\cdots\;\;b_1-a_1b_0\,]\), \(\class{mD}{D}=b_0\) <span class="ref">L03·s4</span>. OCF: put that same list in <b class="tB">B</b> as a column <span class="ref">L03·s6</span>. DCF/JCF: factor the denominator, then use partial fractions <span class="ref">L03·s8–9</span>.</p>
+    </div></div>
+    <div class="step"><span class="k">SS→TF</span><div class="body">
+      <p>Laplace with \(\mathbf x(0)=0\): \((s\mathbf I-\class{mA}{\mathbf A})\mathbf X=\class{mB}{\mathbf B}U\), so \(G=\class{mC}{\mathbf C}(s\mathbf I-\class{mA}{\mathbf A})^{-1}\class{mB}{\mathbf B}+\class{mD}{D}\) <span class="ref">L03·s14–16</span>.</p>
+      <p>Example 2 <span class="ref">L03·s17–18</span>: upper-triangular A with diagonal −1, −1, −2 gives \(G=\frac{1}{(s+1)^2(s+2)}=\frac{1}{s^3+4s^2+5s+2}\). With C = [1 0 0] and B = e₃ you only need the top-right entry of the inverse.</p>
+    </div></div>
+  </div>
+
+  <div class="watch">
+    <p><b>L02 β-form vs L03 CCF</b> <span class="add">added</span>: same companion A, but the β-form puts the numerator into <b class="tB">B</b> (C = [1 0 … 0]), while CCF puts it into <b class="tC">C</b> (B = [0 … 0 1]ᵀ). If an answer has a different B and C from the official one, check which form was asked for before assuming it's wrong.</p>
+    <p><b>Slide wording to check:</b> <span class="ref">L03·s10</span> says Jordan is for "only multiple roots", but the s9 example mixes a triple root with distinct ones. In practice, each repeated root gets a Jordan block and the distinct roots stay diagonal. Ask the lecturer if this matters for the exam.</p>
+  </div>
+
+  <div class="mem">
+    <h3>Can't rebuild: memorise</h3>
+    <ul>
+      <li>CCF's C runs <b>backwards</b>: \(b_n-a_nb_0\) first, \(b_1-a_1b_0\) last <span class="ref">L03·s4</span></li>
+      <li>OCF = CCF transposed (A→Aᵀ, B↔Cᵀ). Remember one and you get the other <span class="add">added</span></li>
+      <li>\(G=\class{mC}{\mathbf C}(s\mathbf I-\class{mA}{\mathbf A})^{-1}\class{mB}{\mathbf B}+\class{mD}{D}\) <span class="ref">L03·s16</span></li>
+    </ul>
+  </div>
+</section>
+
+<footer>
+  <p>Checked: every form and worked example on this page was recomputed in sympy (17 checks, all pass), including the generic n = 3 CCF, OCF and β-forms and the <span class="add">added</span> claims. Script: <code>chapters/lecture/verify_L01_03.py</code>.</p>
+  <p>Not used: <code>concepts/chap2.md</code> and <code>state_space_transformation.md</code> (AI-generated, unverified). Exercise answers (L02 Ex 1–2, L03 Ex 1) are left for you.</p>
+</footer>
+</div>
+
+<script>
+window.MathJax={loader:{load:['[tex]/html']},tex:{packages:{'[+]':['html']},inlineMath:[['\\(','\\)']],displayMath:[['\\[','\\]']]},svg:{fontCache:'global'}};
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-svg.js"></script>

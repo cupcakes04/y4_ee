@@ -5,6 +5,8 @@ description: How the student and the AI work together to learn Y4 lecture materi
 
 # Learn — finding what works, per module
 
+> Before starting, interogate the student for information.
+
 ## Intent
 
 The student (Y4 MEng Mechatronics; strong in Python and systems thinking, maths/physics intuition
@@ -63,7 +65,27 @@ Ask the student when unsure (which topic, what hurts, whether a method helped) r
 | File | Content |
 |---|---|
 | `lessons.md` | Cross-module findings with evidence. Starts with the aerial-robotics audit |
-| `modules/<code>.md` | Per module: hypothesis → to-do → log → current method. Grows with use |
+| `modules/<code>.md` | Per module: hypothesis → to-do → log → current method → **lectured so far**. Grows with use |
+
+## Where work goes in a module folder (`modules/<code>_<name>/`)
+
+| Folder | Whose | Content |
+|---|---|---|
+| `raw/`, `drills/` | official | slides, tutorial solutions. Read only |
+| `concepts/` | **student** | the student's own notes. AI only suggests changes (fixed rule 6) |
+| `chapters/lecture/` | shared | AI-built study material (maps, footholds, widgets, check scripts) + `exercise.md` |
+| `chapters/cwN/` | student | coursework |
+
+**`chapters/lecture/exercise.md`** is the back-and-forth channel. It holds dated entries with the newest at the bottom.
+Each entry has a source line (real Tutorial/slide reference, numbers verbatim), then a **Me:** section (the
+student's attempt or one-line friction) and an **AI:** section. When the student says they've updated
+it, read the newest entries and reply under **AI:** using the escalation ladder above, recomputing every number.
+Add new exercises at the bottom. Never edit the student's **Me:** text. Distil anything learned into the module log.
+
+> Note: exercise is for the ai to invoke when deemed appropriate, not all modules need this.
+
+**Stay within what's been lectured.** Check "lectured so far" in the module file. Material beyond it is marked
+⏭ and isn't set as an exercise.
 
 Keep this skill small. Add to it only what was learned from actual sessions.
 
