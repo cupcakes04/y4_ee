@@ -1,0 +1,20 @@
+# ros_gz_bridge config: one entry per topic (same idea as the command-line spec, just written out)
+# /clock@rosgraph_msgs/msg/Clock[gz.msgs.Clock  ==  the first entry below
+
+- ros_topic_name: "/clock"
+  gz_topic_name: "/clock"
+  ros_type_name: "rosgraph_msgs/msg/Clock"
+  gz_type_name: "gz.msgs.Clock"
+  direction: GZ_TO_ROS
+
+- ros_topic_name: "/scan_low"
+  gz_topic_name: "/scan_low"
+  ros_type_name: "sensor_msgs/msg/LaserScan"
+  gz_type_name: "gz.msgs.LaserScan"
+  direction: GZ_TO_ROS
+
+- ros_topic_name: "/scan_high"
+  gz_topic_name: "/scan_high"
+  ros_type_name: "sensor_msgs/msg/LaserScan"
+  gz_type_name: "gz.msgs.LaserScan"
+  direction: GZ_TO_ROS

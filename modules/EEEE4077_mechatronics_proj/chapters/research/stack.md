@@ -11,7 +11,7 @@ Learning notes: ROS 2 basics in [`concepts/ROS2_notes`](../../concepts/ROS2_note
 | tf2 + REP 105 frames (`map → odom → base_link → laser/camera`) | all | ✅ | ROS2_notes 06 |
 | URDF/xacro, robot_state_publisher, RViz2, Markers | M1, M4 viz | ✅ | ROS2_notes 07 |
 | Gazebo Harmonic: worlds, SDF, system plugins (diff-drive, `gpu_lidar`, camera, joint state), actors | M1 | 🎯 | Robot driving in a world, sensors on ROS topics |
-| `ros_gz_bridge`, `/clock`, `use_sim_time` | M1 | 🎯 | Can explain why sim time matters and debug a missing bridge |
+| `ros_gz_bridge`, `/clock`, `use_sim_time` | M1 | ✅ (2026-11-19) | Can explain why sim time matters and debug a missing bridge |
 | Nav2 architecture: map server, AMCL, planner vs controller, costmap layers, BT navigator, lifecycle | M1 | ⬜ | Can read a Nav2 params file and say what each block does |
 | MPPI algorithm: sampling, rollouts, critics, softmax weighting, key params | M2–M3 | ⬜ | Can predict what changing `temperature`, `batch_size`, `time_steps`, critic weights does. Old note to reuse after checking: `archive/.../research/notes/4_1_*` |
 | pluginlib + MPPI `CriticFunction` (C++) | M1 hello, M3 | ⬜ | Can write a critic that reads trajectories and adds cost |
@@ -26,7 +26,7 @@ Learning notes: ROS 2 basics in [`concepts/ROS2_notes`](../../concepts/ROS2_note
 | Component | Choice | Note |
 |---|---|---|
 | OS / ROS | Ubuntu 24.04 + ROS 2 Jazzy | Installed on laptop [M1] |
-| Simulator | Gazebo Harmonic + `ros_gz` | The Gazebo release paired with Jazzy [E]. Not installed yet |
+| Simulator | Gazebo Harmonic + `ros_gz` | The Gazebo release paired with Jazzy [E]. Installed: Gazebo Sim 8.15.0 (2026-11-18) |
 | Navigation | Nav2 (Jazzy): MPPI, costmap_2d, collision_monitor, AMCL, slam_toolbox (once, to make a map) | [L1][L2] |
 | Critic | C++ (pluginlib) | Only C++ in the project |
 | Fusion, harness, analysis | Python, NumPy, Matplotlib | Spec names NumPy + Matplotlib |

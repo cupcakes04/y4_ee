@@ -1,6 +1,6 @@
 # Plan
 
-**Now (2026-11-17, wk 12):** M1 step 1 in progress: student installing Gazebo + Nav2 per [notes/M1_01](notes/M1_01_gazebo_and_sim_time.md); next is the Q3 test world. Active scratch: [`M1-M2_to_midterm.md`](../scratch/M1-M2_to_midterm.md).
+**Now (2026-11-19, wk 12):** M1 step 1 done + promoted (Q3 = yes). Step-1 understanding check waiting in `scratch/answer.md`; then step 2 `fyp_description`. Active scratch: [`M1_sim_nav2.md`](../scratch/M1_sim_nav2.md) (M2 queued in [`M2_harness_b0.md`](../scratch/M2_harness_b0.md)).
 
 Rule: each milestone ends in something that **runs and produces a number**. Learn only what the next milestone needs (learn↔build, see [ws/README.md](../../ws/README.md)).
 Order is risk-first: harness and baseline before perception; critic on ground truth before fusion; C++ early because it's the biggest skill gap.

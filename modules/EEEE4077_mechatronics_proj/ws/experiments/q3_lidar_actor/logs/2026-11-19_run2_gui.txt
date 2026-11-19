@@ -1,0 +1,19 @@
+# Q3 run 2 (GUI), 2026-11-19. q3_check.py output pasted by student (answer.md), verbatim.
+# Outcome: actor hit by both lidars in every scan; control hit in every scan; RTF ~1.0 with GUI. RViz: /scan_high not drawn (no TF lidar_high->lidar_low; README fixed). Screenshot: ../media/2026-11-19_run2_rviz_scan_low.png
+
+$ ros2 topic echo /scan_low --once --field header
+stamp:
+  sec: 1469
+  nanosec: 600000000
+frame_id: lidar_low
+---
+$ python3 q3_check.py --ros-args -p use_sim_time:=true
+[INFO] [1795056391.333405321] [q3_check]: started at sim t = 1471.0 s, running 28 sim s
+/scan_low: scans=289  actor-lane hit in 289/289 (100%), max points on actor=11  |  control hit in 289/289 (100%)
+/scan_high: scans=289  actor-lane hit in 289/289 (100%), max points on actor=11  |  control hit in 289/289 (100%)
+$ gz topic -e -t /stats -n 1 | grep real_time_factor
+real_time_factor: 1.0055192954125194
+real_time_factor: 0.99920762835071786
+
+$ rviz2 (scan_high display)
+[INFO] [1795057860.130577717] [rviz]: Message Filter dropping message: frame 'lidar_high' at time 2934.800 for reason 'discarding message because the queue is full'

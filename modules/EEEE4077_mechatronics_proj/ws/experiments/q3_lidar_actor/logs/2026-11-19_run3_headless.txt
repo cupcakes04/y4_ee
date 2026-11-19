@@ -1,0 +1,15 @@
+# Q3 run 3 (headless: gz sim -s -r --headless-rendering), 2026-11-19. Pasted by student (answer.md), verbatim.
+# Outcome: same as GUI: actor + control hit in every scan, both heights. RTF ~1.0 headless (single sample).
+
+$ ros2 topic echo /scan_low --once --field header
+stamp:
+  sec: 85
+  nanosec: 0
+frame_id: lidar_low
+---
+$ python3 q3_check.py --ros-args -p use_sim_time:=true
+[INFO] [1795057957.259372732] [q3_check]: started at sim t = 86.6 s, running 28 sim s
+/scan_low: scans=284  actor-lane hit in 284/284 (100%), max points on actor=11  |  control hit in 284/284 (100%)
+/scan_high: scans=284  actor-lane hit in 284/284 (100%), max points on actor=11  |  control hit in 284/284 (100%)
+$ gz topic -e -t /stats -n 1 | grep real_time_factor
+real_time_factor: 1.0011643541438693

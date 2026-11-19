@@ -69,6 +69,24 @@ Rule for the project: **every launch file passes `use_sim_time: true` to every n
 3. What breaks if one node has `use_sim_time` false?
 4. What is RTF, and what does yours look like on this laptop?
 
+### A6. Symptom → cause (added after the step-1 check)
+
+Two clock problems that look alike:
+
+| Situation | Node's "now" | Symptom |
+|---|---|---|
+| `use_sim_time: true`, **no `/clock` bridged** | Stuck at **0** (no time source) | Node waits forever: timers don't fire, "waiting for transform", nothing moves. `q3_check.py` prints *"sim time is 0"* for exactly this |
+| `/clock` bridged, **one node `use_sim_time: false`** | Wall time (~1.79e9 s since 1970) vs everyone else's sim time (~100 s) | TF "extrapolation" errors, data dropped as too old/new |
+
+One tf2 lookup ("give me frame B in frame A at time t") fails in two ways:
+
+| Failure | Missing | Error text | Typical cause here |
+|---|---|---|---|
+| **Which frames** | No chain of transforms connects B to A | *"Frame [x] does not exist"*, *"could not find a connection"*, RViz *"queue is full"* | `robot_state_publisher` not running (no `base_link → lidar_link`), or no odometry TF (`odom → base_link`) |
+| **When** | Chain exists, but not at time t | *"extrapolation into the future/past"* | One node on wall time; sensor stamp newer than the last odom TF (TF published late or slowly) |
+
+Bridge spec reminder: `topic @ ROS_type X gz_type`. The **first `@` is always just a separator**; only `X` (`[` `]` `@`) is the direction.
+
 ---
 
 ## Part B — Setup (laptop, Ubuntu 24.04, ROS 2 Jazzy already installed)

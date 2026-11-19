@@ -9,7 +9,6 @@ Ordered by how much damage a wrong answer does.
 |---|---|---|---|---|
 | Q1 | How badly does a **tuned** stock MPPI (B0) actually do against crossing / head-on people? | Nav2 maintainers say it handles dynamics well [L3]. If B0 rarely fails, scenarios must be chosen where it does — or the result is "no gain", reported honestly | B0 runs in harness, scenarios A/B, several speeds | M2 |
 | Q2 | Do Jazzy's MPPI critics / API match `main` [L1]? Same `CriticFunction` interface? | Plugin must compile against Jazzy | Read `jazzy` branch headers; build hello-critic | M1 |
-| Q3 | Does Gazebo Harmonic `gpu_lidar` return hits on **actors**? | If not, LiDAR never sees people in sim → need collision-shaped models moved by a plugin instead | 10-min test: one actor in front of the robot, echo `/scan` | M1 |
 | Q4 | Can the laptop (8 cores, 13 GB) run Gazebo + Nav2 + harness faster than real time, headless? | Decides runs per night | Time a headless batch of 10 runs | M2 |
 | Q5 | Is `nav2_loopback_sim` + a fake obstacle publisher usable for fast critic iteration without Gazebo? | Could make critic tuning runs much faster | Try it once the critic exists | M3 |
 | Q6 | Is there a standard ROS message for tracked obstacles we should reuse? | Industry practice is to reuse | Search ROS index; check what `nav2_following` / prox_mpc consume | M3 |
@@ -23,4 +22,4 @@ Ordered by how much damage a wrong answer does.
 
 | Q | Answer |
 |---|---|
-| — | — |
+| Q3 | **Yes.** `gpu_lidar` hits Gazebo actors at 0.3 m and 1.0 m in every scan, GUI and headless [M2]. Use actors directly. Actors still have no collision → collision metric from GT distance |

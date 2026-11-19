@@ -1,0 +1,156 @@
+<?xml version="1.0" ?>
+<!--
+  Q3 test: does Gazebo Harmonic gpu_lidar return hits on an actor?
+  Layout (top view, lidar at origin facing +x):
+    - two fixed lidars on a post at the origin: 0.3 m (robot height) and 1.0 m (torso height)
+    - one actor walking back and forth along x = 2 m, from y = -3 to y = +3
+    - one static cylinder at x = -2 m as a CONTROL (proves the lidar works at all)
+-->
+<sdf version="1.10">
+  <world name="q3_lidar_actor">
+
+    <!-- Systems: without these the world has no physics, no GUI sync, and sensors publish nothing -->
+    <plugin filename="gz-sim-physics-system" name="gz::sim::systems::Physics"/>
+    <plugin filename="gz-sim-user-commands-system" name="gz::sim::systems::UserCommands"/>
+    <plugin filename="gz-sim-scene-broadcaster-system" name="gz::sim::systems::SceneBroadcaster"/>
+    <plugin filename="gz-sim-sensors-system" name="gz::sim::systems::Sensors">
+      <render_engine>ogre2</render_engine>
+    </plugin>
+
+    <light type="directional" name="sun">
+      <cast_shadows>true</cast_shadows>
+      <pose>0 0 10 0 0 0</pose>
+      <diffuse>0.8 0.8 0.8 1</diffuse>
+      <direction>-0.5 0.1 -0.9</direction>
+    </light>
+
+    <model name="ground_plane">
+      <static>true</static>
+      <link name="link">
+        <collision name="collision">
+          <geometry><plane><normal>0 0 1</normal><size>40 40</size></plane></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><plane><normal>0 0 1</normal><size>40 40</size></plane></geometry>
+          <material><diffuse>0.7 0.7 0.7 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Fixed sensor post. Static: it never moves. -->
+    <model name="lidar_post">
+      <static>true</static>
+      <pose>0 0 0 0 0 0</pose>
+      <link name="link">
+
+        <!-- Low lidar: the height a small robot's 2D lidar would sit at -->
+        <sensor name="lidar_low" type="gpu_lidar">
+          <pose>0 0 0.3 0 0 0</pose>
+          <topic>/scan_low</topic>
+          <gz_frame_id>lidar_low</gz_frame_id>
+          <update_rate>10</update_rate>
+          <always_on>true</always_on>
+          <visualize>true</visualize>
+          <lidar>
+            <scan>
+              <horizontal>
+                <samples>360</samples>
+                <resolution>1</resolution>
+                <min_angle>-3.14159</min_angle>
+                <max_angle>3.14159</max_angle>
+              </horizontal>
+              <vertical>
+                <samples>1</samples>
+                <resolution>1</resolution>
+                <min_angle>0</min_angle>
+                <max_angle>0</max_angle>
+              </vertical>
+            </scan>
+            <range>
+              <min>0.12</min>
+              <max>12.0</max>
+              <resolution>0.01</resolution>
+            </range>
+          </lidar>
+        </sensor>
+
+        <!-- High lidar: diagnostic only. If low misses but high hits, the issue is thin legs, not "actors invisible" -->
+        <sensor name="lidar_high" type="gpu_lidar">
+          <pose>0 0 1.0 0 0 0</pose>
+          <topic>/scan_high</topic>
+          <gz_frame_id>lidar_high</gz_frame_id>
+          <update_rate>10</update_rate>
+          <always_on>true</always_on>
+          <visualize>true</visualize>
+          <lidar>
+            <scan>
+              <horizontal>
+                <samples>360</samples>
+                <resolution>1</resolution>
+                <min_angle>-3.14159</min_angle>
+                <max_angle>3.14159</max_angle>
+              </horizontal>
+              <vertical>
+                <samples>1</samples>
+                <resolution>1</resolution>
+                <min_angle>0</min_angle>
+                <max_angle>0</max_angle>
+              </vertical>
+            </scan>
+            <range>
+              <min>0.12</min>
+              <max>12.0</max>
+              <resolution>0.01</resolution>
+            </range>
+          </lidar>
+        </sensor>
+
+        <visual name="post">
+          <pose>0 0 0.5 0 0 0</pose>
+          <geometry><cylinder><radius>0.03</radius><length>1.0</length></cylinder></geometry>
+        </visual>
+      </link>
+    </model>
+
+    <!-- CONTROL: a normal static model with a collision shape, 2 m behind the lidar -->
+    <model name="control_cylinder">
+      <static>true</static>
+      <pose>-2 0 0.6 0 0 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry><cylinder><radius>0.25</radius><length>1.2</length></cylinder></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><cylinder><radius>0.25</radius><length>1.2</length></cylinder></geometry>
+          <material><diffuse>0.2 0.4 0.8 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- The actor: animated mesh from Gazebo Fuel (downloaded on first run, then cached).
+         Walks +y along x = 2 (yaw +90 deg), turns, walks back (yaw -90 deg). ~1 m/s. One loop = 14 s. -->
+    <actor name="walker">
+      <skin>
+        <filename>https://fuel.gazebosim.org/1.0/Mingfei/models/actor/tip/files/meshes/walk.dae</filename>
+        <scale>1.0</scale>
+      </skin>
+      <animation name="walk">
+        <filename>https://fuel.gazebosim.org/1.0/Mingfei/models/actor/tip/files/meshes/walk.dae</filename>
+        <interpolate_x>true</interpolate_x>
+      </animation>
+      <script>
+        <loop>true</loop>
+        <delay_start>0.0</delay_start>
+        <auto_start>true</auto_start>
+        <trajectory id="0" type="walk" tension="0.6">
+          <waypoint><time>0</time><pose>2 -3 1.0 0 0 1.5708</pose></waypoint>
+          <waypoint><time>6</time><pose>2 3 1.0 0 0 1.5708</pose></waypoint>
+          <waypoint><time>7</time><pose>2 3 1.0 0 0 -1.5708</pose></waypoint>
+          <waypoint><time>13</time><pose>2 -3 1.0 0 0 -1.5708</pose></waypoint>
+          <waypoint><time>14</time><pose>2 -3 1.0 0 0 1.5708</pose></waypoint>
+        </trajectory>
+      </script>
+    </actor>
+
+  </world>
+</sdf>

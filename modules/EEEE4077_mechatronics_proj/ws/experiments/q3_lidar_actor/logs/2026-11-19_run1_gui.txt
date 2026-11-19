@@ -1,0 +1,21 @@
+# Q3 run 1 (GUI), 2026-11-19. Raw terminal output pasted by student (answer.md). Verbatim below.
+# Outcome: bridge OK; frame_id lidar_low OK; RTF ~1.0 (GUI); q3_check.py FAILED: conda python 3.11 shadowed ROS python 3.12. Screenshot: ../media/2026-11-19_run1_gui_scan_low.png
+
+Slim-3-15AMN8:~/projects/y4_ee/modules/EEEE4077_mechatronics_proj/ws/experiments/q3_lidar_actor$ ros2 run ros_gz_bridge parameter_bridge --ros-args -p config_file:=$PWD/bridge.yaml
+[INFO] [1795055671.259347801] [ros_gz_bridge]: Creating GZ->ROS Bridge: [/clock (gz.msgs.Clock) -> /clock (rosgraph_msgs/msg/Clock)] (Lazy 0)
+[INFO] [1795055671.267272287] [ros_gz_bridge]: Creating GZ->ROS Bridge: [/scan_low (gz.msgs.LaserScan) -> /scan_low (sensor_msgs/msg/LaserScan)] (Lazy 0)
+[INFO] [1795055671.279377326] [ros_gz_bridge]: Creating GZ->ROS Bridge: [/scan_high (gz.msgs.LaserScan) -> /scan_high (sensor_msgs/msg/LaserScan)] (Lazy 0)
+
+this one is error
+ros2 topic echo /scan_low --oncros2 topic echo /scan_low --onc # frame_id should
+e --field header      # frame_id should read lidar_lowck.py --ros-args -p use_si
+python3 q3_check.py --ros-args -p use_sim_time:=true   # ~30 s, prints 2 lines_t
+gz topic -e -t /stats -n 1 | grep real_time_factor    # RTF with GUI
+stamp:
+  sec: 905
+  nanosec: 300000000
+frame_id: lidar_low
+---
+[traceback trimmed: q3_check.py import error from conda Python 3.11; setup gotcha, see README]
+real_time_factor: 1.0062528552424768
+real_time_factor: 0.99610225188836088
