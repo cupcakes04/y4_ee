@@ -25,7 +25,7 @@ Every method in Section A is a way of turning a hard **A** into a product of eas
 | A2 | LU, cost, solvability / rank, non-square | not yet | — | — |
 | A3 | eigen idea, basis, X K Xᵀ, d = Xᵀb | ✓ 2026-11-19 | [`drills/eigen/eigen.md`](../../drills/eigen/eigen.md) ✓ rewritten, verified | [A3 eigen lab](https://claude.ai/artifact/2snCA8AUw4sUWqbbmrHcdb) (`A3_eigen_lab.html`) |
 | A3 | tail: det(A−kI)=0, det = ∏k, A⁻¹, Aᴹ, feedback (sl.30–41) | ✓ 2026-11-19 (A − sI understood; the rest is one sentence) | eigen.md Part C | lab panel 4 |
-| A4 | SVD (same picture, two sets of axes) | not yet | `drills/svd` (old, unverified) | — |
+| A4 | SVD A = QσPᵀ (same picture, two sets of axes) | mostly ✓ 2026-11-21 (open: P–Q link, answered in drill A1) | [`drills/svd/svd.md`](../../drills/svd/svd.md) ✓ written, verified | [A4 SVD lab](https://claude.ai/artifact/FhzUauXrbSSswToXwniqws) (`A4_svd_lab.html`) |
 | A5 | sparse, Jacobi / Gauss-Seidel | not yet | `drills/iterative_revolution` (old, unverified) | — |
 
 ## What clicked for A3 (2026-11-19)

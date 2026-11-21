@@ -1,0 +1,416 @@
+<title>A4 SVD Lab</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=Space+Grotesk:wght@500;600&display=swap">
+<style>
+/* Layout: same graph-paper bench as the A3 lab. Shared matrix bar on top, three experiment panels below */
+:root{
+  --bg:#f3f6f7; --panel:#ffffff; --ink:#18222b; --muted:#5b6872; --rule:#d9e1e5; --grid:#e8eef1;
+  --in:#0f8a7e;      /* input side: x, P axes */
+  --out:#d0661b;     /* output side: b, Q axes */
+  --sig:#6b4fc8;     /* singular values */
+  --ok:#1d8a3a; --warn:#b42318;
+  --f-display:"Space Grotesk",system-ui,sans-serif;
+  --f-body:"IBM Plex Sans",system-ui,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#11171c; --panel:#182027; --ink:#e4ecf0; --muted:#93a3ad; --rule:#2a353e; --grid:#1f2930;
+  --in:#3cc7b8; --out:#f39a52; --sig:#a993f5; --ok:#4cc46c; --warn:#ff7b6b; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#11171c; --panel:#182027; --ink:#e4ecf0; --muted:#93a3ad; --rule:#2a353e; --grid:#1f2930;
+  --in:#3cc7b8; --out:#f39a52; --sig:#a993f5; --ok:#4cc46c; --warn:#ff7b6b; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.5;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:24px 48px}
+.wrap{max-width:1060px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+h1{font-family:var(--f-display);font-weight:600;font-size:1.7rem;margin:0;text-wrap:balance}
+h2{font-family:var(--f-display);font-weight:600;font-size:1.2rem;margin:0;text-wrap:balance}
+.lede{color:var(--muted);max-width:70ch;margin:4px 0 0}
+.src{font-family:var(--f-mono);font-size:.75rem;color:var(--muted);letter-spacing:.02em;margin:4px 0 0}
+.bar,.panel{background:var(--panel);border:1px solid var(--rule);border-radius:8px;padding:16px}
+.bar{display:flex;flex-wrap:wrap;gap:16px 28px;align-items:center}
+.eq{font-family:var(--f-mono);font-size:.95rem;display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;min-width:0}
+.mat{display:grid;gap:1px 12px;padding:2px 8px;border-left:2px solid var(--ink);border-right:2px solid var(--ink);text-align:right;font-variant-numeric:tabular-nums;font-size:.88rem}
+.mat.c2{grid-template-columns:auto auto} .mat.c3{grid-template-columns:auto auto auto}
+.mat.in{border-color:var(--in)} .mat.out{border-color:var(--out)} .mat.sg{border-color:var(--sig)}
+.mlab{font-size:.72rem;color:var(--muted);text-align:center}
+.mbox{display:flex;flex-direction:column;align-items:center;gap:2px}
+.sliders{display:grid;grid-template-columns:auto minmax(110px,200px) 5ch;gap:4px 10px;align-items:center;font-family:var(--f-mono);font-size:.85rem}
+.sliders output{text-align:right;font-variant-numeric:tabular-nums}
+.presets{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+button{font:inherit;font-size:.82rem;padding:5px 10px;border-radius:5px;border:1px solid var(--rule);background:var(--bg);color:var(--ink);cursor:pointer}
+button:hover{border-color:var(--muted)}
+button:focus-visible,input:focus-visible{outline:2px solid var(--sig);outline-offset:2px}
+.panel{display:grid;grid-template-columns:minmax(0,440px) minmax(0,1fr);gap:20px}
+.panel.wide{grid-template-columns:minmax(0,1fr)}
+@media (max-width:760px){.panel{grid-template-columns:minmax(0,1fr)}}
+.plot{position:relative;width:100%;aspect-ratio:1;max-width:100%}
+canvas{width:100%;height:100%;display:block;border-radius:6px;background:var(--bg)}
+.side{display:flex;flex-direction:column;gap:12px;min-width:0}
+.ctrl{display:flex;flex-direction:column;gap:4px}
+.ctrl label{font-size:.85rem;color:var(--muted)}
+input[type=range]{width:100%;accent-color:var(--sig)}
+input[type=number]{font:inherit;font-family:var(--f-mono);width:7ch;padding:3px 6px;border:1px solid var(--rule);border-radius:4px;background:var(--bg);color:var(--ink)}
+label.chk{display:flex;gap:6px;align-items:center;font-size:.85rem}
+.read{font-family:var(--f-mono);font-size:.85rem;font-variant-numeric:tabular-nums;display:grid;grid-template-columns:auto minmax(0,1fr);gap:3px 14px}
+.read dt{color:var(--muted)} .read dd{margin:0;overflow-wrap:anywhere}
+.pill{display:inline-block;font-family:var(--f-mono);font-size:.78rem;padding:3px 9px;border-radius:99px;border:1px solid currentColor}
+.pill.on{color:var(--ok)} .pill.off{color:var(--muted)} .pill.bad{color:var(--warn)}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:.8rem;color:var(--muted)}
+.sw{display:inline-block;width:14px;height:3px;border-radius:2px;vertical-align:middle;margin-right:5px}
+.note{font-size:.88rem;color:var(--muted);max-width:66ch;margin:0}
+.note b{color:var(--ink);font-weight:600}
+.predict{border-left:3px solid var(--sig);padding:6px 10px;font-size:.9rem;background:var(--bg);border-radius:0 6px 6px 0}
+.steps{display:flex;gap:6px;flex-wrap:wrap}
+.steps button[aria-pressed="true"]{background:var(--sig);color:#fff;border-color:var(--sig)}
+.stepText{min-height:3em;font-size:.92rem}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.tag{font-family:var(--f-mono);font-size:.7rem;color:var(--muted);border:1px dashed var(--rule);padding:1px 6px;border-radius:4px}
+/* panel 2: stage flow */
+.flowwrap{overflow-x:auto}
+.flow{display:grid;grid-template-columns:repeat(4,minmax(120px,1fr));gap:10px;min-width:540px}
+.stage{border:1px solid var(--rule);border-radius:6px;padding:10px;display:flex;flex-direction:column;gap:6px;background:var(--bg)}
+.stage h3{font-family:var(--f-display);font-size:.92rem;font-weight:600;margin:0}
+.stage .shape{font-family:var(--f-mono);font-size:.72rem;color:var(--muted)}
+.bars{display:flex;gap:6px;height:120px;align-items:stretch}
+.bcol{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;min-width:0}
+.btrack{flex:1;width:100%;position:relative;border-radius:3px}
+.btrack::after{content:"";position:absolute;left:0;right:0;top:50%;border-top:1px solid var(--rule)}
+.bfill{position:absolute;left:18%;right:18%;border-radius:2px}
+.bval{font-family:var(--f-mono);font-size:.72rem;font-variant-numeric:tabular-nums}
+.bname{font-family:var(--f-mono);font-size:.72rem;color:var(--muted)}
+.dropped{opacity:.35}
+.calc{font-family:var(--f-mono);font-size:.84rem;font-variant-numeric:tabular-nums;display:flex;flex-direction:column;gap:8px}
+.calc .card{border:1px solid var(--rule);border-radius:6px;padding:8px 10px;background:var(--bg);overflow-x:auto}
+.calc .card b{font-family:var(--f-body);font-weight:600;font-size:.86rem}
+.calc .line{white-space:pre}
+.strip{flex-direction:column;align-items:flex-start;gap:6px}
+.eqline{font-family:var(--f-mono);font-size:.9rem;overflow-wrap:anywhere}
+.cin{color:var(--in);font-weight:500} .cout{color:var(--out);font-weight:500}
+.cap{font-size:.8rem;color:var(--muted);margin:4px 0 0}
+.grid2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px}
+@media (max-width:760px){.grid2{grid-template-columns:minmax(0,1fr)}}
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>A4 SVD lab</h1>
+    <p class="lede">A = Q σ Pᵀ says any matrix acts in three moves. <b>Pᵀ</b> reads the input x in the P axes. <b>σ</b> scales each amount. <b>Q</b> rebuilds the result along the Q axes. Eigen (A3) is the special case where both sets of axes are the same.</p>
+    <p class="src">Source: EEEE3116 A4 “A singularly useful representation”, sl.15, 25, 32, 36–38, and the A4 practical. Anything not from the slides is tagged <span class="tag">added</span>.</p>
+  </header>
+
+  <!-- equation strip -->
+  <section class="bar strip" aria-label="Key equations">
+    <div class="eqline">Ax = b &nbsp;→&nbsp; Q σ Pᵀ x = b &nbsp;→&nbsp; multiply both sides by Qᵀ (QᵀQ = I) &nbsp;→&nbsp; <b>σ (<span class="cin">Pᵀx</span>) = <span class="cout">Qᵀb</span></b></div>
+    <div class="eqline"><span class="cin">Pᵀx</span> = amounts of p₀, p₁ in x. &nbsp;<span class="cout">Qᵀb</span> = amounts of q₀, q₁ in b. &nbsp;So σᵢ × (amount of <span class="cin">pᵢ</span> in x) = (amount of <span class="cout">qᵢ</span> in b). <span class="tag">sl.36, with its “times” corrected</span></div>
+    <div class="eqline">Solve: x = P σ⁻¹ Qᵀ b. &nbsp;Eigen case (A3): Q = P = X and σ = K, so x = X K⁻¹ Xᵀ b. <span class="tag">added: σ = K needs every k ≥ 0</span></div>
+  </section>
+
+  <!-- shared matrix -->
+  <section class="bar" aria-label="Matrix built from its SVD">
+    <div class="eq">
+      <div class="mbox"><div class="mat c2" id="mA"></div><div class="mlab">A</div></div> =
+      <div class="mbox"><div class="mat c2 out" id="mQ"></div><div class="mlab">Q (output axes)</div></div>
+      <div class="mbox"><div class="mat c2 sg" id="mS"></div><div class="mlab">σ</div></div>
+      <div class="mbox"><div class="mat c2 in" id="mPt"></div><div class="mlab">Pᵀ (input axes)</div></div>
+    </div>
+    <div class="sliders">
+      <label for="tP">P angle</label><input id="tP" type="range" min="0" max="180" step="1" value="50"><output id="otP">50°</output>
+      <label for="tQ">Q angle</label><input id="tQ" type="range" min="0" max="180" step="1" value="20"><output id="otQ">20°</output>
+      <label for="s0">σ₀</label><input id="s0" type="range" min="0" max="3" step="0.05" value="2"><output id="os0">2</output>
+      <label for="s1">σ₁</label><input id="s1" type="range" min="0" max="3" step="0.05" value="0.1"><output id="os1">0.1</output>
+    </div>
+    <div class="side" style="gap:8px">
+      <div class="presets">
+        <button id="pSl37">Slide 37 example</button>
+        <button id="pRound">σ₁ = 1 (rounder)</button>
+        <button id="pZero">σ₁ = 0</button>
+      </div>
+      <label class="chk"><input type="checkbox" id="lock"> Lock Q = P (one set of axes)</label>
+      <span id="symPill" class="pill off"></span>
+    </div>
+  </section>
+
+  <!-- panel 1 -->
+  <section class="panel" aria-labelledby="h1p">
+    <div class="plot"><canvas id="c1" aria-label="Input circle and output ellipse with P and Q axes"></canvas></div>
+    <div class="side">
+      <h2 id="h1p">1 · The three moves, Ax = Q σ Pᵀ x</h2>
+      <div class="legend">
+        <span><span class="sw" style="background:var(--in)"></span>x and the P axes (input side)</span>
+        <span><span class="sw" style="background:var(--out)"></span>b = Ax and the Q axes (output side)</span>
+      </div>
+      <div class="predict"><b>Predict first:</b> press “x = p₀”. Where does b land, and how long is it? Then try “x = p₁”.</div>
+      <div class="ctrl"><label for="phi">Input direction of x (x stays length 1): <span id="phiv"></span></label>
+        <input id="phi" type="range" min="0" max="360" step="1" value="110"></div>
+      <div class="row"><button id="xp0">x = p₀</button><button id="xp1">x = p₁</button></div>
+      <div class="predict"><b>How are P and Q linked?</b> In A3 you swept x until Ax lined up with x. Here, tick the box, then sweep x until Ax and Ax⊥ are perpendicular. Where are x and x⊥ then, and where do their outputs land?</div>
+      <label class="chk"><input type="checkbox" id="partner"> Show x⊥ (x turned 90°) and its output Ax⊥</label>
+      <span id="pairPill" class="pill off" hidden></span>
+      <div class="steps" role="group" aria-label="Step">
+        <button data-s="0">x</button><button data-s="1">1 · Pᵀ: read x in P axes</button>
+        <button data-s="2">2 · σ: scale each amount</button><button data-s="3">3 · Q: rebuild in Q axes</button>
+      </div>
+      <p class="stepText note" id="st1"></p>
+      <dl class="read" id="r1"></dl>
+    </div>
+  </section>
+
+  <!-- panel 2 -->
+  <section class="panel wide" aria-labelledby="h2p">
+    <div class="side">
+      <h2 id="h2p">2 · Rectangular: the practical’s A (2×3)</h2>
+      <p class="note">A = [[2, 0, 1], [−1, 2, 9]] from the A4 practical. Think of it as 3 knobs (x) driving 2 outputs (b). P lives in the 3-number input space and Q in the 2-number output space. The sliders here change x. Panel 2 does not use the matrix bar above.</p>
+      <div class="eq">
+        <div class="mbox"><div class="mat c3" id="mA2"></div><div class="mlab">A 2×3</div></div> =
+        <div class="mbox"><div class="mat c2 out" id="mQ2"></div><div class="mlab">Q 2×2</div></div>
+        <div class="mbox"><div class="mat c3 sg" id="mS2"></div><div class="mlab">σ 2×3</div></div>
+        <div class="mbox"><div class="mat c3 in" id="mP2"></div><div class="mlab">Pᵀ 3×3</div></div>
+      </div>
+      <div class="predict"><b>Predict first:</b> σ is 2×3, so p₂ has no σ to pair with. Press “x = p₂”: what is b? Then set any x with the sliders and press “add 0.5·p₂” a few times. What happens to b? If someone gave you that b and asked for x, how many answers are there?</div>
+      <div class="grid2">
+        <div class="sliders" style="grid-template-columns:auto minmax(100px,1fr) 6ch">
+          <label for="x0">x₀</label><input id="x0" type="range" min="-1" max="1" step="0.01" value="0.3"><output id="ox0"></output>
+          <label for="x1">x₁</label><input id="x1" type="range" min="-1" max="1" step="0.01" value="0.5"><output id="ox1"></output>
+          <label for="x2">x₂</label><input id="x2" type="range" min="-1" max="1" step="0.01" value="0.2"><output id="ox2"></output>
+        </div>
+        <div class="row" style="align-content:flex-start">
+          <button id="q2p0">x = p₀</button><button id="q2p1">x = p₁</button><button id="q2p2">x = p₂</button>
+          <button id="q2add">add 0.5·p₂ to x</button>
+        </div>
+      </div>
+      <div class="flowwrap"><div class="flow" id="flow"></div></div>
+      <p class="predict" id="p2stat" hidden></p>
+      <dl class="read" id="r2"></dl>
+      <p class="note"><b>Full vs economy form.</b> The lecture (sl.15) uses the full form: Q is N×N, σ is N×M padded with zeros, Pᵀ is M×M. MATLAB’s <span style="font-family:var(--f-mono)">svd(A,'econ')</span>, which your CW1 used, throws away the padding and the p₂ row it multiplies. Both give the same A. <span class="tag">added: each (qᵢ, pᵢ) pair can flip sign together, so a hand calculation may show the opposite signs</span></p>
+    </div>
+  </section>
+
+  <!-- panel 3 -->
+  <section class="panel wide" aria-labelledby="h3p">
+    <div class="side">
+      <h2 id="h3p">3 · Solve Ax = b backwards (sl.36–37)</h2>
+      <p class="note">Run the three moves in reverse: <b>Qᵀ</b> reads b in Q axes, <b>÷σ</b> undoes each scale, <b>P</b> rebuilds x. So x = P σ⁻¹ Qᵀ b, the same shape as A3’s x = X K⁻¹ Xᵀ b. This uses the matrix bar above; the Slide 37 preset gives the slide’s numbers.</p>
+      <div class="predict"><b>Predict first:</b> on the Slide 37 preset σ₁ = 0.1. In the left plot, the faint ellipse is every output a length-1 input can make. How thin is it along q₁, and how much of b lies along q₁? So how big must x be? Check the right plot, then drag σ₁ toward 0 and watch the grid step.</div>
+      <div class="row">
+        <label for="b0">b =</label> (<input id="b0" type="number" step="0.5" value="3">,
+        <input id="b1" type="number" step="0.5" value="-7">)
+        <label class="chk"><input type="checkbox" id="nudge"> nudge b by 0.05 along q₁ <span class="tag">added</span></label>
+        <span id="solPill" class="pill off"></span>
+      </div>
+      <div class="grid2">
+        <div><div class="plot"><canvas id="c3b" aria-label="Output side: b read in the Q axes"></canvas></div>
+          <p class="cap">Output side. b (orange) and its shadows c₀, c₁ on the Q axes. Faint ellipse: all outputs from length-1 inputs.</p></div>
+        <div><div class="plot"><canvas id="c3x" aria-label="Input side: x rebuilt from the P axes"></canvas></div>
+          <p class="cap">Input side. x rebuilt as d₀·p₀ + d₁·p₁ on the P axes. Faint circle: length 1. The plot zooms out to fit x.</p></div>
+      </div>
+      <div class="calc" id="calc"></div>
+    </div>
+  </section>
+</div>
+
+<script>
+(function(){
+const $=id=>document.getElementById(id);
+const col=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const f=(v,n=3)=>{if(!isFinite(v))return'∞';const r=Math.abs(v)<5e-10?0:v;if(Math.abs(r)>=1e6)return r.toExponential(2);return (+r.toFixed(n)).toString()};
+const vec=(v,n=3)=>'('+v.map(x=>f(x,n)).join(', ')+')';
+const dot=(u,v)=>u.reduce((s,x,i)=>s+x*v[i],0);
+const rad=d=>d*Math.PI/180;
+const S={tP:50,tQ:20,s0:2,s1:0.1,lock:false,phi:110,step:3,x:[0.3,0.5,0.2]};
+
+function axesOf(deg){const t=rad(deg);return [[Math.cos(t),Math.sin(t)],[-Math.sin(t),Math.cos(t)]]}
+function M(){ // returns p,q axes (columns) and A
+  const p=axesOf(S.tP), q=axesOf(S.lock?S.tP:S.tQ), s=[S.s0,S.s1];
+  const A=[[0,0],[0,0]];
+  for(let i=0;i<2;i++)for(let j=0;j<2;j++)A[i][j]=q[0][i]*s[0]*p[0][j]+q[1][i]*s[1]*p[1][j];
+  return {p,q,s,A};
+}
+const mulA=(A,x)=>A.map(r=>dot(r,x));
+function fillMat(el,rows){el.innerHTML=rows.flat().map(v=>'<span>'+f(v,3)+'</span>').join('')}
+
+/* ---- canvas helpers (from A3 lab) ---- */
+function setup(cv){const r=cv.getBoundingClientRect(),dpr=window.devicePixelRatio||1;
+  cv.width=Math.round(r.width*dpr);cv.height=Math.round(r.height*dpr);const g=cv.getContext('2d');g.setTransform(dpr,0,0,dpr,0,0);return {g,W:r.width,H:r.height}}
+function niceStep(x){const p=Math.pow(10,Math.floor(Math.log10(x)));const m=x/p;return (m<1.5?1:m<3.5?2:m<7.5?5:10)*p}
+function frame(c,R){const s=Math.min(c.W,c.H)/(2*R);const P=v=>[c.W/2+v[0]*s,c.H/2-v[1]*s];const g=c.g;g.clearRect(0,0,c.W,c.H);
+  const step=niceStep(R/4);g.lineWidth=1;g.strokeStyle=col('--grid');
+  for(let t=-Math.ceil(R/step)*step;t<=R;t+=step){let p=P([t,0]);g.beginPath();g.moveTo(p[0],0);g.lineTo(p[0],c.H);g.stroke();p=P([0,t]);g.beginPath();g.moveTo(0,p[1]);g.lineTo(c.W,p[1]);g.stroke()}
+  g.strokeStyle=col('--rule');g.lineWidth=1.2;let p=P([-R,0]),q=P([R,0]);g.beginPath();g.moveTo(...p);g.lineTo(...q);g.stroke();p=P([0,-R]);q=P([0,R]);g.beginPath();g.moveTo(...p);g.lineTo(...q);g.stroke();
+  return {P,s,g}}
+function arrow(F,from,to,color,w=2.5,dash){const g=F.g,a=F.P(from),b=F.P(to);const dx=b[0]-a[0],dy=b[1]-a[1],L=Math.hypot(dx,dy);
+  g.strokeStyle=color;g.fillStyle=color;g.lineWidth=w;g.setLineDash(dash||[]);g.beginPath();g.moveTo(...a);g.lineTo(...b);g.stroke();g.setLineDash([]);
+  if(L<3)return;const ux=dx/L,uy=dy/L,h=Math.min(11,L*0.4);g.beginPath();g.moveTo(...b);g.lineTo(b[0]-h*ux+h*0.45*uy,b[1]-h*uy-h*0.45*ux);g.lineTo(b[0]-h*ux-h*0.45*uy,b[1]-h*uy+h*0.45*ux);g.closePath();g.fill()}
+function line(F,from,to,color,w=1,dash){const g=F.g,a=F.P(from),b=F.P(to);g.strokeStyle=color;g.lineWidth=w;g.setLineDash(dash||[]);g.beginPath();g.moveTo(...a);g.lineTo(...b);g.stroke();g.setLineDash([])}
+function label(F,v,txt,color,dx=6,dy=-6){const p=F.P(v);F.g.fillStyle=color;F.g.font='500 12px "IBM Plex Mono", ui-monospace, monospace';F.g.fillText(txt,p[0]+dx,p[1]+dy)}
+function curve(F,fn,color,alpha){const g=F.g;g.strokeStyle=color;g.globalAlpha=alpha;g.lineWidth=1.4;g.beginPath();
+  for(let t=0;t<=360;t+=3){const p=F.P(fn(rad(t)));t?g.lineTo(...p):g.moveTo(...p)}g.stroke();g.globalAlpha=1}
+
+/* ---- shared bar ---- */
+function drawBar(){
+  const m=M();
+  fillMat($('mA'),m.A);
+  fillMat($('mQ'),[[m.q[0][0],m.q[1][0]],[m.q[0][1],m.q[1][1]]]);
+  fillMat($('mS'),[[m.s[0],0],[0,m.s[1]]]);
+  fillMat($('mPt'),[m.p[0],m.p[1]]);
+  $('otP').textContent=S.tP+'°';$('otQ').textContent=(S.lock?S.tP:S.tQ)+'°';$('os0').textContent=f(S.s0,2);$('os1').textContent=f(S.s1,2);
+  $('tQ').disabled=S.lock;
+  const sym=Math.abs(m.A[0][1]-m.A[1][0])<1e-9, pill=$('symPill');
+  if(sym){pill.className='pill on';pill.textContent=S.lock||Math.abs(((S.tQ-S.tP)%360+360)%360)<1e-9?'Q = P: A is symmetric, this is the A3 eigen picture (k = σ)':'A is symmetric';}
+  else {pill.className='pill off';pill.textContent='Q ≠ P: input axes and output axes differ (A not symmetric)';}
+}
+
+/* ---- panel 1 ---- */
+const stepTxt=[
+  'x is a length-1 input. The teal dashed lines are the P axes, the orange dashed lines the Q axes.',
+  'Pᵀx = (p₀·x, p₁·x): the amount of each P axis in x. These are the shadows of x on the teal axes, same as Xᵀb in A3.',
+  'Multiply amount i by σᵢ. Nothing is drawn for this move; it only changes the two numbers. σ₀ scales the p₀ amount, σ₁ the p₁ amount.',
+  'Use the scaled amounts as amounts of q₀ and q₁. Walk σ₀a₀ along q₀, then σ₁a₁ along q₁. That lands on b = Ax. The input circle becomes the output ellipse with half-axes σ₀ along q₀ and σ₁ along q₁.'];
+function draw1(){
+  const m=M(),c=setup($('c1'));const R=Math.max(1,S.s0,S.s1)*1.25;const F=frame(c,R);
+  const x=[Math.cos(rad(S.phi)),Math.sin(rad(S.phi))];
+  const a=[dot(m.p[0],x),dot(m.p[1],x)], sa=[m.s[0]*a[0],m.s[1]*a[1]];
+  const b=[sa[0]*m.q[0][0]+sa[1]*m.q[1][0], sa[0]*m.q[0][1]+sa[1]*m.q[1][1]];
+  // axes
+  m.p.forEach((e,i)=>{line(F,[-e[0]*R,-e[1]*R],[e[0]*R,e[1]*R],col('--in'),1.2,[6,5]);label(F,[e[0]*R*.88,e[1]*R*.88],'p'+'₀₁'[i],col('--in'),-20,-6)});
+  if(S.step>=3||S.lock) m.q.forEach((e,i)=>{line(F,[-e[0]*R,-e[1]*R],[e[0]*R,e[1]*R],col('--out'),1.2,[2,4]);label(F,[e[0]*R*.88,e[1]*R*.88],'q'+'₀₁'[i],col('--out'),-20,14)});
+  curve(F,t=>[Math.cos(t),Math.sin(t)],col('--in'),.35);
+  if(S.step>=3) curve(F,t=>mulA(m.A,[Math.cos(t),Math.sin(t)]),col('--out'),.5);
+  arrow(F,[0,0],x,col('--in'),3);label(F,x,'x',col('--in'));
+  if(S.step>=1){ // shadows
+    m.p.forEach((e,i)=>{const sh=[e[0]*a[i],e[1]*a[i]];line(F,x,sh,col('--muted'),1,[3,3]);arrow(F,[0,0],sh,col('--in'),2);label(F,sh,'a'+'₀₁'[i]+'='+f(a[i],2),col('--in'),6,14)});
+  }
+  if(S.step>=3){
+    const l1=[sa[0]*m.q[0][0],sa[0]*m.q[0][1]];
+    arrow(F,[0,0],l1,col('--out'),2,[5,3]);arrow(F,l1,b,col('--out'),2,[5,3]);
+    arrow(F,[0,0],b,col('--out'),3.2);label(F,b,'b = Ax',col('--out'));
+  }
+  const xp=[-x[1],x[0]], bp=mulA(m.A,xp), pp=$('pairPill');
+  if(S.partner){
+    arrow(F,[0,0],xp,col('--in'),1.8,[4,3]);label(F,xp,'x⊥',col('--in'));
+    if(S.step>=3){arrow(F,[0,0],bp,col('--out'),1.8,[4,3]);label(F,bp,'Ax⊥',col('--out'));}
+    const n1=Math.hypot(...b),n2=Math.hypot(...bp);pp.hidden=false;
+    if(n1<1e-9||n2<1e-9){pp.className='pill off';pp.textContent='one output is 0';}
+    else{const ang=Math.acos(Math.max(-1,Math.min(1,dot(b,bp)/(n1*n2))))*180/Math.PI;
+      if(Math.abs(ang-90)<0.6){pp.className='pill on';pp.textContent='Ax ⟂ Ax⊥ (90°)';}
+      else{pp.className='pill off';pp.textContent='angle between Ax and Ax⊥: '+f(ang,1)+'°';}}
+  } else pp.hidden=true;
+  $('phiv').textContent=S.phi+'°';
+  $('st1').textContent=stepTxt[S.step];
+  document.querySelectorAll('.steps button').forEach(bt=>bt.setAttribute('aria-pressed',+bt.dataset.s===S.step));
+  const Ax=mulA(m.A,x);
+  let h='<dt>x</dt><dd>'+vec(x)+'</dd>';
+  if(S.step>=1) h+='<dt>Pᵀx</dt><dd>('+f(m.p[0][0],3)+'·'+f(x[0],3)+' + '+f(m.p[0][1],3)+'·'+f(x[1],3)+', …) = '+vec(a)+' ← amounts of p₀, p₁ in x</dd>';
+  if(S.step>=2) h+='<dt>σPᵀx</dt><dd>('+f(m.s[0],2)+'×'+f(a[0],3)+', '+f(m.s[1],2)+'×'+f(a[1],3)+') = '+vec(sa)+' ← amounts of q₀, q₁ in b</dd>';
+  if(S.step>=3) h+='<dt>b = Q(…)</dt><dd>'+f(sa[0],3)+'·q₀ + '+f(sa[1],3)+'·q₁ = '+vec(b)+'</dd><dt>check Ax</dt><dd>'+vec(Ax)+'</dd>'+
+    '<dt>Qᵀb</dt><dd>'+vec([dot(m.q[0],b),dot(m.q[1],b)])+' ← same as σPᵀx</dd><dt>|Ax|</dt><dd>'+f(Math.hypot(...b))+'</dd>';
+  if(S.partner&&S.step>=3) h+='<dt>|Ax⊥|</dt><dd>'+f(Math.hypot(...bp))+'</dd>';
+  $('r1').innerHTML=h;
+}
+
+/* ---- panel 2: practical A = [[2,0,1],[-1,2,9]], numpy SVD ---- */
+const A2=[[2,0,1],[-1,2,9]];
+const Q2=[[0.08547,0.996341],[0.996341,-0.08547]];          // columns q0,q1
+const sg2=[9.305938,2.097502];
+const Pt2=[[-0.088696,0.21413,0.97277],[0.990775,-0.081497,0.108277],[-0.102463,-0.973399,0.204926]]; // rows p0,p1,p2
+function bars(vals,names,scale,color,dropIdx){
+  return '<div class="bars">'+vals.map((v,i)=>{const h=Math.min(1,Math.abs(v)/scale)*50;
+    const pos=v>=0?'bottom:50%;height:'+h+'%':'top:50%;height:'+h+'%';
+    return '<div class="bcol'+(i===dropIdx?' dropped':'')+'"><span class="bval">'+f(v,2)+'</span><div class="btrack"><div class="bfill" style="'+pos+';background:'+color+'"></div></div><span class="bname">'+names[i]+'</span></div>'}).join('')+'</div>'}
+function draw2(){
+  const x=S.x;['x0','x1','x2'].forEach((id,i)=>{$(id).value=x[i];$('o'+id).textContent=f(x[i],2)});
+  const a=Pt2.map(r=>dot(r,x)), sa=[sg2[0]*a[0],sg2[1]*a[1]];
+  const b=[Q2[0][0]*sa[0]+Q2[0][1]*sa[1],Q2[1][0]*sa[0]+Q2[1][1]*sa[1]];
+  const Ax=mulA(A2,x);
+  const ci=col('--in'),co=col('--out');
+  $('flow').innerHTML=
+    '<div class="stage"><h3>x</h3><span class="shape">3×1, input space</span>'+bars(x,['x₀','x₁','x₂'],1.8,ci)+'</div>'+
+    '<div class="stage"><h3>Pᵀx</h3><span class="shape">3×3 · 3×1 → amounts of p₀ p₁ p₂</span>'+bars(a,['a₀','a₁','a₂'],1.8,ci)+'</div>'+
+    '<div class="stage"><h3>σ (Pᵀx)</h3><span class="shape">2×3 · 3×1 → 2 amounts. a₂ meets the zero column</span>'+bars([sa[0],sa[1],0],['σ₀a₀','σ₁a₁','a₂ → 0'],17,col('--sig'),2)+'</div>'+
+    '<div class="stage"><h3>b = Q(…)</h3><span class="shape">2×2 · 2×1, output space</span>'+bars(b,['b₀','b₁'],17,co)+'</div>';
+  const p2=Pt2[2], Ap2=mulA(A2,p2), t=v=>f(v,3);
+  $('r2').innerHTML='<dt>Pᵀx</dt><dd>'+vec(a)+'</dd><dt>σPᵀx</dt><dd>('+f(sg2[0],3)+'×'+f(a[0],3)+', '+f(sg2[1],3)+'×'+f(a[1],3)+') = '+vec(sa)+'</dd>'+
+    '<dt>b = Q(…)</dt><dd>'+vec(b)+'</dd><dt>check Ax</dt><dd>'+vec(Ax)+'</dd>'+
+    '<dt>A p₂</dt><dd>(2·'+t(p2[0])+' + 0·'+t(p2[1])+' + 1·'+t(p2[2])+', −1·'+t(p2[0])+' + 2·'+t(p2[1])+' + 9·'+t(p2[2])+') = '+vec(Ap2)+'</dd>';
+  const st=$('p2stat');
+  if(S.lastB){st.hidden=false;st.innerHTML='<b>b before:</b> '+vec(S.lastB)+' &nbsp; <b>b after adding 0.5·p₂:</b> '+vec(b)+'. x changed, b did not.';}
+  else st.hidden=true;
+}
+const b2=x=>{const a=Pt2.map(r=>dot(r,x));return [Q2[0][0]*sg2[0]*a[0]+Q2[0][1]*sg2[1]*a[1],Q2[1][0]*sg2[0]*a[0]+Q2[1][1]*sg2[1]*a[1]]};
+function initMats2(){fillMat($('mA2'),A2);fillMat($('mQ2'),Q2);fillMat($('mS2'),[[sg2[0],0,0],[0,sg2[1],0]]);fillMat($('mP2'),Pt2)}
+
+/* ---- panel 3 ---- */
+function draw3(){
+  const m=M();const bRaw=[+$('b0').value||0,+$('b1').value||0];let b=bRaw;
+  const nud=$('nudge').checked;
+  if(nud) b=[b[0]+0.05*m.q[1][0],b[1]+0.05*m.q[1][1]];
+  const c=[dot(m.q[0],b),dot(m.q[1],b)];
+  const pill=$('solPill');let h='';
+  const zs=m.s.map(s=>s<1e-9);
+  const dd=c.map((ci,i)=>zs[i]?0:ci/m.s[i]);
+  const xs=[dd[0]*m.p[0][0]+dd[1]*m.p[1][0], dd[0]*m.p[0][1]+dd[1]*m.p[1][1]];
+  plotB(m,b,c);plotX(m,xs,dd,zs);
+  h+='<div class="card"><b>1 · Qᵀb: amounts of q₀, q₁ in b</b><div class="line">q₀·b = '+f(m.q[0][0])+'×'+f(b[0])+' + '+f(m.q[0][1])+'×'+f(b[1])+' = '+f(c[0])+'</div><div class="line">q₁·b = '+f(m.q[1][0])+'×'+f(b[0])+' + '+f(m.q[1][1])+'×'+f(b[1])+' = '+f(c[1])+'</div></div>';
+  const zero=m.s.map(s=>s<1e-9);
+  const d=c.map((ci,i)=>zero[i]?NaN:ci/m.s[i]);
+  h+='<div class="card"><b>2 · ÷σ: amounts of p₀, p₁ in x</b>'+[0,1].map(i=>'<div class="line">'+(zero[i]?'d'+'₀₁'[i]+' = '+f(c[i])+' ÷ 0  →  impossible':'d'+'₀₁'[i]+' = '+f(c[i])+' ÷ '+f(m.s[i],2)+' = '+f(d[i]))+'</div>').join('')+'</div>';
+  if(zero.some(z=>z)){
+    const zi=zero.indexOf(true);
+    h+='<div class="card"><b>3 · stuck</b><div class="line">σ'+'₀₁'[zi]+' = 0: A sends p'+'₀₁'[zi]+' to nothing, so every output lies on the other Q axis.</div>'+
+      '<div class="line">'+(Math.abs(c[zi])>1e-9?'Here c'+'₀₁'[zi]+' ≠ 0: b has a part A can never make, so no exact x exists.':'Here c'+'₀₁'[zi]+' = 0: any amount of p'+'₀₁'[zi]+' can be added to x, so there are infinitely many x.')+' <span class="tag">added: the two cases</span></div>'+
+      '<div class="line">Either way: a zero σ means no unique solution (sl.38). The red line on the right shows all x that give the same Ax.</div></div>';
+    pill.className='pill bad';pill.textContent='σ = 0: no unique solution';
+  } else {
+    const x=[d[0]*m.p[0][0]+d[1]*m.p[1][0], d[0]*m.p[0][1]+d[1]*m.p[1][1]];
+    h+='<div class="card"><b>3 · P(…): rebuild x</b><div class="line">x = '+f(d[0])+'·p₀ + '+f(d[1])+'·p₁ = '+vec(x,2)+'</div><div class="line">check Ax = '+vec(mulA(m.A,x))+'  vs b = '+vec(b)+'</div></div>';
+    if(nud) h+='<div class="card"><b>nudge</b> <span class="tag">added</span><div class="line">b moved 0.05 along q₁, so c₁ moved 0.05, so d₁ moved 0.05 ÷ '+f(m.s[1],2)+' = '+f(0.05/m.s[1])+', so x moved '+f(0.05/m.s[1])+' along p₁.</div></div>';
+    const ratio=m.s[0]/m.s[1];
+    if(ratio>10){pill.className='pill bad';pill.textContent='σ₀/σ₁ = '+f(ratio,1)+': borderline, x is very sensitive to b';}
+    else {pill.className='pill on';pill.textContent='σ₀/σ₁ = '+f(ratio,1)+': well behaved';}
+  }
+  $('calc').innerHTML=h;
+}
+function gridLabel(F,R){F.g.fillStyle=col('--muted');F.g.font='500 11px "IBM Plex Mono", ui-monospace, monospace';F.g.fillText('grid step '+f(niceStep(R/4)),8,16)}
+function plotB(m,b,c){
+  const cv=setup($('c3b'));const R=Math.max(Math.hypot(...b),m.s[0],1)*1.2;const F=frame(cv,R);
+  m.q.forEach((e,i)=>{line(F,[-e[0]*R,-e[1]*R],[e[0]*R,e[1]*R],col('--out'),1.2,[2,4]);label(F,[e[0]*R*.88,e[1]*R*.88],'q'+'₀₁'[i],col('--out'),-20,14)});
+  curve(F,t=>mulA(m.A,[Math.cos(t),Math.sin(t)]),col('--out'),.45);
+  m.q.forEach((e,i)=>{const sh=[e[0]*c[i],e[1]*c[i]];line(F,b,sh,col('--muted'),1,[3,3]);arrow(F,[0,0],sh,col('--out'),2);label(F,sh,'c'+'₀₁'[i]+'='+f(c[i],2),col('--out'),6,14)});
+  arrow(F,[0,0],b,col('--out'),3.2);label(F,b,'b',col('--out'));gridLabel(F,R);
+}
+function plotX(m,x,d,zs){
+  const cv=setup($('c3x'));const R=Math.max(Math.hypot(...x),1)*1.2;const F=frame(cv,R);
+  m.p.forEach((e,i)=>{line(F,[-e[0]*R,-e[1]*R],[e[0]*R,e[1]*R],col('--in'),1.2,[6,5]);label(F,[e[0]*R*.88,e[1]*R*.88],'p'+'₀₁'[i],col('--in'),-20,-6)});
+  curve(F,t=>[Math.cos(t),Math.sin(t)],col('--in'),.35);
+  const zi=zs.indexOf(true);
+  if(zi>=0){const e=m.p[zi];line(F,[x[0]-e[0]*R*3,x[1]-e[1]*R*3],[x[0]+e[0]*R*3,x[1]+e[1]*R*3],col('--warn'),2,[6,4]);}
+  else{const l1=[d[0]*m.p[0][0],d[0]*m.p[0][1]];arrow(F,[0,0],l1,col('--in'),2,[5,3]);arrow(F,l1,x,col('--in'),2,[5,3]);}
+  arrow(F,[0,0],x,col('--in'),3.2);label(F,x,zi>=0?'x (one of many)':'x',col('--in'));gridLabel(F,R);
+}
+
+function all(){drawBar();draw1();draw3()}
+// events
+[['tP','tP'],['tQ','tQ']].forEach(([id,k])=>$(id).addEventListener('input',e=>{S[k]=+e.target.value;all()}));
+$('s0').addEventListener('input',e=>{S.s0=+e.target.value;if(S.s1>S.s0){S.s1=S.s0;$('s1').value=S.s1}all()});
+$('s1').addEventListener('input',e=>{S.s1=Math.min(+e.target.value,S.s0);e.target.value=S.s1;all()});
+$('lock').addEventListener('change',e=>{S.lock=e.target.checked;all()});
+function preset(tP,tQ,s0,s1){Object.assign(S,{tP,tQ,s0,s1,lock:false});$('lock').checked=false;$('tP').value=tP;$('tQ').value=tQ;$('s0').value=s0;$('s1').value=s1;all()}
+$('pSl37').onclick=()=>{preset(50,20,2,0.1);$('b0').value=3;$('b1').value=-7;$('nudge').checked=false;all()};
+$('pRound').onclick=()=>preset(S.tP,S.tQ,S.s0,Math.min(1,S.s0));
+$('pZero').onclick=()=>preset(S.tP,S.tQ,S.s0,0);
+$('phi').addEventListener('input',e=>{S.phi=+e.target.value;draw1()});
+const setPhiTo=v=>{let d=Math.round(Math.atan2(v[1],v[0])*180/Math.PI);d=(d+360)%360;S.phi=d;$('phi').value=d;draw1()};
+$('xp0').onclick=()=>setPhiTo(M().p[0]);$('xp1').onclick=()=>setPhiTo(M().p[1]);
+document.querySelectorAll('.steps button').forEach(bt=>bt.addEventListener('click',()=>{S.step=+bt.dataset.s;draw1()}));
+['x0','x1','x2'].forEach((id,i)=>$(id).addEventListener('input',e=>{S.x[i]=+e.target.value;S.lastB=null;draw2()}));
+[0,1,2].forEach(i=>$('q2p'+i).onclick=()=>{S.x=Pt2[i].slice();S.lastB=null;draw2()});
+$('q2add').onclick=()=>{S.lastB=b2(S.x);S.x=S.x.map((v,i)=>v+0.5*Pt2[2][i]);draw2()}; // no clipping: the point is that b stays put
+$('partner').addEventListener('change',e=>{S.partner=e.target.checked;if(S.partner)S.step=3;draw1()});
+['b0','b1'].forEach(id=>$(id).addEventListener('input',draw3));$('nudge').addEventListener('change',draw3);
+const redraw=()=>{draw1();draw2();draw3()};
+window.addEventListener('resize',()=>{draw1();draw3()});
+if(window.matchMedia)matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change',redraw);
+new MutationObserver(redraw).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+initMats2();all();draw2();
+})();
+</script>
