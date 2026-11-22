@@ -1,0 +1,688 @@
+<title>A5 Iterative Lab</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=Space+Grotesk:wght@500;600&display=swap">
+<style>
+/* Layout: same graph-paper bench as the A2/A3/A4 labs. Equation strip on top, six experiment panels below */
+:root{
+  --bg:#f3f6f7; --panel:#ffffff; --ink:#18222b; --muted:#5b6872; --rule:#d9e1e5; --grid:#e8eef1;
+  --in:#0f8a7e; --out:#d0661b; --sig:#6b4fc8;
+  --ok:#1d8a3a; --warn:#b42318; --okbg:#e3f4e7; --warnbg:#fbe4e1;
+  /* methods */
+  --m-sd:#d0661b; --m-cg:#6b4fc8; --m-mra:#0f8a7e; --m-j:#8a6d12; --m-gs:#2f6fbf;
+  /* domains (sl.50 colours: blue, green, yellow, magenta) */
+  --da:#4f86c6; --db:#4c9a3c; --dc:#c99a12; --di:#c8339a;
+  --f-display:"Space Grotesk",system-ui,sans-serif;
+  --f-body:"IBM Plex Sans",system-ui,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#11171c; --panel:#182027; --ink:#e4ecf0; --muted:#93a3ad; --rule:#2a353e; --grid:#1f2930;
+  --in:#3cc7b8; --out:#f39a52; --sig:#a993f5; --ok:#4cc46c; --warn:#ff7b6b; --okbg:#173322; --warnbg:#3a1d1a;
+  --m-sd:#f39a52; --m-cg:#a993f5; --m-mra:#3cc7b8; --m-j:#d9b84a; --m-gs:#6fa8ef;
+  --da:#7aa9e0; --db:#7cc46a; --dc:#e6bd3e; --di:#ee6cc4; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#11171c; --panel:#182027; --ink:#e4ecf0; --muted:#93a3ad; --rule:#2a353e; --grid:#1f2930;
+  --in:#3cc7b8; --out:#f39a52; --sig:#a993f5; --ok:#4cc46c; --warn:#ff7b6b; --okbg:#173322; --warnbg:#3a1d1a;
+  --m-sd:#f39a52; --m-cg:#a993f5; --m-mra:#3cc7b8; --m-j:#d9b84a; --m-gs:#6fa8ef;
+  --da:#7aa9e0; --db:#7cc46a; --dc:#e6bd3e; --di:#ee6cc4; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.5;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:24px 48px}
+.wrap{max-width:1060px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+h1{font-family:var(--f-display);font-weight:600;font-size:1.7rem;margin:0;text-wrap:balance}
+h2{font-family:var(--f-display);font-weight:600;font-size:1.2rem;margin:0;text-wrap:balance}
+.lede{color:var(--muted);max-width:70ch;margin:4px 0 0}
+.src{font-family:var(--f-mono);font-size:.75rem;color:var(--muted);letter-spacing:.02em;margin:4px 0 0}
+.bar,.panel{background:var(--panel);border:1px solid var(--rule);border-radius:8px;padding:16px}
+.strip{display:flex;flex-direction:column;gap:6px}
+.eqline{font-family:var(--f-mono);font-size:.88rem;overflow-wrap:anywhere}
+.panel{display:grid;grid-template-columns:minmax(0,420px) minmax(0,1fr);gap:20px}
+@media (max-width:760px){.panel{grid-template-columns:minmax(0,1fr)}}
+.plot{position:relative;width:100%;aspect-ratio:1;max-width:100%}
+.plot.short{aspect-ratio:16/9}
+canvas{width:100%;height:100%;display:block;border-radius:6px;background:var(--bg);touch-action:none}
+.side{display:flex;flex-direction:column;gap:12px;min-width:0}
+.ctrl{display:flex;flex-direction:column;gap:4px}
+.ctrl label{font-size:.85rem;color:var(--muted)}
+input[type=range]{width:100%;accent-color:var(--sig)}
+button{font:inherit;font-size:.82rem;padding:5px 10px;border-radius:5px;border:1px solid var(--rule);background:var(--bg);color:var(--ink);cursor:pointer}
+button:hover{border-color:var(--muted)}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--sig);outline-offset:2px}
+button[aria-pressed="true"]{background:var(--sig);color:#fff;border-color:var(--sig)}
+select{font:inherit;font-size:.85rem;padding:4px 6px;border-radius:5px;border:1px solid var(--rule);background:var(--bg);color:var(--ink)}
+label.chk{display:inline-flex;gap:6px;align-items:center;font-size:.85rem}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.read{font-family:var(--f-mono);font-size:.83rem;font-variant-numeric:tabular-nums;display:grid;grid-template-columns:auto minmax(0,1fr);gap:3px 14px;margin:0}
+.read dt{color:var(--muted)} .read dd{margin:0;overflow-wrap:anywhere}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:.8rem;color:var(--muted)}
+.sw{display:inline-block;width:14px;height:3px;border-radius:2px;vertical-align:middle;margin-right:5px}
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;vertical-align:middle;margin-right:5px}
+.note{font-size:.88rem;color:var(--muted);max-width:68ch;margin:0}
+.note b{color:var(--ink);font-weight:600}
+.predict{border-left:3px solid var(--sig);padding:6px 10px;font-size:.9rem;background:var(--bg);border-radius:0 6px 6px 0;margin:0}
+.tag{font-family:var(--f-mono);font-size:.7rem;color:var(--muted);border:1px dashed var(--rule);padding:1px 6px;border-radius:4px;white-space:nowrap}
+.mono{font-family:var(--f-mono);font-size:.83rem;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.cin{color:var(--in);font-weight:500} .cout{color:var(--out);font-weight:500} .csig{color:var(--sig);font-weight:500}
+.grid2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px}
+.cap{font-size:.78rem;color:var(--muted);margin:4px 0 0;text-align:center}
+.cmp{border-collapse:collapse;font-size:.83rem;font-variant-numeric:tabular-nums;width:100%}
+.cmp th,.cmp td{border-bottom:1px solid var(--rule);padding:3px 8px;text-align:right}
+.cmp th:first-child,.cmp td:first-child{text-align:left}
+.cmp th{font-weight:600;color:var(--muted);font-size:.76rem;letter-spacing:.03em}
+.tblwrap{overflow-x:auto}
+details.why{font-size:.88rem;color:var(--muted)}
+details.why summary{cursor:pointer;color:var(--ink);font-weight:500}
+.warnline{color:var(--warn);font-weight:500}
+@media (prefers-reduced-motion: reduce){*{transition:none!important}}
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>A5 iterative lab</h1>
+    <p class="lede">Real engineering matrices are <b>huge and sparse</b>: each node only talks to its neighbours. Multiplying such a matrix is cheap. Factorising it (QR, LU) fills the zeros in and runs out of memory. So A5 solves Ax = b using <b>only multiplies</b>: guess, measure the miss, adjust, repeat.</p>
+    <p class="src">Source: EEEE3116 A5 “Why are zeros good and why so many of them?”, sl.3–55, plus the iterative practical (A = [2 1; 1 3], b = [1; 2]). Anything not from the slides is tagged <span class="tag">added</span>. Worked numbers: A5_iterative.md.</p>
+  </header>
+
+  <section class="bar strip" aria-label="Key equations">
+    <div class="eqline"><b>Residual</b> (the miss): r = b − A x̃ &nbsp;·&nbsp; one sparse multiply &nbsp;·&nbsp; r = 0 ⇔ solved <span class="tag">sl.16</span></div>
+    <div class="eqline"><b>Every method:</b> x<sub>k+1</sub> = x<sub>k</sub> + (step length) × (direction). Methods differ only in the adjustment rule <span class="tag">sl.15, 24</span></div>
+    <div class="eqline"><span style="color:var(--m-sd)">SD</span>: dir r, d = rᵀr / rᵀAr &nbsp;·&nbsp; <span style="color:var(--m-mra)">MRA</span>: dir r, d = rᵀAr / (Ar)ᵀ(Ar) &nbsp;·&nbsp; <span style="color:var(--m-cg)">CG</span>: dir p = r + β·p<sub>old</sub>, α = rᵀr / pᵀAp <span class="tag">sl.25, 27, 29</span></div>
+    <div class="eqline"><span style="color:var(--m-j)">Jacobi</span>: D x<sub>k+1</sub> = b − E x<sub>k</sub> (A = diagonal D + rest E) &nbsp;·&nbsp; <span style="color:var(--m-gs)">Gauss-Seidel</span>: same, but use each new value at once <span class="tag">sl.33</span></div>
+    <div class="eqline"><b>Power method:</b> x<sub>k</sub> = A x<sub>k−1</sub> → dominant eigenvector (A3's X Kᴺ c) <span class="tag">sl.19–21</span></div>
+  </section>
+
+  <!-- ============ panel 1: fill-in ============ -->
+  <section class="panel" aria-labelledby="h1p">
+    <div class="grid2">
+      <div><div class="plot"><canvas id="c1a" aria-label="Non-zero pattern of the grid matrix A"></canvas></div><p class="cap">A: <span id="p1nnzA"></span></p></div>
+      <div><div class="plot"><canvas id="c1b" aria-label="Non-zero pattern of L and U after LU"></canvas></div><p class="cap">L + U after LU: <span id="p1nnzLU"></span></p></div>
+    </div>
+    <div class="side">
+      <h2 id="h1p">1 · Why not just LU? Fill-in, and why node order matters</h2>
+      <p class="note">A is the 2D diffusion matrix of an n×n grid (sl.39–40). Each node couples to itself and its 4 neighbours. Left: where A is non-zero. Right: where L and U are non-zero after LU (A2). <b class="cout">Orange</b> = <b>fill-in</b>, a zero of A that LU turned into a number you must store.</p>
+      <div class="legend"><span><span class="dot" style="background:var(--ink)"></span>non-zero in A</span><span><span class="dot" style="background:var(--out)"></span>fill-in (new non-zero)</span></div>
+      <div class="ctrl"><label for="p1n">Grid size n = <span id="p1nv"></span> (N = n² unknowns)</label><input id="p1n" type="range" min="3" max="12" step="1" value="6"></div>
+      <div class="row"><label for="p1o" class="note">Numbering of the nodes:</label>
+        <select id="p1o"><option value="row">row by row (sl.40)</option><option value="rand">random, “silly indexing” (sl.41)</option></select>
+        <button id="p1shuf" type="button">reshuffle</button></div>
+      <p class="predict"><b>Predict first:</b> switch to random numbering. Does the <i>answer</i> x change? Does the fill-in change?</p>
+      <dl class="read">
+        <dt>non-zeros in A</dt><dd id="p1r1"></dd>
+        <dt>non-zeros in L+U</dt><dd id="p1r2"></dd>
+        <dt>dense N²</dt><dd id="p1r3"></dd>
+        <dt>bandwidth</dt><dd id="p1r4"></dd>
+      </dl>
+      <details class="why"><summary>Reveal</summary>
+        <p class="note">The answer x is the same either way: renumbering just reorders the equations (sl.41). The <b>work</b> changes. Row-by-row numbering keeps every non-zero within n of the diagonal (a <b>band</b>, sl.40). LU then fills in only inside that band. Random numbering scatters the entries, LU fills in nearly everything, and you're back to dense storage. At N = 10⁸ that's 160 PB (sl.11). QR is worse still: Q comes out dense in general (sl.10). sl.41 adds that silly numbering also costs <b>accuracy</b>, because of more rounding.</p>
+      </details>
+    </div>
+  </section>
+
+  <!-- ============ panel 2: power method ============ -->
+  <section class="panel" aria-labelledby="h2p">
+    <div class="plot"><canvas id="c2" aria-label="Direction of x after repeated multiplication by A, against the eigen axes"></canvas></div>
+    <div class="side">
+      <h2 id="h2p">2 · Power method: multiply again and again (sl.19–21)</h2>
+      <p class="note">Start with any x₀ = c₀Y₀ + c₁Y₁ (A3: amounts along the eigen axes). Each multiply scales each amount by its k, so x<sub>N</sub> = c₀k₀ᴺ Y₀ + c₁k₁ᴺ Y₁. The plot shows only the <b>direction</b> of x (scaled to length 1), because the size can explode or vanish.</p>
+      <div class="legend"><span><span class="sw" style="background:var(--in)"></span>Y₀ (k₀)</span><span><span class="sw" style="background:var(--muted)"></span>Y₁ (k₁)</span><span><span class="sw" style="background:var(--out)"></span>direction of x<sub>N</sub></span></div>
+      <p class="predict"><b>Predict first:</b> after 10 presses, where will the orange arrow point? Does that change if you make k₀ smaller than 1?</p>
+      <div class="ctrl"><label for="p2k0">k₀ = <span id="p2k0v"></span></label><input id="p2k0" type="range" min="0.2" max="4" step="0.01" value="3.618"></div>
+      <div class="ctrl"><label for="p2k1">k₁ = <span id="p2k1v"></span></label><input id="p2k1" type="range" min="-4" max="4" step="0.01" value="1.382"></div>
+      <div class="row"><button id="p2step" type="button">x ← A x</button><button id="p2ten" type="button">× 10</button><button id="p2reset" type="button">reset</button><button id="p2rand" type="button">new random x₀</button><button id="p2prac" type="button">practical’s k</button></div>
+      <dl class="read">
+        <dt>N</dt><dd id="p2N"></dd>
+        <dt>amounts c₀k₀ᴺ, c₁k₁ᴺ</dt><dd id="p2amt"></dd>
+        <dt>|c₁k₁ᴺ| / |c₀k₀ᴺ|</dt><dd id="p2rat"></dd>
+        <dt>size |x<sub>N</sub>|</dt><dd id="p2size"></dd>
+        <dt>|x<sub>N</sub>| / |x<sub>N−1</sub>|</dt><dd id="p2gr"></dd>
+      </dl>
+      <details class="why"><summary>Reveal</summary>
+        <p class="note">The <b>shape</b> depends on the ratio (k₁/k₀)ᴺ. If |k₀| is the biggest, the ratio goes to 0 and x lines up with Y₀, whether k₀ is above or below 1 (sl.20). The <b>size</b> goes like k₀ᴺ: it explodes if k₀ > 1 and vanishes if k₀ < 1. The growth per step tends to k₀, so you can read the eigenvalue off too (sl.21). It only uses sparse multiplies, which is why it's an A5 method. If |k₁| = k₀ the two amounts never separate and the shape never settles. <span class="tag">added</span></p>
+      </details>
+    </div>
+  </section>
+
+  <!-- ============ panel 3: one step along r ============ -->
+  <section class="panel" aria-labelledby="h3p">
+    <div class="side" style="gap:8px">
+      <div class="plot"><canvas id="c3" aria-label="Bowl contours with the current guess, its residual direction and the step"></canvas></div>
+      <div class="plot short"><canvas id="c3s" aria-label="Error along the line of the step as d changes"></canvas></div>
+    </div>
+    <div class="side">
+      <h2 id="h3p">3 · One step: what d chooses (sl.23–27)</h2>
+      <p class="note">Top: the practical’s problem drawn as a <b>bowl</b> over (x₀, x₁). The bottom is x* = (0.2, 0.6). From your guess x<sub>k</sub> (click or drag to move it), r points downhill. The new guess is x<sub>k</sub> + d·r, somewhere along the dashed line. Bottom: how big the error is along that line, as d grows.</p>
+      <div class="legend"><span><span class="sw" style="background:var(--ink)"></span>‖r‖ along the line (sl.23)</span><span><span class="sw" style="background:var(--muted)"></span>energy along the line <span class="tag">added</span></span><span><span class="dot" style="background:var(--m-mra)"></span>d<sub>MRA</sub></span><span><span class="dot" style="background:var(--m-sd)"></span>d<sub>SD</sub></span></div>
+      <p class="predict"><b>Predict first:</b> push d to 3× the best value. Does the error just converge slowly, or get worse than where you started?</p>
+      <div class="ctrl"><label for="p3d">Step length d = <span id="p3dv"></span></label><input id="p3d" type="range" min="0" max="3" step="0.005" value="0.5"></div>
+      <div class="row"><button id="p3sd" type="button">snap to d<sub>SD</sub></button><button id="p3mra" type="button">snap to d<sub>MRA</sub></button><button id="p3go" type="button">take this step</button><button id="p3reset" type="button">x<sub>k</sub> = 0</button></div>
+      <div class="row"><label for="p3bowl" class="note">Bowl drawn:</label><select id="p3bowl"><option value="r">‖r‖, the slide’s error measure</option><option value="e">energy ½eᵀAe (what SD’s d minimises)</option></select></div>
+      <dl class="read">
+        <dt>x<sub>k</sub></dt><dd id="p3x"></dd>
+        <dt>r<sub>k</sub> = b − Ax<sub>k</sub></dt><dd id="p3r"></dd>
+        <dt>d<sub>SD</sub> = rᵀr / rᵀAr</dt><dd id="p3dsd"></dd>
+        <dt>d<sub>MRA</sub> = rᵀAr / (Ar)ᵀAr</dt><dd id="p3dmra"></dd>
+        <dt>‖r‖ now → after step</dt><dd id="p3nr"></dd>
+        <dt>steps taken</dt><dd id="p3cnt"></dd>
+      </dl>
+      <details class="why"><summary>Reveal</summary>
+        <p class="note">d is <b>computed</b> each step, not tuned. It is the bottom of the bowl along the line. MRA takes the lowest ‖r‖ on the line (sl.27). SD takes the lowest point of the energy bowl, a close cousin whose downhill direction is exactly r <span class="tag">added</span>. Too small wastes the step. Past twice the best value, the error ends up <b>bigger</b> than where you started: that's your overshoot and divergence intuition. A fixed step would need tuning like a gain. Computing d each time avoids that, and it's why SD is guaranteed to converge for symmetric positive definite A (sl.25).</p>
+      </details>
+    </div>
+  </section>
+
+  <!-- ============ panel 4: Jacobi vs GS ============ -->
+  <section class="panel" aria-labelledby="h4p">
+    <div class="plot"><canvas id="c4" aria-label="The two equations as lines, with Jacobi or Gauss-Seidel sweeps"></canvas></div>
+    <div class="side">
+      <h2 id="h4p">4 · Jacobi vs Gauss-Seidel: one equation at a time (sl.33)</h2>
+      <p class="note">Each equation is a <b>line</b>. Row 0, 2x₀ + x₁ = 1, solved for x₀ means: keep x₁ and slide <b>sideways</b> onto line 0. Row 1, x₀ + 3x₁ = 2, solved for x₁ means: keep x₀ and slide <b>up or down</b> onto line 1. The answer is where the lines cross.</p>
+      <div class="legend"><span><span class="sw" style="background:var(--in)"></span>line 0 (row 0)</span><span><span class="sw" style="background:var(--sig)"></span>line 1 (row 1)</span><span><span class="sw" style="background:var(--m-j)"></span>Jacobi</span><span><span class="sw" style="background:var(--m-gs)"></span>Gauss-Seidel</span></div>
+      <div class="row"><button id="p4m" type="button" aria-pressed="false">Method: Jacobi</button><button id="p4step" type="button">one sweep</button><button id="p4reset" type="button">reset</button></div>
+      <p class="predict"><b>Predict first:</b> in Gauss-Seidel, row 1 uses the x₀ that row 0 <i>just</i> produced. On the picture, what does that turn each sweep into?</p>
+      <label class="chk"><input id="p4swap" type="checkbox"> write the equations in the other order (row 0: x₀ + 3x₁ = 2) <span class="tag">added</span></label>
+      <div class="mono" id="p4lines"></div>
+      <div class="tblwrap"><table class="cmp" id="p4tab"><thead><tr><th>sweep</th><th>x₀</th><th>x₁</th><th>‖r‖</th></tr></thead><tbody></tbody></table></div>
+      <details class="why"><summary>Reveal</summary>
+        <p class="note"><b>Gauss-Seidel</b> is a staircase: across to line 0, then up to line 1, so r₁ = 0 after every sweep. It reaches the crossing faster (×1/6 per sweep here, against Jacobi's ×0.41 <span class="tag">added</span>). <b>Jacobi</b> computes both slides from the <i>old</i> point, then jumps diagonally to the corner. It's slower, but both rows can run at the same time on separate CPUs. With the order swapped, the diagonal (1 and 1) is small next to the off-diagonals (3 and 2). The staircase then walks <b>away</b> from the crossing. Being <b>diagonally dominant</b>, where each diagonal is bigger than the rest of its row, is what keeps these splits safe. It's the same property that makes CG fast (sl.31) <span class="tag">added</span>.</p>
+      </details>
+    </div>
+  </section>
+
+  <!-- ============ panel 5: SD vs CG, conditioning, preconditioning ============ -->
+  <section class="panel" aria-labelledby="h5p">
+    <div class="side" style="gap:8px">
+      <div class="plot"><canvas id="c5" aria-label="Paths of the methods on the energy bowl"></canvas></div>
+      <div class="plot short"><canvas id="c5s" aria-label="Log residual against iteration for each method"></canvas></div>
+    </div>
+    <div class="side">
+      <h2 id="h5p">5 · Zig-zag vs CG, stretched bowls, preconditioning (sl.17, 25–34)</h2>
+      <p class="note">All the methods from the same x₀, drawn on the energy bowl <span class="tag">added</span>. Bottom: log₁₀(‖r‖/‖b‖) against iteration, the “professional” plot of sl.17. Click the top plot to move x₀.</p>
+      <div class="row">
+        <label class="chk"><input type="checkbox" id="m_sd" checked><span style="color:var(--m-sd)">SD</span></label>
+        <label class="chk"><input type="checkbox" id="m_cg" checked><span style="color:var(--m-cg)">CG</span></label>
+        <label class="chk"><input type="checkbox" id="m_mra"><span style="color:var(--m-mra)">MRA</span></label>
+        <label class="chk"><input type="checkbox" id="m_j"><span style="color:var(--m-j)">Jacobi</span></label>
+        <label class="chk"><input type="checkbox" id="m_gs"><span style="color:var(--m-gs)">Gauss-Seidel</span></label>
+      </div>
+      <div class="ctrl"><label for="p5s">Stretch: A = [2s 1; 1 3], s = <span id="p5sv"></span>, b = A·(0.2, 0.6) <span class="tag">added</span></label><input id="p5s" type="range" min="1" max="40" step="0.5" value="1"></div>
+      <div class="row">
+        <label class="chk"><input type="checkbox" id="p5round"> round the bowl (draw in A-stretched coordinates) <span class="tag">added</span></label>
+        <label class="chk"><input type="checkbox" id="p5pre"> precondition with Z = D⁻¹ <span class="tag">added example</span></label>
+      </div>
+      <p class="predict"><b>Predict first:</b> stretch to s = 20. Which method suffers most? Then tick “precondition”. What happens to the bowl’s shape?</p>
+      <div class="tblwrap"><table class="cmp" id="p5tab"><thead><tr><th>method</th><th>iterations to ‖r‖/‖b‖ &lt; 10⁻⁶</th></tr></thead><tbody></tbody></table></div>
+      <dl class="read"><dt>κ = k<sub>max</sub>/k<sub>min</sub></dt><dd id="p5k"></dd></dl>
+      <details class="why"><summary>Reveal: why CG finishes in 2</summary>
+        <p class="note">SD always heads straight downhill. Each new direction is at 90° to the last (r₁ ⟂ r₀), so in a stretched bowl it keeps undoing part of its own progress: the zig-zag. CG mixes in some of the old direction (+β·p) so that the new direction is <b>A-conjugate</b> to the old one, pᵀ₀Ap₁ = 0. Tick “round the bowl”. In coordinates where the bowl is a circle, CG's two directions are simply <b>perpendicular</b>, and two perpendicular moves finish a 2D problem. In general that's ≤ N moves for N unknowns (sl.30). In practice rounding breaks this on big problems (sl.30). <span class="tag">added picture</span></p>
+      </details>
+      <details class="why"><summary>Reveal: preconditioning</summary>
+        <p class="note">Stretching raises κ, and SD slows down badly (6 → 23 iterations at s = 20). Jacobi actually speeds up, because a bigger 2s makes A more diagonally dominant (panel 4). CG still finishes in 2, but in big problems rounding stops it hitting its N-step finish (sl.30). A preconditioner Z ≈ A⁻¹ turns the problem into ZAx = Zb with ZA ≈ I (sl.32). ZA ≈ I means a round bowl, where downhill points straight at the answer, so one or two steps do it (sl.31). Z = D⁻¹ (divide each row by its diagonal) is the cheapest guess. sl.33 says Jacobi “can be used as a preconditioner”. Here it undoes the 2s stretch almost completely. Finding a good Z for a real problem is “those other 55 credits” (sl.32). Rule of thumb: no strong convergence in ~100 iterations means it never will, so preconditioning is critical (sl.34).</p>
+      </details>
+    </div>
+  </section>
+
+  <!-- ============ panel 6: domain decomposition ============ -->
+  <section class="panel" aria-labelledby="h6p">
+    <div class="side" style="gap:8px">
+      <div class="plot"><canvas id="c6g" aria-label="Grid of nodes coloured by domain"></canvas></div>
+      <div class="grid2">
+        <div><div class="plot"><canvas id="c6a" aria-label="Pattern of A in the chosen order"></canvas></div><p class="cap">A</p></div>
+        <div><div class="plot"><canvas id="c6b" aria-label="Pattern of L+U in the chosen order"></canvas></div><p class="cap">L + U (orange = fill-in)</p></div>
+      </div>
+    </div>
+    <div class="side">
+      <h2 id="h6p">6 · Domain decomposition: where the parallel speed-up comes from (sl.47–55)</h2>
+      <p class="note">sl.50’s thermal grid, cut into domains <span style="color:var(--da)">a</span>, <span style="color:var(--db)">b</span> and <span style="color:var(--dc)">c</span> by an <span style="color:var(--di)">interface</span>. Domains never touch each other directly, only through the interface. Number each domain’s nodes together and the interface <b>last</b>, and A becomes the block shape of sl.51–52: [Ã B̃; C̃ D̃].</p>
+      <div class="legend"><span><span class="dot" style="background:var(--da)"></span>a</span><span><span class="dot" style="background:var(--db)"></span>b</span><span><span class="dot" style="background:var(--dc)"></span>c</span><span><span class="dot" style="background:var(--di)"></span>interface i</span></div>
+      <div class="ctrl"><label for="p6n">Grid n × n, n = <span id="p6nv"></span></label><input id="p6n" type="range" min="6" max="14" step="1" value="10"></div>
+      <div class="row"><button id="p6o" type="button" aria-pressed="true">Order: domains, then interface</button></div>
+      <p class="predict"><b>Predict first:</b> in domain order, where in L+U can fill-in appear? Inside a domain's block? Between two domains? In the interface corner?</p>
+      <dl class="read">
+        <dt>N unknowns</dt><dd id="p6N"></dd>
+        <dt>domain sizes a / b / c</dt><dd id="p6sz"></dd>
+        <dt>interface m</dt><dd id="p6m"></dd>
+        <dt>dense solve (Schur)</dt><dd id="p6s"></dd>
+        <dt>fill-in</dt><dd id="p6f"></dd>
+      </dl>
+      <details class="why"><summary>Reveal</summary>
+        <p class="note">In domain order, Ã is block-diagonal, one block per domain. LU of Ã fills in <b>only inside each block</b>, so CPU a, CPU b and CPU c each factorise and solve their own block, all at once (sl.54). The blocks never mix. The only dense piece is the bottom-right corner, the <b>Schur complement</b> D̃ − C̃Ã⁻¹B̃ (sl.52). It is m × m (interface size), far smaller than N × N. Ordinary LU (sl.48) can't be split this way: row k of the result needs the finished rows above it, so the work is sequential. Matrix multiply is the easy case to parallelise, because each row of y is independent (sl.47). That's another reason iterative methods suit big clusters.</p>
+      </details>
+    </div>
+  </section>
+</div>
+
+<script>
+(() => {
+const $ = id => document.getElementById(id);
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const fmt = (v, d = 3) => (Math.abs(v) < 1e-12 ? 0 : v).toFixed(d);
+const fe = v => (Math.abs(v) >= 1e4 || (Math.abs(v) < 1e-3 && v !== 0)) ? v.toExponential(2) : v.toFixed(3);
+
+function setup(cv) {
+  const r = cv.getBoundingClientRect();
+  const dpr = window.devicePixelRatio || 1;
+  cv.width = Math.max(1, Math.round(r.width * dpr));
+  cv.height = Math.max(1, Math.round(r.height * dpr));
+  const ctx = cv.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, r.width, r.height);
+  return { ctx, w: r.width, h: r.height };
+}
+// equal-aspect view mapping world box -> canvas
+function view(w, h, box, pad = 14) {
+  const [x0, x1, y0, y1] = box;
+  const s = Math.min((w - 2 * pad) / (x1 - x0), (h - 2 * pad) / (y1 - y0));
+  const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2;
+  return {
+    X: x => w / 2 + (x - cx) * s, Y: y => h / 2 - (y - cy) * s, s,
+    inv: (px, py) => [cx + (px - w / 2) / s, cy - (py - h / 2) / s],
+    box: [cx - w / 2 / s, cx + w / 2 / s, cy - h / 2 / s, cy + h / 2 / s]
+  };
+}
+function arrow(ctx, x0, y0, x1, y1, col, lw = 2, head = 8) {
+  ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineWidth = lw;
+  ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
+  const a = Math.atan2(y1 - y0, x1 - x0), L = Math.hypot(x1 - x0, y1 - y0);
+  if (L < 3) return;
+  ctx.beginPath(); ctx.moveTo(x1, y1);
+  ctx.lineTo(x1 - head * Math.cos(a - 0.4), y1 - head * Math.sin(a - 0.4));
+  ctx.lineTo(x1 - head * Math.cos(a + 0.4), y1 - head * Math.sin(a + 0.4));
+  ctx.closePath(); ctx.fill();
+}
+function dotp(ctx, x, y, r, col) { ctx.fillStyle = col; ctx.beginPath(); ctx.arc(x, y, r, 0, 2 * Math.PI); ctx.fill(); }
+function axes(ctx, V, labx = 'x₀', laby = 'x₁') {
+  const [bx0, bx1, by0, by1] = V.box;
+  ctx.strokeStyle = css('--grid'); ctx.lineWidth = 1;
+  const step = niceStep((bx1 - bx0) / 6);
+  for (let g = Math.ceil(bx0 / step) * step; g <= bx1; g += step) { ctx.beginPath(); ctx.moveTo(V.X(g), V.Y(by0)); ctx.lineTo(V.X(g), V.Y(by1)); ctx.stroke(); }
+  for (let g = Math.ceil(by0 / step) * step; g <= by1; g += step) { ctx.beginPath(); ctx.moveTo(V.X(bx0), V.Y(g)); ctx.lineTo(V.X(bx1), V.Y(g)); ctx.stroke(); }
+  ctx.strokeStyle = css('--rule'); ctx.lineWidth = 1.2;
+  ctx.beginPath(); ctx.moveTo(V.X(bx0), V.Y(0)); ctx.lineTo(V.X(bx1), V.Y(0)); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(V.X(0), V.Y(by0)); ctx.lineTo(V.X(0), V.Y(by1)); ctx.stroke();
+  ctx.fillStyle = css('--muted'); ctx.font = '12px ' + css('--f-mono');
+  ctx.fillText(labx, V.X(bx1) - 22, V.Y(0) - 6); ctx.fillText(laby, V.X(0) + 6, V.Y(by1) + 14);
+}
+function niceStep(x) { const p = Math.pow(10, Math.floor(Math.log10(x))); const m = x / p; return (m < 1.5 ? 1 : m < 3.5 ? 2 : m < 7.5 ? 5 : 10) * p; }
+
+// ---------- 2x2 algebra ----------
+const mv = (A, v) => [A[0][0] * v[0] + A[0][1] * v[1], A[1][0] * v[0] + A[1][1] * v[1]];
+const dt = (u, v) => u[0] * v[0] + u[1] * v[1];
+const add = (u, v, a = 1) => [u[0] + a * v[0], u[1] + a * v[1]];
+const nrm = v => Math.hypot(v[0], v[1]);
+function eigSym(M) { // returns {k:[big,small], Y:[[y0],[y1]]}
+  const a = M[0][0], b = M[0][1], c = M[1][1];
+  const m = (a + c) / 2, d = Math.sqrt(((a - c) / 2) ** 2 + b * b);
+  const k0 = m + d, k1 = m - d;
+  let y0 = Math.abs(b) > 1e-14 ? [b, k0 - a] : (a >= c ? [1, 0] : [0, 1]);
+  const n0 = nrm(y0); y0 = [y0[0] / n0, y0[1] / n0];
+  return { k: [k0, k1], Y: [y0, [-y0[1], y0[0]]] };
+}
+function solve2(A, b) { const det = A[0][0] * A[1][1] - A[0][1] * A[1][0]; return [(b[0] * A[1][1] - A[0][1] * b[1]) / det, (A[0][0] * b[1] - A[1][0] * b[0]) / det]; }
+function sqrtSym(M) { const { k, Y } = eigSym(M); const s = k.map(Math.sqrt); const R = [[0, 0], [0, 0]]; for (let i = 0; i < 2; i++) for (let j = 0; j < 2; j++) R[i][j] = s[0] * Y[0][i] * Y[0][j] + s[1] * Y[1][i] * Y[1][j]; return R; }
+// ellipse eᵀMe = c around ctr, mapped through f(x) -> display
+function ellipse(ctx, M, c, ctr, f, V) {
+  const { k, Y } = eigSym(M);
+  ctx.beginPath();
+  for (let t = 0; t <= 96; t++) {
+    const th = 2 * Math.PI * t / 96, u = Math.sqrt(c / k[0]) * Math.cos(th), v = Math.sqrt(c / k[1]) * Math.sin(th);
+    const x = [ctr[0] + u * Y[0][0] + v * Y[1][0], ctr[1] + u * Y[0][1] + v * Y[1][1]];
+    const d = f(x); t ? ctx.lineTo(V.X(d[0]), V.Y(d[1])) : ctx.moveTo(V.X(d[0]), V.Y(d[1]));
+  }
+  ctx.stroke();
+}
+
+// iterative methods on 2x2 (float)
+function runMethod(A, b, x0, m, maxit = 60) {
+  const bn = nrm(b) || 1; let x = x0.slice(); const pts = [x.slice()];
+  let r = add(b, mv(A, x), -1); const res = [nrm(r) / bn]; let p = r.slice();
+  for (let k = 0; k < maxit; k++) {
+    if (res[res.length - 1] < 1e-14 || res[res.length - 1] > 1e8) break;
+    if (m === 'sd') { const Ar = mv(A, r); const d = dt(r, r) / dt(r, Ar); x = add(x, r, d); }
+    else if (m === 'mra') { const Ar = mv(A, r); const d = dt(r, Ar) / dt(Ar, Ar); x = add(x, r, d); }
+    else if (m === 'cg') { const Ap = mv(A, p); const al = dt(r, r) / dt(p, Ap); x = add(x, p, al); const rn = add(r, Ap, -al); const be = dt(rn, rn) / dt(r, r); p = add(rn, p, be); r = rn; }
+    else if (m === 'j') { x = [(b[0] - A[0][1] * x[1]) / A[0][0], (b[1] - A[1][0] * x[0]) / A[1][1]]; }
+    else if (m === 'gs') { const n0 = (b[0] - A[0][1] * x[1]) / A[0][0]; x = [n0, (b[1] - A[1][0] * n0) / A[1][1]]; }
+    if (m !== 'cg') r = add(b, mv(A, x), -1);
+    pts.push(x.slice()); res.push(nrm(add(b, mv(A, x), -1)) / bn);
+  }
+  return { pts, res };
+}
+const itersTo = (res, tol = 1e-6) => { const i = res.findIndex(v => v < tol); return i < 0 ? null : i; };
+
+const AP = [[2, 1], [1, 3]], BP = [1, 2], XS = [0.2, 0.6];
+
+// =============== PANEL 1: fill-in ===============
+let p1perm = null;
+function lap(n, order, perm) {
+  const N = n * n; const M = Array.from({ length: N }, () => new Float64Array(N));
+  const id = (i, j) => order(i * n + j);
+  for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) {
+    const a = id(i, j); M[a][a] = 4;
+    [[i - 1, j], [i + 1, j], [i, j - 1], [i, j + 1]].forEach(([u, v]) => { if (u >= 0 && v >= 0 && u < n && v < n) M[a][id(u, v)] = -1; });
+  }
+  return M;
+}
+function luPattern(M) {
+  const N = M.length; const U = M.map(r => Float64Array.from(r));
+  for (let k = 0; k < N; k++) {
+    const piv = U[k][k]; if (Math.abs(piv) < 1e-14) continue;
+    for (let i = k + 1; i < N; i++) {
+      if (U[i][k] === 0) continue;
+      const l = U[i][k] / piv; U[i][k] = l;
+      const ri = U[i], rk = U[k];
+      for (let j = k + 1; j < N; j++) if (rk[j] !== 0) ri[j] -= l * rk[j];
+    }
+  }
+  return U.map(r => Array.from(r, v => Math.abs(v) > 1e-12));
+}
+function spy(cv, Mnz, LUnz, blocks) {
+  const { ctx, w, h } = setup(cv); const N = Mnz.length; const s = Math.min(w, h) / N;
+  ctx.fillStyle = css('--panel'); ctx.fillRect(0, 0, N * s, N * s);
+  if (blocks) { // block guides
+    ctx.strokeStyle = css('--rule'); ctx.lineWidth = 1;
+    let acc = 0; blocks.forEach(b => { acc += b; ctx.beginPath(); ctx.moveTo(acc * s, 0); ctx.lineTo(acc * s, N * s); ctx.moveTo(0, acc * s); ctx.lineTo(N * s, acc * s); ctx.stroke(); });
+  }
+  const ink = css('--ink'), out = css('--out');
+  for (let i = 0; i < N; i++) for (let j = 0; j < N; j++) {
+    const orig = Mnz[i][j] !== 0;
+    if (LUnz) { if (!LUnz[i][j]) continue; ctx.fillStyle = orig ? ink : out; }
+    else { if (!orig) continue; ctx.fillStyle = ink; }
+    ctx.fillRect(j * s, i * s, Math.max(s - (s > 3 ? 0.6 : 0), 0.8), Math.max(s - (s > 3 ? 0.6 : 0), 0.8));
+  }
+  ctx.strokeStyle = css('--rule'); ctx.strokeRect(0.5, 0.5, N * s - 1, N * s - 1);
+}
+function shuffle(N) { const p = [...Array(N).keys()]; for (let i = N - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [p[i], p[j]] = [p[j], p[i]]; } return p; }
+function drawP1() {
+  const n = +$('p1n').value, N = n * n; $('p1nv').textContent = n;
+  const mode = $('p1o').value;
+  if (!p1perm || p1perm.length !== N) p1perm = shuffle(N);
+  const order = mode === 'row' ? (q => q) : (q => p1perm[q]);
+  const M = lap(n, order); const LU = luPattern(M);
+  let nnzA = 0, nnzLU = 0, bw = 0;
+  for (let i = 0; i < N; i++) for (let j = 0; j < N; j++) { if (M[i][j] !== 0) { nnzA++; bw = Math.max(bw, Math.abs(i - j)); } if (LU[i][j]) nnzLU++; }
+  spy($('c1a'), M, null); spy($('c1b'), M, LU);
+  $('p1nnzA').textContent = nnzA + ' non-zeros'; $('p1nnzLU').textContent = nnzLU + ' (' + (nnzLU - nnzA) + ' fill-in)';
+  $('p1r1').textContent = nnzA + '  (≈ 5N)'; $('p1r2').textContent = nnzLU + '  (fill-in ' + (nnzLU - nnzA) + ')';
+  $('p1r3').textContent = N * N; $('p1r4').textContent = bw + (mode === 'row' ? '  (= n)' : '');
+  $('p1shuf').hidden = mode !== 'rand';
+}
+['p1n', 'p1o'].forEach(id => $(id).addEventListener('input', drawP1));
+$('p1shuf').addEventListener('click', () => { p1perm = null; drawP1(); });
+
+// =============== PANEL 2: power method ===============
+const Y0P = eigSym(AP).Y; // practical eigenvectors
+let p2c = [0, 0], p2N = 0, p2prev = null, p2trail = [];
+function p2init(random) {
+  let x0 = random ? [Math.cos(Math.random() * 6.283), Math.sin(Math.random() * 6.283)] : [1, 0];
+  p2c = [dt(x0, Y0P[0]), dt(x0, Y0P[1])];
+  if (Math.abs(p2c[0]) < 0.05) p2c[0] = 0.05; // keep some of Y0
+  p2N = 0; p2trail = []; p2prev = null; drawP2();
+}
+function p2x(N) { const k0 = +$('p2k0').value, k1 = +$('p2k1').value; const a0 = p2c[0] * Math.pow(k0, N), a1 = p2c[1] * Math.pow(k1, N); return { a0, a1, x: [a0 * Y0P[0][0] + a1 * Y0P[1][0], a0 * Y0P[0][1] + a1 * Y0P[1][1]] }; }
+function drawP2() {
+  const k0 = +$('p2k0').value, k1 = +$('p2k1').value;
+  $('p2k0v').textContent = k0.toFixed(3); $('p2k1v').textContent = k1.toFixed(3);
+  const { ctx, w, h } = setup($('c2')); const V = view(w, h, [-1.25, 1.25, -1.25, 1.25]);
+  axes(ctx, V);
+  ctx.strokeStyle = css('--rule'); ctx.setLineDash([3, 4]); ctx.beginPath(); ctx.arc(V.X(0), V.Y(0), V.s, 0, 2 * Math.PI); ctx.stroke(); ctx.setLineDash([]);
+  [[Y0P[0], css('--in'), 'Y₀'], [Y0P[1], css('--muted'), 'Y₁']].forEach(([y, c, lab]) => {
+    ctx.strokeStyle = c; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(V.X(-1.2 * y[0]), V.Y(-1.2 * y[1])); ctx.lineTo(V.X(1.2 * y[0]), V.Y(1.2 * y[1])); ctx.stroke();
+    ctx.fillStyle = c; ctx.font = '13px ' + css('--f-mono'); ctx.fillText(lab, V.X(1.12 * y[0]) + 4, V.Y(1.12 * y[1]) - 4);
+  });
+  const cur = p2x(p2N); const n = nrm(cur.x);
+  p2trail.forEach((u, i) => dotp(ctx, V.X(u[0]), V.Y(u[1]), 3, css('--out') + (i < p2trail.length - 1 ? '66' : 'ff')));
+  if (n > 0 && isFinite(n)) arrow(ctx, V.X(0), V.Y(0), V.X(cur.x[0] / n), V.Y(cur.x[1] / n), css('--out'), 2.5, 10);
+  $('p2N').textContent = p2N;
+  $('p2amt').textContent = fe(cur.a0) + ',  ' + fe(cur.a1);
+  $('p2rat').textContent = cur.a0 !== 0 ? fe(Math.abs(cur.a1 / cur.a0)) : '∞';
+  $('p2size').textContent = fe(n);
+  if (p2N > 0) { const pv = nrm(p2x(p2N - 1).x); $('p2gr').textContent = (n / pv).toFixed(4) + '   (k₀ = ' + k0.toFixed(3) + ')'; } else $('p2gr').textContent = '—';
+}
+function p2step(t) { for (let i = 0; i < t; i++) { const c = p2x(p2N), n = nrm(c.x); if (n > 0 && isFinite(n)) p2trail.push([c.x[0] / n, c.x[1] / n]); p2N++; } if (p2trail.length > 40) p2trail = p2trail.slice(-40); drawP2(); }
+$('p2step').addEventListener('click', () => p2step(1));
+$('p2ten').addEventListener('click', () => p2step(10));
+$('p2reset').addEventListener('click', () => p2init(false));
+$('p2rand').addEventListener('click', () => p2init(true));
+$('p2prac').addEventListener('click', () => { $('p2k0').value = 3.618; $('p2k1').value = 1.382; p2init(false); });
+['p2k0', 'p2k1'].forEach(id => $(id).addEventListener('input', () => { p2N = 0; p2trail = []; drawP2(); }));
+
+// =============== PANEL 3: one step ===============
+let p3x = [0, 0], p3cnt = 0;
+const A2 = [[5, 5], [5, 10]]; // AᵀA = A² for the practical
+function p3info() {
+  const r = add(BP, mv(AP, p3x), -1), Ar = mv(AP, r);
+  const rr = dt(r, r), rAr = dt(r, Ar), ArAr = dt(Ar, Ar);
+  return { r, Ar, dsd: rr > 1e-20 ? rr / rAr : 0, dmra: rr > 1e-20 ? rAr / ArAr : 0 };
+}
+const energy = x => { const e = add(x, XS, -1); return 0.5 * dt(e, mv(AP, e)); };
+const resn = x => nrm(add(BP, mv(AP, x), -1));
+function drawP3() {
+  const I = p3info(); const t = +$('p3d').value; const d = t * I.dsd;
+  $('p3dv').textContent = d.toFixed(4) + '  (' + t.toFixed(2) + ' × d_SD)';
+  const { ctx, w, h } = setup($('c3')); const V = view(w, h, [-0.35, 0.95, -0.25, 1.05]);
+  axes(ctx, V);
+  const bowl = $('p3bowl').value;
+  ctx.strokeStyle = css('--rule'); ctx.lineWidth = 1;
+  const M = bowl === 'r' ? A2 : AP;
+  for (let j = 1; j <= 9; j++) { const lev = bowl === 'r' ? Math.pow(0.06 * j, 2) * 5 : 0.5 * Math.pow(0.12 * j, 2) * 3; ellipse(ctx, M, bowl === 'r' ? lev : 2 * lev, XS, x => x, V); }
+  dotp(ctx, V.X(XS[0]), V.Y(XS[1]), 5, css('--ok'));
+  ctx.fillStyle = css('--ok'); ctx.font = '12px ' + css('--f-mono'); ctx.fillText('x*', V.X(XS[0]) + 7, V.Y(XS[1]) - 6);
+  // line x + s r
+  const r = I.r, L = 4;
+  ctx.strokeStyle = css('--muted'); ctx.setLineDash([4, 4]); ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(V.X(p3x[0] - L * r[0]), V.Y(p3x[1] - L * r[1])); ctx.lineTo(V.X(p3x[0] + L * r[0]), V.Y(p3x[1] + L * r[1])); ctx.stroke(); ctx.setLineDash([]);
+  const xn = add(p3x, r, d);
+  arrow(ctx, V.X(p3x[0]), V.Y(p3x[1]), V.X(xn[0]), V.Y(xn[1]), css('--sig'), 2.5, 9);
+  dotp(ctx, V.X(add(p3x, r, I.dsd)[0]), V.Y(add(p3x, r, I.dsd)[1]), 4, css('--m-sd'));
+  dotp(ctx, V.X(add(p3x, r, I.dmra)[0]), V.Y(add(p3x, r, I.dmra)[1]), 4, css('--m-mra'));
+  dotp(ctx, V.X(p3x[0]), V.Y(p3x[1]), 6, css('--ink'));
+  ctx.fillStyle = css('--ink'); ctx.fillText('xₖ', V.X(p3x[0]) - 20, V.Y(p3x[1]) + 16);
+  // slice
+  const S = setup($('c3s')); const c = S.ctx, W = S.w, H = S.h; const pl = 40, pr = 10, pt = 10, pb = 26;
+  const tmax = 3; const r0 = resn(p3x) || 1, e0 = energy(p3x) || 1;
+  const fr = s => resn(add(p3x, r, s * I.dsd)) / r0, fe2 = s => energy(add(p3x, r, s * I.dsd)) / e0;
+  let ymax = 1.2; for (let s = 0; s <= tmax; s += 0.05) ymax = Math.max(ymax, Math.min(fr(s), 4), Math.min(fe2(s), 4));
+  ymax = Math.min(ymax, 4);
+  const sx = s => pl + (W - pl - pr) * s / tmax, sy = y => H - pb - (H - pt - pb) * Math.min(y, ymax) / ymax;
+  c.strokeStyle = css('--rule'); c.lineWidth = 1; c.beginPath(); c.moveTo(pl, pt); c.lineTo(pl, H - pb); c.lineTo(W - pr, H - pb); c.stroke();
+  c.fillStyle = css('--muted'); c.font = '11px ' + css('--f-mono');
+  c.fillText('error / error now', 4, pt + 4); c.fillText('1', pl - 12, sy(1) + 4);
+  c.strokeStyle = css('--grid'); c.beginPath(); c.moveTo(pl, sy(1)); c.lineTo(W - pr, sy(1)); c.stroke();
+  for (let s = 0; s <= tmax; s++) c.fillText(s + '×d_SD', sx(s) - 14, H - 8);
+  [[fr, css('--ink')], [fe2, css('--muted')]].forEach(([f, col]) => { c.strokeStyle = col; c.lineWidth = 2; c.beginPath(); for (let s = 0; s <= tmax + 1e-9; s += 0.02) { const y = f(s); s ? c.lineTo(sx(s), sy(y)) : c.moveTo(sx(s), sy(y)); } c.stroke(); });
+  if (I.dsd > 0) { dotp(c, sx(1), sy(fe2(1)), 4, css('--m-sd')); dotp(c, sx(I.dmra / I.dsd), sy(fr(I.dmra / I.dsd)), 4, css('--m-mra')); }
+  c.strokeStyle = css('--sig'); c.lineWidth = 1.5; c.beginPath(); c.moveTo(sx(t), pt); c.lineTo(sx(t), H - pb); c.stroke();
+  // readouts
+  $('p3x').textContent = '(' + fmt(p3x[0], 4) + ', ' + fmt(p3x[1], 4) + ')';
+  $('p3r').textContent = '(' + fmt(r[0], 4) + ', ' + fmt(r[1], 4) + ')';
+  $('p3dsd').textContent = I.dsd.toFixed(4); $('p3dmra').textContent = I.dmra.toFixed(4);
+  const after = resn(xn);
+  $('p3nr').innerHTML = resn(p3x).toFixed(4) + ' → ' + after.toFixed(4) + (after > resn(p3x) + 1e-12 ? ' <span class="warnline">worse</span>' : '');
+  $('p3cnt').textContent = p3cnt;
+}
+$('p3d').addEventListener('input', drawP3); $('p3bowl').addEventListener('input', drawP3);
+$('p3sd').addEventListener('click', () => { $('p3d').value = 1; drawP3(); });
+$('p3mra').addEventListener('click', () => { const I = p3info(); if (I.dsd > 0) $('p3d').value = I.dmra / I.dsd; drawP3(); });
+$('p3go').addEventListener('click', () => { const I = p3info(); p3x = add(p3x, I.r, +$('p3d').value * I.dsd); p3cnt++; drawP3(); });
+$('p3reset').addEventListener('click', () => { p3x = [0, 0]; p3cnt = 0; drawP3(); });
+function dragOn(cv, boxFn, cb) {
+  let down = false;
+  const at = e => { const r = cv.getBoundingClientRect(); const V = view(r.width, r.height, boxFn()); cb(V.inv(e.clientX - r.left, e.clientY - r.top)); };
+  cv.addEventListener('pointerdown', e => { down = true; cv.setPointerCapture(e.pointerId); at(e); });
+  cv.addEventListener('pointermove', e => { if (down) at(e); });
+  cv.addEventListener('pointerup', () => down = false);
+}
+dragOn($('c3'), () => [-0.35, 0.95, -0.25, 1.05], x => { p3x = x; p3cnt = 0; drawP3(); });
+
+// =============== PANEL 4: Jacobi vs GS ===============
+let p4gs = false, p4hist = [[0, 0]];
+function p4sys() { return $('p4swap').checked ? { A: [[1, 3], [2, 1]], b: [2, 1] } : { A: AP, b: BP }; }
+function p4sweep(x) {
+  const { A, b } = p4sys();
+  const n0 = (b[0] - A[0][1] * x[1]) / A[0][0];
+  const n1 = (b[1] - A[1][0] * (p4gs ? n0 : x[0])) / A[1][1];
+  return [n0, n1];
+}
+function drawP4() {
+  $('p4m').textContent = 'Method: ' + (p4gs ? 'Gauss-Seidel' : 'Jacobi'); $('p4m').setAttribute('aria-pressed', p4gs);
+  const { A, b } = p4sys();
+  const { ctx, w, h } = setup($('c4')); const V = view(w, h, [-0.35, 0.95, -0.25, 1.05]);
+  axes(ctx, V);
+  const [bx0, bx1] = V.box;
+  // line for row i: A[i][0] x0 + A[i][1] x1 = b[i]; colour by equation identity (2x0+x1=1 is always "line 0" colour)
+  const eqs = [{ a: [2, 1], c: 1, col: css('--in') }, { a: [1, 3], c: 2, col: css('--sig') }];
+  eqs.forEach(E => { ctx.strokeStyle = E.col; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(V.X(bx0), V.Y((E.c - E.a[0] * bx0) / E.a[1])); ctx.lineTo(V.X(bx1), V.Y((E.c - E.a[0] * bx1) / E.a[1])); ctx.stroke(); });
+  dotp(ctx, V.X(XS[0]), V.Y(XS[1]), 5, css('--ok'));
+  const col = p4gs ? css('--m-gs') : css('--m-j');
+  const clip = v => Math.max(-1e4, Math.min(1e4, v));
+  for (let i = 1; i < p4hist.length; i++) {
+    const o = p4hist[i - 1], nw = p4hist[i];
+    const last = i === p4hist.length - 1; ctx.globalAlpha = last ? 1 : 0.45;
+    if (p4gs) {
+      const mid = [nw[0], o[1]];
+      arrow(ctx, V.X(o[0]), V.Y(o[1]), V.X(clip(mid[0])), V.Y(o[1]), col, 2, 7);
+      arrow(ctx, V.X(clip(mid[0])), V.Y(o[1]), V.X(clip(nw[0])), V.Y(clip(nw[1])), col, 2, 7);
+    } else {
+      ctx.setLineDash([3, 3]); ctx.strokeStyle = col; ctx.lineWidth = 1.2;
+      ctx.beginPath(); ctx.moveTo(V.X(o[0]), V.Y(o[1])); ctx.lineTo(V.X(clip(nw[0])), V.Y(o[1])); ctx.moveTo(V.X(o[0]), V.Y(o[1])); ctx.lineTo(V.X(o[0]), V.Y(clip(nw[1]))); ctx.stroke(); ctx.setLineDash([]);
+      arrow(ctx, V.X(o[0]), V.Y(o[1]), V.X(clip(nw[0])), V.Y(clip(nw[1])), col, 2, 7);
+    }
+    ctx.globalAlpha = 1;
+  }
+  p4hist.forEach(p => dotp(ctx, V.X(clip(p[0])), V.Y(clip(p[1])), 3.5, css('--ink')));
+  // text
+  const k = p4hist.length - 1, o = p4hist[Math.max(0, k - 1)], nw = p4hist[k];
+  const sw = $('p4swap').checked;
+  const r0 = sw ? 'x₀ = 2 − 3x₁' : 'x₀ = (1 − x₁)/2', r1 = sw ? 'x₁ = 1 − 2x₀' : 'x₁ = (2 − x₀)/3';
+  if (k === 0) $('p4lines').innerHTML = 'row 0: ' + r0 + '<br>row 1: ' + r1 + (p4gs ? '   (x₀ = the one just computed)' : '   (x₀ = old value)');
+  else {
+    const s0 = sw ? `x₀ = 2 − 3(${fmt(o[1], 4)}) = ${fe(nw[0])}` : `x₀ = (1 − ${fmt(o[1], 4)})/2 = ${fe(nw[0])}`;
+    const used = p4gs ? nw[0] : o[0];
+    const s1 = sw ? `x₁ = 1 − 2(${fe(used)}) = ${fe(nw[1])}` : `x₁ = (2 − ${fe(used)})/3 = ${fe(nw[1])}`;
+    $('p4lines').innerHTML = `sweep ${k}:<br>row 0: ${s0}<br>row 1: ${s1}  <span class="note">(uses ${p4gs ? '<b>new</b>' : 'old'} x₀)</span>`;
+  }
+  const tb = $('p4tab').querySelector('tbody'); tb.innerHTML = '';
+  p4hist.forEach((p, i) => { const tr = document.createElement('tr'); const rn = nrm(add(b, mv(A, p), -1)); tr.innerHTML = `<td>${i}</td><td>${fe(p[0])}</td><td>${fe(p[1])}</td><td>${fe(rn)}</td>`; tb.appendChild(tr); });
+}
+$('p4m').addEventListener('click', () => { p4gs = !p4gs; p4hist = [p4hist[0]]; drawP4(); });
+$('p4step').addEventListener('click', () => { if (p4hist.length < 12) p4hist.push(p4sweep(p4hist[p4hist.length - 1])); drawP4(); });
+$('p4reset').addEventListener('click', () => { p4hist = [[0, 0]]; drawP4(); });
+$('p4swap').addEventListener('input', () => { p4hist = [p4hist[0]]; drawP4(); });
+dragOn($('c4'), () => [-0.35, 0.95, -0.25, 1.05], x => { p4hist = [x]; drawP4(); });
+
+// =============== PANEL 5: paths + convergence ===============
+let p5x0 = [0, 0];
+const METH = [['sd', 'SD', '--m-sd'], ['cg', 'CG', '--m-cg'], ['mra', 'MRA', '--m-mra'], ['j', 'Jacobi', '--m-j'], ['gs', 'Gauss-Seidel', '--m-gs']];
+function p5problem() {
+  const s = +$('p5s').value; const A = [[2 * s, 1], [1, 3]]; const b = mv(A, XS);
+  if (!$('p5pre').checked) return { A, b, xs: XS, toY: x => x, fromY: y => y, s };
+  const dh = [Math.sqrt(A[0][0]), Math.sqrt(A[1][1])];
+  const Ah = [[1, A[0][1] / (dh[0] * dh[1])], [A[1][0] / (dh[0] * dh[1]), 1]];
+  const bh = [b[0] / dh[0], b[1] / dh[1]];
+  return { A: Ah, b: bh, xs: [XS[0] * dh[0], XS[1] * dh[1]], toY: x => [x[0] * dh[0], x[1] * dh[1]], fromY: y => [y[0] / dh[0], y[1] / dh[1]], s };
+}
+function drawP5() {
+  const P = p5problem(); $('p5sv').textContent = P.s;
+  const round = $('p5round').checked; const R = sqrtSym(P.A);
+  const disp = y => round ? mv(R, add(y, P.xs, -1)) : y; // display coords
+  const y0 = P.toY(p5x0);
+  const runs = METH.map(([m]) => runMethod(P.A, P.b, y0, m, 400));
+  // view box: fit x0, xs and paths' first few points
+  const pts = [disp(y0), disp(P.xs)]; runs.forEach((R_, i) => { if ($('m_' + METH[i][0]).checked) R_.pts.slice(0, 8).forEach(p => { if (nrm(p) < 1e3) pts.push(disp(p)); }); });
+  let xs = pts.map(p => p[0]), ys = pts.map(p => p[1]);
+  let bx = [Math.min(...xs), Math.max(...xs), Math.min(...ys), Math.max(...ys)];
+  const span = Math.max(bx[1] - bx[0], bx[3] - bx[2], 0.2) * 0.6;
+  const cx = (bx[0] + bx[1]) / 2, cy = (bx[2] + bx[3]) / 2;
+  const box = [cx - span * 1.05, cx + span * 1.05, cy - span * 1.05, cy + span * 1.05];
+  p5box = box;
+  const { ctx, w, h } = setup($('c5')); const V = view(w, h, box);
+  const pre = $('p5pre').checked;
+  axes(ctx, V, round ? 'u₀' : pre ? 'y₀' : 'x₀', round ? 'u₁' : pre ? 'y₁' : 'x₁');
+  // energy contours through x0, scaled
+  const e0 = add(y0, P.xs, -1); const c0 = dt(e0, mv(P.A, e0)) || 1;
+  ctx.strokeStyle = css('--rule'); ctx.lineWidth = 1;
+  for (let j = 1; j <= 10; j++) ellipse(ctx, P.A, c0 * Math.pow(j / 7, 2), P.xs, disp, V);
+  const dxs = disp(P.xs); dotp(ctx, V.X(dxs[0]), V.Y(dxs[1]), 5, css('--ok'));
+  runs.forEach((R_, i) => {
+    if (!$('m_' + METH[i][0]).checked) return;
+    const col = css(METH[i][2]); ctx.strokeStyle = col; ctx.lineWidth = METH[i][0] === 'cg' ? 2.5 : 1.8;
+    ctx.beginPath(); R_.pts.slice(0, 60).forEach((p, k) => { const d = disp(p); k ? ctx.lineTo(V.X(d[0]), V.Y(d[1])) : ctx.moveTo(V.X(d[0]), V.Y(d[1])); }); ctx.stroke();
+    R_.pts.slice(0, 12).forEach(p => { const d = disp(p); dotp(ctx, V.X(d[0]), V.Y(d[1]), 2.5, col); });
+  });
+  const d0 = disp(y0); dotp(ctx, V.X(d0[0]), V.Y(d0[1]), 5.5, css('--ink'));
+  // convergence plot
+  const S = setup($('c5s')); const c = S.ctx, W = S.w, H = S.h; const pl = 44, pr = 10, pt = 10, pb = 24; const KM = 40;
+  const sx = k => pl + (W - pl - pr) * k / KM, sy = v => pt + (H - pt - pb) * (-v) / 16;
+  c.strokeStyle = css('--rule'); c.beginPath(); c.moveTo(pl, pt); c.lineTo(pl, H - pb); c.lineTo(W - pr, H - pb); c.stroke();
+  c.fillStyle = css('--muted'); c.font = '11px ' + css('--f-mono');
+  [0, -4, -8, -12, -16].forEach(v => { c.fillText('1e' + v, 4, sy(v) + 4); c.strokeStyle = css('--grid'); c.beginPath(); c.moveTo(pl, sy(v)); c.lineTo(W - pr, sy(v)); c.stroke(); });
+  c.strokeStyle = css('--warn'); c.setLineDash([3, 3]); c.beginPath(); c.moveTo(pl, sy(-6)); c.lineTo(W - pr, sy(-6)); c.stroke(); c.setLineDash([]);
+  [0, 10, 20, 30, 40].forEach(k => c.fillText(k, sx(k) - 4, H - 8));
+  runs.forEach((R_, i) => {
+    if (!$('m_' + METH[i][0]).checked) return;
+    c.strokeStyle = css(METH[i][2]); c.lineWidth = 2; c.beginPath();
+    R_.res.slice(0, KM + 1).forEach((v, k) => { const lv = Math.max(-16, Math.min(0.5, Math.log10(Math.max(v, 1e-17)))); k ? c.lineTo(sx(k), sy(lv)) : c.moveTo(sx(k), sy(lv)); }); c.stroke();
+  });
+  // table
+  const tb = $('p5tab').querySelector('tbody'); tb.innerHTML = '';
+  runs.forEach((R_, i) => { const it = itersTo(R_.res); const tr = document.createElement('tr'); tr.innerHTML = `<td style="color:var(${METH[i][2]})">${METH[i][1]}</td><td>${it === null ? (R_.res[R_.res.length - 1] > 1 ? 'diverges' : '> 400') : it}</td>`; tb.appendChild(tr); });
+  const ek = eigSym(P.A).k; $('p5k').textContent = (ek[0] / ek[1]).toFixed(2) + (pre ? '  (preconditioned; unpreconditioned ' + (() => { const k2 = eigSym([[2 * P.s, 1], [1, 3]]).k; return (k2[0] / k2[1]).toFixed(2); })() + ')' : '');
+}
+let p5box = [-0.3, 0.9, -0.3, 0.9];
+['p5s', 'p5round', 'p5pre', 'm_sd', 'm_cg', 'm_mra', 'm_j', 'm_gs'].forEach(id => $(id).addEventListener('input', drawP5));
+(() => { // click to move x0 (only in plain x view, to keep it simple)
+  const cv = $('c5');
+  cv.addEventListener('pointerdown', e => {
+    if ($('p5round').checked || $('p5pre').checked) return;
+    const r = cv.getBoundingClientRect(); const V = view(r.width, r.height, p5box);
+    p5x0 = V.inv(e.clientX - r.left, e.clientY - r.top); drawP5();
+  });
+})();
+
+// =============== PANEL 6: domain decomposition ===============
+let p6dom = true;
+function p6layout(n) {
+  const ri = Math.round(n * 0.4), ci = Math.floor(n / 2);
+  const lab = []; // per node (i row from top, j col)
+  for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) {
+    let d; if (i < ri) d = 'a'; else if (i === ri) d = 'i'; else if (j === ci) d = 'i'; else d = j < ci ? 'b' : 'c';
+    lab.push(d);
+  }
+  return { lab, ri, ci };
+}
+function drawP6() {
+  const n = +$('p6n').value; $('p6nv').textContent = n; const N = n * n;
+  $('p6o').textContent = 'Order: ' + (p6dom ? 'domains, then interface' : 'row by row'); $('p6o').setAttribute('aria-pressed', p6dom);
+  const { lab } = p6layout(n);
+  const groups = { a: [], b: [], c: [], i: [] }; lab.forEach((d, q) => groups[d].push(q));
+  const seq = p6dom ? [...groups.a, ...groups.b, ...groups.c, ...groups.i] : [...Array(N).keys()];
+  const pos = new Array(N); seq.forEach((q, k) => pos[q] = k);
+  const M = lap(n, q => pos[q]); const LU = luPattern(M);
+  const blocks = p6dom ? [groups.a.length, groups.b.length, groups.c.length] : null;
+  spy($('c6a'), M, null, blocks); spy($('c6b'), M, LU, blocks);
+  // grid
+  const { ctx, w, h } = setup($('c6g')); const s = Math.min(w, h) / (n + 1);
+  const colOf = { a: css('--da'), b: css('--db'), c: css('--dc'), i: css('--di') };
+  ctx.strokeStyle = css('--rule'); ctx.lineWidth = 1;
+  for (let i = 0; i < n; i++) { ctx.beginPath(); ctx.moveTo(s, s * (i + 1)); ctx.lineTo(s * n, s * (i + 1)); ctx.stroke(); ctx.beginPath(); ctx.moveTo(s * (i + 1), s); ctx.lineTo(s * (i + 1), s * n); ctx.stroke(); }
+  lab.forEach((d, q) => { const i = Math.floor(q / n), j = q % n; dotp(ctx, s * (j + 1), s * (i + 1), Math.max(2.5, s * 0.22), colOf[d]); });
+  // counts
+  let nnzA = 0, nnzLU = 0; for (let i = 0; i < N; i++) for (let j = 0; j < N; j++) { if (M[i][j] !== 0) nnzA++; if (LU[i][j]) nnzLU++; }
+  const m = groups.i.length;
+  $('p6N').textContent = N; $('p6sz').textContent = groups.a.length + ' / ' + groups.b.length + ' / ' + groups.c.length + '  (one CPU each)';
+  $('p6m').textContent = m;
+  $('p6s').textContent = m + ' × ' + m + ' = ' + m * m + ' entries   (vs N² = ' + N * N + ')';
+  $('p6f').textContent = (nnzLU - nnzA) + ' new non-zeros';
+}
+$('p6n').addEventListener('input', drawP6);
+$('p6o').addEventListener('click', () => { p6dom = !p6dom; drawP6(); });
+
+// =============== boot & theme ===============
+function drawAll() { drawP1(); drawP2(); drawP3(); drawP4(); drawP5(); drawP6(); }
+p2init(false);
+drawAll();
+let rt; window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(drawAll, 120); });
+try { matchMedia('(prefers-color-scheme: dark)').addEventListener('change', drawAll); } catch (e) {}
+new MutationObserver(drawAll).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+})();
+</script>

@@ -207,6 +207,54 @@ label.chk{display:flex;gap:6px;align-items:center;font-size:.85rem}
       <div class="calc" id="calc"></div>
     </div>
   </section>
+
+  <!-- panel 4 -->
+  <section class="panel wide" aria-labelledby="h4p">
+    <div class="side">
+      <h2 id="h4p">4 · Why the hand recipe works (the practical’s A)</h2>
+      <p class="note">The hand recipe is: AAᵀ → σ = √k → q → p = Aᵀq/σ → the leftover p from Ap = 0. Each step comes from one of three facts. Try each question on paper first, then reveal it. The checks use the practical’s A = [[2, 0, 1], [−1, 2, 9]] and the same Q, σ, Pᵀ as panel 2.</p>
+      <div class="grid2">
+        <div class="calc">
+          <div class="card"><b>Fact 1 · How are P and Q linked?</b>
+            <div class="predict" style="font-family:var(--f-body)">Start from A = Q σ Pᵀ and multiply both sides on the right by P. Read the result one column at a time.</div>
+            <button id="rv1" aria-expanded="false">show derivation</button>
+            <div id="dv1" hidden>
+              <div class="line">AP = Q σ (PᵀP) = Q σ        ← PᵀP = I</div>
+              <div class="line">column i:  A pᵢ = σᵢ qᵢ</div>
+              <div class="line">mirror (transpose first): Aᵀ qᵢ = σᵢ pᵢ</div>
+              <p class="note" style="font-family:var(--f-body)">Input axis pᵢ lands on output axis qᵢ, stretched by σᵢ. In A3 an eigen axis lands on <b>itself</b> (Axᵢ = kᵢxᵢ). SVD lets it land somewhere else, but keeps the landing spots perpendicular. That is panel 1’s x / x⊥ sweep. The mirror form gives the recipe’s p = Aᵀq/σ.</p>
+              <div id="ck1"></div>
+            </div>
+          </div>
+        </div>
+        <div class="calc">
+          <div class="card"><b>Fact 2 · Why eig(AᵀA) gives P and σ²</b>
+            <div class="predict" style="font-family:var(--f-body)">Write AᵀA using A = Q σ Pᵀ. Which A3 form does it match?</div>
+            <button id="rv2" aria-expanded="false">show derivation</button>
+            <div id="dv2" hidden>
+              <div class="line">AᵀA = (P σᵀ Qᵀ)(Q σ Pᵀ) = P (σᵀσ) Pᵀ   ← QᵀQ = I</div>
+              <div class="line">     = X K Xᵀ with X = P, K = σᵀσ = diag(σ₀², σ₁², …)</div>
+              <div class="line">AAᵀ = Q (σσᵀ) Qᵀ   → Q = eigenvectors of AAᵀ</div>
+              <p class="note" style="font-family:var(--f-body)">So an SVD is <b>two A3 eigen problems</b>: P from AᵀA, Q from AAᵀ, and σᵢ = √kᵢ. AᵀA is always symmetric, so A3’s perpendicular axes are guaranteed.</p>
+              <div id="ck2"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="calc">
+        <div class="card"><b>Fact 3 · Shapes (sl.15, full form), and why the recipe starts from AAᵀ</b>
+          <div class="predict" style="font-family:var(--f-body)">A is 2×3. Give the shapes of Q, σ, Pᵀ, AAᵀ and AᵀA. Which of AAᵀ and AᵀA is quicker to solve by hand?</div>
+          <button id="rv3" aria-expanded="false">show answer</button>
+          <div id="dv3" hidden>
+            <div class="line">A (N×M) = Q (N×N) · σ (N×M) · Pᵀ (M×M)      practical: 2×3 = 2×2 · 2×3 · 3×3</div>
+            <div class="line">AAᵀ is N×N = 2×2 → a quadratic.   AᵀA is M×M = 3×3 → a cubic.</div>
+            <p class="note" style="font-family:var(--f-body)">Both share the same nonzero eigenvalues, so the small one gives every σ. Then get P from pᵢ = Aᵀqᵢ/σᵢ without ever solving the 3×3. The 3×3 has one extra eigenvalue, 0. It belongs to p₂, the input axis with no σ partner (panel 2). <span class="tag">added: start from the smaller product</span></p>
+            <div id="ck3"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
 </div>
 
 <script>
@@ -388,6 +436,26 @@ function plotX(m,x,d,zs){
   arrow(F,[0,0],x,col('--in'),3.2);label(F,x,zi>=0?'x (one of many)':'x',col('--in'));gridLabel(F,R);
 }
 
+/* ---- panel 4: live checks on the practical's numbers ---- */
+function draw4(){
+  const AT=A2[0].map((_,j)=>A2.map(r=>r[j]));
+  const qc=i=>[Q2[0][i],Q2[1][i]];
+  let h='<div class="line"><b>check</b> (practical numbers)</div>';
+  [0,1].forEach(i=>{h+='<div class="line">A p'+'₀₁'[i]+' = '+vec(mulA(A2,Pt2[i]))+'   σ'+'₀₁'[i]+'q'+'₀₁'[i]+' = '+f(sg2[i],3)+'·'+vec(qc(i))+' = '+vec(qc(i).map(v=>sg2[i]*v))+' ✓</div>'});
+  h+='<div class="line">A p₂ = '+vec(mulA(A2,Pt2[2]))+'   ← no partner, lands on 0</div>';
+  h+='<div class="line">Aᵀq₀ / σ₀ = '+vec(mulA(AT,qc(0)).map(v=>v/sg2[0]))+' = p₀ ✓</div>';
+  $('ck1').innerHTML=h;
+  const AAt=A2.map(r=>A2.map(s=>dot(r,s))), tr=AAt[0][0]+AAt[1][1], det=AAt[0][0]*AAt[1][1]-AAt[0][1]*AAt[1][0];
+  const disc=Math.sqrt(tr*tr-4*det), k0=(tr+disc)/2, k1=(tr-disc)/2;
+  $('ck2').innerHTML='<div class="line"><b>check</b>  AAᵀ = [['+AAt[0].join(', ')+'], ['+AAt[1].join(', ')+']]</div>'+
+    '<div class="line">k² − '+tr+'k + '+det+' = 0 → k = ('+tr+' ± √'+f(tr*tr-4*det,0)+')/2 = '+f(k0,3)+', '+f(k1,3)+'</div>'+
+    '<div class="line">σ = √k = '+f(Math.sqrt(k0),4)+', '+f(Math.sqrt(k1),4)+'   (panel 2’s σ: '+f(sg2[0],4)+', '+f(sg2[1],4)+') ✓</div>';
+  const AtA=AT.map(r=>AT.map(s=>dot(r,s)));
+  $('ck3').innerHTML='<div class="line"><b>check</b>  AᵀA = ['+AtA.map(r=>'['+r.join(', ')+']').join(', ')+']</div>'+
+    '<div class="line">trace AᵀA = '+(AtA[0][0]+AtA[1][1]+AtA[2][2])+' = '+f(k0,3)+' + '+f(k1,3)+' + 0 ✓   (same nonzero k as AAᵀ, plus 0)</div>';
+}
+[1,2,3].forEach(n=>$('rv'+n).addEventListener('click',e=>{const d=$('dv'+n),open=d.hidden;d.hidden=!open;e.target.setAttribute('aria-expanded',open);e.target.textContent=open?(n===3?'hide answer':'hide derivation'):(n===3?'show answer':'show derivation')}));
+
 function all(){drawBar();draw1();draw3()}
 // events
 [['tP','tP'],['tQ','tQ']].forEach(([id,k])=>$(id).addEventListener('input',e=>{S[k]=+e.target.value;all()}));
@@ -411,6 +479,6 @@ const redraw=()=>{draw1();draw2();draw3()};
 window.addEventListener('resize',()=>{draw1();draw3()});
 if(window.matchMedia)matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change',redraw);
 new MutationObserver(redraw).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
-initMats2();all();draw2();
+initMats2();all();draw2();draw4();
 })();
 </script>

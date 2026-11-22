@@ -1,0 +1,430 @@
+<title>A2 QR Lab</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=Space+Grotesk:wght@500;600&display=swap">
+<style>
+/* Layout: same graph-paper bench as the A3/A4 labs. Equation strip on top, five experiment panels below */
+:root{
+  --bg:#f3f6f7; --panel:#ffffff; --ink:#18222b; --muted:#5b6872; --rule:#d9e1e5; --grid:#e8eef1;
+  --in:#0f8a7e;      /* kept / pivot / input side */
+  --out:#d0661b;     /* the entry being killed / target */
+  --sig:#6b4fc8;     /* the transform itself (G, H, u) */
+  --ok:#1d8a3a; --warn:#b42318; --okbg:#e3f4e7; --warnbg:#fbe4e1;
+  --f-display:"Space Grotesk",system-ui,sans-serif;
+  --f-body:"IBM Plex Sans",system-ui,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#11171c; --panel:#182027; --ink:#e4ecf0; --muted:#93a3ad; --rule:#2a353e; --grid:#1f2930;
+  --in:#3cc7b8; --out:#f39a52; --sig:#a993f5; --ok:#4cc46c; --warn:#ff7b6b; --okbg:#173322; --warnbg:#3a1d1a; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#11171c; --panel:#182027; --ink:#e4ecf0; --muted:#93a3ad; --rule:#2a353e; --grid:#1f2930;
+  --in:#3cc7b8; --out:#f39a52; --sig:#a993f5; --ok:#4cc46c; --warn:#ff7b6b; --okbg:#173322; --warnbg:#3a1d1a; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.5;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:24px 48px}
+.wrap{max-width:1060px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+h1{font-family:var(--f-display);font-weight:600;font-size:1.7rem;margin:0;text-wrap:balance}
+h2{font-family:var(--f-display);font-weight:600;font-size:1.2rem;margin:0;text-wrap:balance}
+.lede{color:var(--muted);max-width:70ch;margin:4px 0 0}
+.src{font-family:var(--f-mono);font-size:.75rem;color:var(--muted);letter-spacing:.02em;margin:4px 0 0}
+.bar,.panel{background:var(--panel);border:1px solid var(--rule);border-radius:8px;padding:16px}
+.strip{display:flex;flex-direction:column;gap:6px}
+.eqline{font-family:var(--f-mono);font-size:.9rem;overflow-wrap:anywhere}
+.panel{display:grid;grid-template-columns:minmax(0,420px) minmax(0,1fr);gap:20px}
+.panel.wide{grid-template-columns:minmax(0,1fr)}
+@media (max-width:760px){.panel{grid-template-columns:minmax(0,1fr)}}
+.plot{position:relative;width:100%;aspect-ratio:1;max-width:100%}
+canvas{width:100%;height:100%;display:block;border-radius:6px;background:var(--bg)}
+.side{display:flex;flex-direction:column;gap:12px;min-width:0}
+.ctrl{display:flex;flex-direction:column;gap:4px}
+.ctrl label{font-size:.85rem;color:var(--muted)}
+input[type=range]{width:100%;accent-color:var(--sig)}
+button{font:inherit;font-size:.82rem;padding:5px 10px;border-radius:5px;border:1px solid var(--rule);background:var(--bg);color:var(--ink);cursor:pointer}
+button:hover{border-color:var(--muted)}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--sig);outline-offset:2px}
+button[aria-pressed="true"]{background:var(--sig);color:#fff;border-color:var(--sig)}
+select{font:inherit;font-size:.85rem;padding:4px 6px;border-radius:5px;border:1px solid var(--rule);background:var(--bg);color:var(--ink)}
+label.chk{display:flex;gap:6px;align-items:center;font-size:.85rem}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.read{font-family:var(--f-mono);font-size:.85rem;font-variant-numeric:tabular-nums;display:grid;grid-template-columns:auto minmax(0,1fr);gap:3px 14px;margin:0}
+.read dt{color:var(--muted)} .read dd{margin:0;overflow-wrap:anywhere}
+.pill{display:inline-block;font-family:var(--f-mono);font-size:.78rem;padding:3px 9px;border-radius:99px;border:1px solid currentColor}
+.pill.on{color:var(--ok)} .pill.off{color:var(--muted)} .pill.bad{color:var(--warn)}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:.8rem;color:var(--muted)}
+.sw{display:inline-block;width:14px;height:3px;border-radius:2px;vertical-align:middle;margin-right:5px}
+.note{font-size:.88rem;color:var(--muted);max-width:68ch;margin:0}
+.note b{color:var(--ink);font-weight:600}
+.predict{border-left:3px solid var(--sig);padding:6px 10px;font-size:.9rem;background:var(--bg);border-radius:0 6px 6px 0;margin:0}
+.tag{font-family:var(--f-mono);font-size:.7rem;color:var(--muted);border:1px dashed var(--rule);padding:1px 6px;border-radius:4px}
+.cin{color:var(--in);font-weight:500} .cout{color:var(--out);font-weight:500} .csig{color:var(--sig);font-weight:500}
+/* matrix tables */
+.mats{display:flex;flex-wrap:wrap;gap:14px 22px;align-items:flex-start}
+.mbox{display:flex;flex-direction:column;align-items:center;gap:3px;min-width:0}
+.mlab{font-size:.72rem;color:var(--muted);text-align:center}
+table.m{border-collapse:separate;border-spacing:2px;border-left:2px solid var(--ink);border-right:2px solid var(--ink);padding:0 3px;font-family:var(--f-mono);font-size:.84rem;font-variant-numeric:tabular-nums}
+table.m td{padding:2px 6px;text-align:right;border-radius:3px;min-width:5.2ch}
+table.m td.z{color:var(--ok);background:var(--okbg)}
+table.m td.t{color:var(--out);font-weight:600;outline:1.5px solid var(--out)}
+table.m td.bad{color:var(--warn);background:var(--warnbg);font-weight:600}
+table.m td.dim{color:var(--muted)}
+.mtx-wrap{overflow-x:auto}
+.log{font-family:var(--f-mono);font-size:.8rem;color:var(--muted);display:flex;flex-direction:column;gap:2px;margin:0;padding-left:18px}
+.grid2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px}
+@media (max-width:760px){.grid2{grid-template-columns:minmax(0,1fr)}}
+.cap{font-size:.8rem;color:var(--muted);margin:4px 0 0}
+.cmp{border-collapse:collapse;font-size:.85rem;font-variant-numeric:tabular-nums}
+.cmp th,.cmp td{border-bottom:1px solid var(--rule);padding:4px 12px;text-align:right}
+.cmp th:first-child,.cmp td:first-child{text-align:left}
+.cmp th{font-weight:600;color:var(--muted);font-size:.78rem;letter-spacing:.03em}
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>A2 QR lab</h1>
+    <p class="lede">Solving Ax = b is hard. Solving a <b>triangular</b> system is easy: start at the bottom row and substitute upwards. So multiply both sides by orthogonal matrices (Givens rotations or Householder mirrors) until A becomes triangular. x doesn't change, because both sides got the same treatment.</p>
+    <p class="src">Source: EEEE3116 A2 “What are the nice matrices?”, sl.2–3, 12–24, 33–47, 51–68, plus the Givens and Householder practicals. Anything not from the slides is tagged <span class="tag">added</span>.</p>
+  </header>
+
+  <section class="bar strip" aria-label="Key equations">
+    <div class="eqline">Ax = b &nbsp;→&nbsp; <span class="csig">G</span>Ax = <span class="csig">G</span>b &nbsp;(same x) &nbsp;→&nbsp; … &nbsp;→&nbsp; <b>Rx = b̃</b>, R upper triangular &nbsp;→&nbsp; back-substitute</div>
+    <div class="eqline">Collect the steps: <span class="csig">G₃G₂G₁</span>A = R &nbsp;⇒&nbsp; A = QR with Q = G₁ᵀG₂ᵀG₃ᵀ (orthogonal, so Q⁻¹ = Qᵀ) &nbsp;⇒&nbsp; Rx = Qᵀb <span class="tag">sl.37–40</span></div>
+    <div class="eqline">Same first move as A4’s SVD solve (Qᵀb). There the middle matrix is diagonal (σ); here it is triangular (R). <span class="tag">added</span></div>
+  </section>
+
+  <!-- panel 1 -->
+  <section class="panel" aria-labelledby="h1p">
+    <div class="plot"><canvas id="c1" aria-label="The two rows' column pairs before and after the rotation"></canvas></div>
+    <div class="side">
+      <h2 id="h1p">1 · A Givens rotation is a 2D rotation of two rows</h2>
+      <p class="note">A Givens rotation only touches two rows, i and k. Each column of those two rows is a pair of numbers, i.e. a 2D arrow. G turns <b>every</b> arrow by the same angle. Pick the angle so that the pivot column’s arrow lies flat on the axis. Then its bottom number, the entry you want gone, is 0.</p>
+      <div class="legend">
+        <span><span class="sw" style="background:var(--out)"></span>pivot column’s pair (pivot, target)</span>
+        <span><span class="sw" style="background:var(--muted)"></span>the other columns of the same two rows</span>
+      </div>
+      <div class="row"><label for="p1s" class="note">Practical step:</label>
+        <select id="p1s"><option value="0">1 · kill a₁₀ (rows 0, 1)</option><option value="1">2 · kill a₂₀ (rows 0, 2)</option><option value="2">3 · kill a₂₁ (rows 1, 2)</option></select></div>
+      <p class="predict"><b>Predict first:</b> where must the orange arrow point for its bottom number to be 0? How long will it be then? Turn the dial, then press “snap”.</p>
+      <div class="ctrl"><label for="phi">Rotation angle θ: <span id="phiv"></span></label>
+        <input id="phi" type="range" min="-180" max="180" step="0.5" value="0"></div>
+      <div class="row"><button id="snap">snap: c = a/r, s = b/r</button><span id="p1pill" class="pill off"></span></div>
+      <div class="mats mtx-wrap" id="p1mats"></div>
+      <dl class="read" id="r1"></dl>
+      <p class="note"><b>Two ways of writing the same G.</b> The lecture writes [[cos θ, −sin θ], [sin θ, cos θ]] and solves for θ (sl.14). The practical writes [[c, s], [−s, c]] with c = a/r, s = b/r and never computes θ. They are the same matrix with s = −sin θ.</p>
+    </div>
+  </section>
+
+  <!-- panel 2 -->
+  <section class="panel wide" aria-labelledby="h2p">
+    <div class="side">
+      <h2 id="h2p">2 · Triangularise the practical’s 3×3, in any order you like</h2>
+      <p class="note">A = [[3, 4, 5], [−1, 1, 3], [2, −2, 3]], b = (7, 1, 5), from the Givens practical. Each button kills one entry, using the diagonal entry of that column as the pivot. G is applied to b too. <span class="cout">Orange</span> = still to kill, <span style="color:var(--ok)">green</span> = zero, <span style="color:var(--warn)">red</span> = a zero you made earlier that has come back.</p>
+      <p class="predict"><b>Predict first:</b> press “kill a₂₁” first, then “kill a₂₀”. What happens to a₂₁? Reset and try the order (1,0) → (2,0) → (2,1). Why does that order never undo itself? (sl.18, 21)</p>
+      <div class="row">
+        <button id="k10">kill a₁₀</button><button id="k20">kill a₂₀</button><button id="k21">kill a₂₁</button>
+        <button id="kreset">reset</button><span id="p2pill" class="pill off"></span>
+      </div>
+      <div class="mats mtx-wrap" id="p2mats"></div>
+      <ol class="log" id="p2log"></ol>
+      <dl class="read" id="r2"></dl>
+    </div>
+  </section>
+
+  <!-- panel 3 -->
+  <section class="panel" aria-labelledby="h3p">
+    <div class="plot"><canvas id="c3" aria-label="Householder mirror reflecting x onto the axis"></canvas></div>
+    <div class="side">
+      <h2 id="h3p">3 · Householder is a mirror: one reflection clears a whole column</h2>
+      <p class="note">Givens turns the column bit by bit. Householder <b>reflects</b> it straight onto the axis in one go. Reflections keep length too, so the target is x′ = (±|x|, 0, …). The mirror sits halfway between x and x′. Its normal is <span class="csig">u = x − x′</span>, and H = I − 2uuᵀ/uᵀu. Drawn here in 2D: the practical’s second step, x = (1.871, −3.742).</p>
+      <div class="legend">
+        <span><span class="sw" style="background:var(--in)"></span>x (sub-column)</span>
+        <span><span class="sw" style="background:var(--out)"></span>x′ = Hx (on the axis)</span>
+        <span><span class="sw" style="background:var(--sig)"></span>u = x − x′ and the mirror</span>
+      </div>
+      <div class="ctrl"><label for="psi">Direction of x (length stays 4.183): <span id="psiv"></span></label>
+        <input id="psi" type="range" min="-180" max="180" step="0.5" value="-63.4"></div>
+      <div class="row">
+        <button id="sgnOpp" aria-pressed="true">x′ sign opposite to x₀ (practical)</button>
+        <button id="sgnSame" aria-pressed="false">x′ sign same as x₀</button>
+      </div>
+      <p class="predict"><b>Predict first:</b> turn x close to the positive axis (θ ≈ 5°) and switch to “same as x₀”. How long is u now? Why might a computer dislike that?</p>
+      <span id="p3pill" class="pill off"></span>
+      <dl class="read" id="r3"></dl>
+      <table class="cmp" aria-label="Number of steps to triangularise an N by N matrix">
+        <thead><tr><th>N × N</th><th>Givens: N(N−1)/2</th><th>Householder: N−1</th></tr></thead>
+        <tbody><tr><td>3 × 3 (practicals)</td><td>3</td><td>2</td></tr><tr><td>5 × 5 (sl.21, 45)</td><td>10</td><td>4</td></tr><tr><td>10 × 10</td><td>45</td><td>9</td></tr></tbody>
+      </table>
+      <p class="note">One Givens kills one entry. One Householder kills a whole column below the diagonal. Sl.47: Householder is “very efficient … widely used (preferred)”.</p>
+    </div>
+  </section>
+
+  <!-- panel 4 -->
+  <section class="panel wide" aria-labelledby="h4p">
+    <div class="side">
+      <h2 id="h4p">4 · Rank: a zero on R’s diagonal (sl.53, 65–68)</h2>
+      <p class="note">Sl.68’s matrix has row 2 = 2 × row 1: the same equation written twice. Here row 2 is (8, 16, 4 + ε). At ε = 0 it is exactly sl.68’s matrix. R comes from Householder QR, computed live. b = (11, 14, b₂) <span class="tag">added: b chosen so x = (1, 1, 1) works at ε = 0, b₂ = 28</span></p>
+      <p class="predict"><b>Predict first:</b> slide ε toward 0. Which entry of R shrinks? Then switch b₂ to 28.1, a tiny error in b, and slide ε toward 0 again. What happens to x?</p>
+      <div class="grid2">
+        <div class="ctrl"><label for="eps">ε (row 2 = (8, 16, 4 + ε)): <span id="epsv"></span></label>
+          <input id="eps" type="range" min="-1" max="1" step="0.01" value="0.5"></div>
+        <div class="row">
+          <button id="b28" aria-pressed="true">b₂ = 28 (consistent)</button>
+          <button id="b281" aria-pressed="false">b₂ = 28.1 (slightly off)</button>
+        </div>
+      </div>
+      <div class="mats mtx-wrap" id="p4mats"></div>
+      <span id="p4pill" class="pill off"></span>
+      <dl class="read" id="r4"></dl>
+      <p class="note">Each 0 on R’s diagonal behaves like one equation removed. A 3×3 with one zero is really rank 2 (sl.67). Back-substitution would divide by that 0. On a computer it shows up as a tiny number instead, so you threshold it (“ignore if below threshold”, sl.67). This is the same failure as a zero k in A3 and a zero σ in A4.</p>
+    </div>
+  </section>
+
+  <!-- panel 5 -->
+  <section class="panel wide" aria-labelledby="h5p">
+    <div class="side">
+      <h2 id="h5p">5 · Non-square: too many equations, or too few (sl.55–62)</h2>
+      <div class="grid2">
+        <div class="side">
+          <p class="note"><b>Tall (more equations than unknowns): best fit.</b> Six points, one line y = m·t + c: 6 equations, 2 unknowns, so no exact solution. QR’s top 2 rows give m and c. The bottom 4 rows of Qᵀb are what no line can fit, and their length equals the misfit. <span class="tag">added: example points</span></p>
+          <div class="plot" style="aspect-ratio:4/3"><canvas id="c5a" aria-label="Six points and the QR best-fit line"></canvas></div>
+          <div class="ctrl"><label for="ty">Drag point 4 up or down: y₄ = <span id="tyv"></span></label>
+            <input id="ty" type="range" min="0" max="9" step="0.05" value="3.9"></div>
+          <dl class="read" id="r5a"></dl>
+        </div>
+        <div class="side">
+          <p class="note"><b>Wide (fewer equations): smallest solution.</b> One equation, two unknowns: 3x₀ + 4x₁ = β. Every point on the line is a solution. QR on Aᵀ sets the free part to 0, and that gives the point <b>closest to the origin</b>, the smallest-norm x (sl.61–62). <span class="tag">added: 2D version of sl.62’s 3D picture</span></p>
+          <div class="plot" style="aspect-ratio:4/3"><canvas id="c5b" aria-label="Line of solutions and the smallest one"></canvas></div>
+          <div class="ctrl"><label for="beta">β = <span id="betav"></span></label>
+            <input id="beta" type="range" min="-10" max="10" step="0.1" value="5"></div>
+          <div class="ctrl"><label for="tt">Free part t (slide along the line): <span id="ttv"></span></label>
+            <input id="tt" type="range" min="-2" max="2" step="0.01" value="0.8"></div>
+          <dl class="read" id="r5b"></dl>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script>
+(function(){
+const $=id=>document.getElementById(id);
+const col=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const f=(v,n=4)=>{if(!isFinite(v))return'∞';const r=Math.abs(v)<5e-10?0:v;if(Math.abs(r)>=1e6)return r.toExponential(2);return (+r.toFixed(n)).toString()};
+const vec=(v,n=4)=>'('+v.map(x=>f(x,n)).join(', ')+')';
+const dot=(u,v)=>u.reduce((s,x,i)=>s+x*v[i],0);
+const rad=d=>d*Math.PI/180, deg=r=>r*180/Math.PI;
+const clone=M=>M.map(r=>r.slice());
+const I=n=>Array.from({length:n},(_,i)=>Array.from({length:n},(_,j)=>+(i===j)));
+const matmul=(A,B)=>A.map(r=>B[0].map((_,j)=>r.reduce((s,a,k)=>s+a*B[k][j],0)));
+const T=A=>A[0].map((_,j)=>A.map(r=>r[j]));
+
+/* matrix table: cls(i,j) returns a class */
+function mtab(M,lab,cls){
+  const rows=M.map((r,i)=>'<tr>'+r.map((v,j)=>'<td class="'+(cls?cls(i,j,v):'')+'">'+f(v,4)+'</td>').join('')+'</tr>').join('');
+  return '<div class="mbox"><table class="m"><tbody>'+rows+'</tbody></table><div class="mlab">'+lab+'</div></div>'}
+const colv=v=>v.map(x=>[x]);
+
+/* canvas helpers (same as A3/A4 labs) */
+function setup(cv){const r=cv.getBoundingClientRect(),dpr=window.devicePixelRatio||1;
+  cv.width=Math.round(r.width*dpr);cv.height=Math.round(r.height*dpr);const g=cv.getContext('2d');g.setTransform(dpr,0,0,dpr,0,0);return {g,W:r.width,H:r.height}}
+function niceStep(x){const p=Math.pow(10,Math.floor(Math.log10(x)));const m=x/p;return (m<1.5?1:m<3.5?2:m<7.5?5:10)*p}
+function frame(c,R,cx=0,cy=0){const s=Math.min(c.W,c.H)/(2*R);const P=v=>[c.W/2+(v[0]-cx)*s,c.H/2-(v[1]-cy)*s];const g=c.g;g.clearRect(0,0,c.W,c.H);
+  const step=niceStep(R/4);g.lineWidth=1;g.strokeStyle=col('--grid');
+  const RX=R*c.W/Math.min(c.W,c.H),RY=R*c.H/Math.min(c.W,c.H);
+  for(let t=Math.floor((cx-RX)/step)*step;t<=cx+RX;t+=step){const p=P([t,0]);g.beginPath();g.moveTo(p[0],0);g.lineTo(p[0],c.H);g.stroke()}
+  for(let t=Math.floor((cy-RY)/step)*step;t<=cy+RY;t+=step){const p=P([0,t]);g.beginPath();g.moveTo(0,p[1]);g.lineTo(c.W,p[1]);g.stroke()}
+  g.strokeStyle=col('--rule');g.lineWidth=1.2;let p=P([0,0]);g.beginPath();g.moveTo(0,p[1]);g.lineTo(c.W,p[1]);g.stroke();g.beginPath();g.moveTo(p[0],0);g.lineTo(p[0],c.H);g.stroke();
+  return {P,s,g,step}}
+function arrow(F,from,to,color,w=2.5,dash){const g=F.g,a=F.P(from),b=F.P(to);const dx=b[0]-a[0],dy=b[1]-a[1],L=Math.hypot(dx,dy);
+  g.strokeStyle=color;g.fillStyle=color;g.lineWidth=w;g.setLineDash(dash||[]);g.beginPath();g.moveTo(...a);g.lineTo(...b);g.stroke();g.setLineDash([]);
+  if(L<3)return;const ux=dx/L,uy=dy/L,h=Math.min(11,L*0.4);g.beginPath();g.moveTo(...b);g.lineTo(b[0]-h*ux+h*0.45*uy,b[1]-h*uy-h*0.45*ux);g.lineTo(b[0]-h*ux-h*0.45*uy,b[1]-h*uy+h*0.45*ux);g.closePath();g.fill()}
+function line(F,from,to,color,w=1,dash){const g=F.g,a=F.P(from),b=F.P(to);g.strokeStyle=color;g.lineWidth=w;g.setLineDash(dash||[]);g.beginPath();g.moveTo(...a);g.lineTo(...b);g.stroke();g.setLineDash([])}
+function label(F,v,txt,color,dx=6,dy=-6){const p=F.P(v);F.g.fillStyle=color;F.g.font='500 12px "IBM Plex Mono", ui-monospace, monospace';F.g.fillText(txt,p[0]+dx,p[1]+dy)}
+function circle(F,c,r,color,alpha=1,dash){const g=F.g,p=F.P(c);g.strokeStyle=color;g.globalAlpha=alpha;g.lineWidth=1.2;g.setLineDash(dash||[]);g.beginPath();g.arc(p[0],p[1],r*F.s,0,2*Math.PI);g.stroke();g.setLineDash([]);g.globalAlpha=1}
+function dotp(F,v,color,r=4){const p=F.P(v);F.g.fillStyle=color;F.g.beginPath();F.g.arc(p[0],p[1],r,0,2*Math.PI);F.g.fill()}
+
+/* Givens on rows i,k using pivot column i (practical form G=[[c,s],[-s,c]]) */
+function givens(M,b,i,k){
+  const a=M[i][i],t=M[k][i],r=Math.hypot(a,t);
+  if(r<1e-14)return {M:clone(M),b:b.slice(),c:1,s:0,r:0};
+  const c=a/r,s=t/r,N=clone(M),nb=b.slice();
+  for(let j=0;j<N[0].length;j++){N[i][j]=c*M[i][j]+s*M[k][j];N[k][j]=-s*M[i][j]+c*M[k][j]}
+  nb[i]=c*b[i]+s*b[k];nb[k]=-s*b[i]+c*b[k];N[k][i]=0;
+  return {M:N,b:nb,c,s,r};
+}
+function backsub(R,b){const n=R[0].length,x=Array(n).fill(0);
+  for(let i=n-1;i>=0;i--){let s=b[i];for(let j=i+1;j<n;j++)s-=R[i][j]*x[j];x[i]=s/R[i][i]}return x}
+/* Householder QR (practical sign choice) applied to A and b */
+function hqr(A,b){const m=A.length,n=A[0].length,R=clone(A),qb=b.slice();
+  for(let k=0;k<Math.min(m-1,n);k++){
+    const x=R.slice(k).map(r=>r[k]);const nx=Math.hypot(...x);if(nx<1e-14)continue;
+    const sg=x[0]>=0?1:-1;const v=x.slice();v[0]+=sg*nx;const vv=dot(v,v);if(vv<1e-28)continue;
+    for(let j=0;j<n;j++){const fct=2*dot(v,R.slice(k).map(r=>r[j]))/vv;for(let i=0;i<v.length;i++)R[k+i][j]-=fct*v[i]}
+    const fb=2*dot(v,qb.slice(k))/vv;for(let i=0;i<v.length;i++)qb[k+i]-=fb*v[i];
+    for(let i=k+1;i<m;i++)R[i][k]=0;
+  }
+  return {R,qb}}
+
+const A0=[[3,4,5],[-1,1,3],[2,-2,3]], b0=[7,1,5];
+const ORDER=[[1,0],[2,0],[2,1]];
+
+/* ---------- panel 1 ---------- */
+const S1={step:0,phi:0};
+function p1state(){ // matrix before the chosen step, following the recommended order
+  let M=clone(A0),b=b0.slice();
+  for(let s=0;s<S1.step;s++){const [k,i]=ORDER[s];({M,b}=givens(M,b,i,k))}
+  const [k,i]=ORDER[S1.step];return {M,b,i,k}}
+function draw1(){
+  const {M,b,i,k}=p1state();const th=rad(S1.phi),C=Math.cos(th),Sn=Math.sin(th);
+  const cols=M[0].map((_,j)=>[M[i][j],M[k][j]]);
+  const rot=v=>[C*v[0]-Sn*v[1],Sn*v[0]+C*v[1]];
+  const nc=cols.map(rot), bb=[b[i],b[k]], nbb=rot(bb);
+  const a=cols[i][0],t=cols[i][1],r=Math.hypot(a,t);
+  const cv=setup($('c1'));const Rr=Math.max(...cols.map(v=>Math.hypot(...v)),1)*1.2;const F=frame(cv,Rr);
+  circle(F,[0,0],r,col('--out'),.35,[4,4]);
+  cols.forEach((v,j)=>{if(j===i||Math.hypot(...v)<1e-9)return;arrow(F,[0,0],v,col('--muted'),1,[3,3]);arrow(F,[0,0],nc[j],col('--muted'),1.8);label(F,nc[j],'col '+j,col('--muted'))});
+  arrow(F,[0,0],cols[i],col('--out'),1.4,[4,4]);label(F,cols[i],'before',col('--out'),6,14);
+  arrow(F,[0,0],nc[i],col('--out'),3.2);
+  const tip=nc[i];line(F,tip,[tip[0],0],col('--sig'),1.6,[3,3]);label(F,[tip[0],tip[1]/2],'target = '+f(tip[1],3),col('--sig'),8,4);
+  label(F,tip,'(row '+i+', row '+k+') of col '+i,col('--out'));
+  F.g.fillStyle=col('--muted');F.g.font='500 11px "IBM Plex Mono", ui-monospace, monospace';F.g.fillText('horizontal = row '+i+'   vertical = row '+k,8,16);
+  $('phiv').textContent=f(S1.phi,1)+'°';
+  const zero=Math.abs(tip[1])<5e-3*Math.max(1,r);
+  const pill=$('p1pill');pill.className='pill '+(zero?'on':'off');pill.textContent=zero?'a'+k+i+' = 0 ✓  (arrow lies flat, length r)':'a'+k+i+' = '+f(tip[1],3);
+  // matrices: G (rows i,k) and the two rows after
+  const G=[[C,-Sn],[Sn,C]];
+  const rowsNew=[nc.map(v=>v[0]),nc.map(v=>v[1])];
+  $('p1mats').innerHTML=mtab(G,'G on rows '+i+', '+k+' = [[cos θ, −sin θ], [sin θ, cos θ]]',(ii,jj)=>'')+
+    mtab([cols.map(v=>v[0]),cols.map(v=>v[1])],'rows '+i+', '+k+' before',(ii,jj)=>jj===i?(ii===1?'t':''):'dim')+
+    mtab(rowsNew,'rows '+i+', '+k+' after',(ii,jj)=>jj===i&&ii===1?(zero?'z':'t'):'');
+  let h='<dt>pivot a</dt><dd>a'+i+i+' = '+f(a)+'</dd><dt>target b</dt><dd>a'+k+i+' = '+f(t)+'</dd>'+
+    '<dt>r = √(a²+b²)</dt><dd>√('+f(a*a)+' + '+f(t*t)+') = '+f(r)+'  ← length never changes</dd>'+
+    '<dt>new target</dt><dd>sin θ·a + cos θ·b = '+f(Sn)+'·'+f(a)+' + '+f(C)+'·'+f(t)+' = '+f(tip[1])+'</dd>';
+  if(zero) h+='<dt>so</dt><dd>cos θ = '+f(C)+' = a/r, &nbsp; −sin θ = '+f(-Sn)+' = b/r &nbsp;→ the practical’s c and s</dd>';
+  h+='<dt>b rows</dt><dd>('+f(bb[0])+', '+f(bb[1])+') → ('+f(nbb[0])+', '+f(nbb[1])+')  ← G is applied to b too</dd>';
+  $('r1').innerHTML=h;
+}
+$('phi').addEventListener('input',e=>{S1.phi=+e.target.value;draw1()});
+$('p1s').addEventListener('change',e=>{S1.step=+e.target.value;S1.phi=0;$('phi').value=0;draw1()});
+$('snap').onclick=()=>{const {M,i,k}=p1state();S1.phi=deg(-Math.atan2(M[k][i],M[i][i]));$('phi').value=S1.phi;draw1()};
+
+/* ---------- panel 2 ---------- */
+const S2={M:clone(A0),b:b0.slice(),Q:I(3),log:[],zeroed:new Set(),bad:new Set()};
+function kill(k,i){
+  const before=clone(S2.M);const g=givens(S2.M,S2.b,i,k);
+  if(g.r===0){S2.log.push('kill a'+k+i+': column pair is all 0, nothing to do');draw2();return}
+  // Q accumulates G^T: Q = Q·Gᵀ
+  const G=I(3);G[i][i]=g.c;G[i][k]=g.s;G[k][i]=-g.s;G[k][k]=g.c;S2.Q=matmul(S2.Q,T(G));
+  S2.M=g.M;S2.b=g.b;S2.zeroed.add(k+','+i);
+  const broke=[];S2.zeroed.forEach(key=>{const [r,c]=key.split(',').map(Number);
+    if(Math.abs(before[r][c])<1e-12&&Math.abs(S2.M[r][c])>1e-9){broke.push('a'+r+c);S2.bad.add(key)}});
+  S2.zeroed.forEach(key=>{const [r,c]=key.split(',').map(Number);if(Math.abs(S2.M[r][c])<1e-12)S2.bad.delete(key)});
+  S2.log.push('kill a'+k+i+' with pivot a'+i+i+': r = '+f(g.r)+', c = '+f(g.c)+', s = '+f(g.s)+' → rows '+i+' and '+k+' change'+(broke.length?'  ⚠ '+broke.join(', ')+' came back!':''));
+  draw2();
+}
+function draw2(){
+  const M=S2.M,below=[[1,0],[2,0],[2,1]];
+  const cls=(i,j,v)=>{if(i<=j)return '';const key=i+','+j;if(Math.abs(v)<1e-9)return 'z';return S2.bad.has(key)?'bad':'t'};
+  $('p2mats').innerHTML=mtab(M,'A after '+S2.log.length+' step(s)',cls)+mtab(colv(S2.b),'b (same steps)',()=>'');
+  $('p2log').innerHTML=S2.log.map(s=>'<li>'+s+'</li>').join('')||'<li>no rotations yet</li>';
+  const tri=below.every(([i,j])=>Math.abs(M[i][j])<1e-9);
+  const pill=$('p2pill');
+  if(tri){pill.className='pill on';pill.textContent='upper triangular after '+S2.log.length+' rotation(s)'}
+  else if(S2.bad.size){pill.className='pill bad';pill.textContent='an earlier zero came back'}
+  else{pill.className='pill off';pill.textContent='not triangular yet'}
+  let h='';
+  if(tri){const x=backsub(M,S2.b);const QR=matmul(S2.Q,M);const err=Math.max(...QR.flat().map((v,ix)=>Math.abs(v-A0.flat()[ix])));
+    h='<dt>back-sub</dt><dd>x₂ = '+f(S2.b[2])+' / '+f(M[2][2])+' = '+f(x[2])+'; then x₁, x₀ upward</dd>'+
+      '<dt>x</dt><dd>'+vec(x)+'  (exact 76/63, −8/63, 7/9)</dd>'+
+      '<dt>Q = G₁ᵀG₂ᵀG₃ᵀ</dt><dd>'+Q2s()+'</dd><dt>check QR = A</dt><dd>largest error '+f(err,12)+' ✓</dd>';}
+  $('r2').innerHTML=h;
+  function Q2s(){return '['+S2.Q.map(r=>vec(r)).join(', ')+']'}
+}
+$('k10').onclick=()=>kill(1,0);$('k20').onclick=()=>kill(2,0);$('k21').onclick=()=>kill(2,1);
+$('kreset').onclick=()=>{Object.assign(S2,{M:clone(A0),b:b0.slice(),Q:I(3),log:[],zeroed:new Set(),bad:new Set()});draw2()};
+
+/* ---------- panel 3 ---------- */
+const S3={psi:-63.4,opp:true};const L3=Math.hypot(1.8708,-3.7417);
+function draw3(){
+  const x=[L3*Math.cos(rad(S3.psi)),L3*Math.sin(rad(S3.psi))];
+  const sx=x[0]>=0?1:-1;const xp=[(S3.opp?-sx:sx)*L3,0];
+  const u=[x[0]-xp[0],x[1]-xp[1]];const uu=dot(u,u);
+  const H=[[1-2*u[0]*u[0]/uu,-2*u[0]*u[1]/uu],[-2*u[1]*u[0]/uu,1-2*u[1]*u[1]/uu]];
+  const Hx=[dot(H[0],x),dot(H[1],x)];
+  const cv=setup($('c3'));const R=L3*1.35;const F=frame(cv,R);
+  circle(F,[0,0],L3,col('--muted'),.35,[4,4]);
+  const un=Math.sqrt(uu);
+  if(un>1e-9){const m=[-u[1]/un,u[0]/un];line(F,[-m[0]*R*1.5,-m[1]*R*1.5],[m[0]*R*1.5,m[1]*R*1.5],col('--sig'),1.6);label(F,[m[0]*R*.8,m[1]*R*.8],'mirror',col('--sig'),6,-6);
+    line(F,x,xp,col('--sig'),1.2,[3,3]);arrow(F,xp,x,col('--sig'),1.8,[6,4]);label(F,[(x[0]+xp[0])/2,(x[1]+xp[1])/2],'u = x − x′',col('--sig'),8,0);}
+  arrow(F,[0,0],x,col('--in'),3);label(F,x,'x',col('--in'));
+  arrow(F,[0,0],xp,col('--out'),3);label(F,xp,'x′ = Hx',col('--out'),-10,18);
+  $('psiv').textContent=f(S3.psi,1)+'°';
+  const ratio=un/L3;const pill=$('p3pill');
+  if(ratio<0.25){pill.className='pill bad';pill.textContent='|u| = '+f(un,3)+' is tiny vs |x| = '+f(L3,3)+': x − x′ subtracts nearly equal numbers, digits get lost';}
+  else{pill.className='pill on';pill.textContent='|u| = '+f(un,3)+': healthy';}
+  $('r3').innerHTML='<dt>x</dt><dd>'+vec(x)+'</dd><dt>α = |x|</dt><dd>'+f(L3)+'</dd><dt>x′</dt><dd>'+vec(xp)+'  ← sign '+(S3.opp?'opposite to':'same as')+' x₀</dd>'+
+    '<dt>u = x − x′</dt><dd>'+vec(u)+'  (only the top entry changes)</dd><dt>uᵀu</dt><dd>'+f(uu)+'</dd>'+
+    '<dt>H = I − 2uuᵀ/uᵀu</dt><dd>[['+f(H[0][0])+', '+f(H[0][1])+'], ['+f(H[1][0])+', '+f(H[1][1])+']]</dd><dt>Hx</dt><dd>'+vec(Hx)+'  ✓ lands on x′</dd>'+
+    '<dt>why it works</dt><dd>|x′| = |x| makes uᵀx = ½uᵀu, so Hx = x − u = x′ <span class="tag">practical</span></dd>';
+}
+$('psi').addEventListener('input',e=>{S3.psi=+e.target.value;draw3()});
+$('sgnOpp').onclick=()=>{S3.opp=true;$('sgnOpp').setAttribute('aria-pressed','true');$('sgnSame').setAttribute('aria-pressed','false');draw3()};
+$('sgnSame').onclick=()=>{S3.opp=false;$('sgnSame').setAttribute('aria-pressed','true');$('sgnOpp').setAttribute('aria-pressed','false');draw3()};
+
+/* ---------- panel 4 ---------- */
+const S4={eps:0.5,b2:28};
+function draw4(){
+  const e=S4.eps;const A=[[3,9,-1],[4,8,2],[8,16,4+e]],b=[11,14,S4.b2];
+  const {R,qb}=hqr(A,b);const r22=R[2][2];
+  $('epsv').textContent=f(e,2);
+  $('p4mats').innerHTML=mtab(A,'A (row 2 = 2·row 1 + (0, 0, ε))',(i,j)=>i===2&&j===2?'t':'')+mtab(R,'R from Householder QR',(i,j,v)=>i>j?'z':(i===2&&j===2?(Math.abs(v)<1e-9?'bad':'t'):''))+mtab(colv(qb),'Qᵀb',()=>'');
+  const pill=$('p4pill');let h='<dt>R₂₂</dt><dd>'+f(r22,6)+'</dd>';
+  if(Math.abs(r22)<1e-9){
+    pill.className='pill bad';pill.textContent='R₂₂ = 0: rank 2, back-substitution would divide by 0';
+    h+='<dt>Qᵀb bottom</dt><dd>'+f(qb[2],6)+(Math.abs(qb[2])<1e-9?'  = 0 → 0·x₂ = 0: any x₂ works, infinitely many x (e.g. (1,1,1) + t(13,−5,−6))':'  ≠ 0 → 0·x₂ = '+f(qb[2],4)+': impossible, no x at all')+'</dd>';
+  } else {
+    const x=backsub(R,qb);
+    pill.className='pill '+(Math.abs(r22)<0.05?'bad':'on');pill.textContent=Math.abs(r22)<0.05?'R₂₂ ≈ 0: nearly rank 2, x is very sensitive':'R₂₂ well away from 0: full rank';
+    h+='<dt>x₂ = (Qᵀb)₂ / R₂₂</dt><dd>'+f(qb[2],6)+' / '+f(r22,6)+' = '+f(x[2])+'</dd><dt>x</dt><dd>'+vec(x,3)+'</dd><dt>|x|</dt><dd>'+f(Math.hypot(...x),3)+'</dd>';
+  }
+  $('r4').innerHTML=h;
+}
+$('eps').addEventListener('input',e=>{S4.eps=+e.target.value;draw4()});
+$('b28').onclick=()=>{S4.b2=28;$('b28').setAttribute('aria-pressed','true');$('b281').setAttribute('aria-pressed','false');draw4()};
+$('b281').onclick=()=>{S4.b2=28.1;$('b281').setAttribute('aria-pressed','true');$('b28').setAttribute('aria-pressed','false');draw4()};
+
+/* ---------- panel 5 ---------- */
+const pts={t:[0,1,2,3,4,5],y:[1.0,1.8,3.2,3.9,5.1,6.0]};
+function draw5a(){
+  pts.y[3]=+$('ty').value;$('tyv').textContent=f(pts.y[3],2);
+  const A=pts.t.map(t=>[t,1]);const {R,qb}=hqr(A,pts.y);
+  const top=[[R[0][0],R[0][1]],[0,R[1][1]]];const mc=backsub(top,qb.slice(0,2));
+  const resid=Math.hypot(...pts.y.map((y,i)=>y-(mc[0]*pts.t[i]+mc[1])));const tail=Math.hypot(...qb.slice(2));
+  const cv=setup($('c5a'));const F=frame(cv,5.2,2.6,4.2);
+  const yat=t=>mc[0]*t+mc[1];line(F,[-1,yat(-1)],[6.5,yat(6.5)],col('--sig'),2.2);
+  pts.t.forEach((t,i)=>{line(F,[t,pts.y[i]],[t,yat(t)],col('--out'),1.2,[3,3]);dotp(F,[t,pts.y[i]],i===3?col('--out'):col('--in'),i===3?5.5:4)});
+  label(F,[3,pts.y[3]],'point 4',col('--out'),8,-4);
+  $('r5a').innerHTML='<dt>A, b</dt><dd>6×2 [t, 1], 6×1 y</dd><dt>R (top 2 rows)</dt><dd>[['+f(R[0][0],3)+', '+f(R[0][1],3)+'], [0, '+f(R[1][1],3)+']]</dd>'+
+    '<dt>m, c</dt><dd>'+f(mc[0],3)+', '+f(mc[1],3)+'  ← back-substitute the top 2 rows</dd>'+
+    '<dt>bottom 4 of Qᵀb</dt><dd>'+vec(qb.slice(2),3)+'</dd><dt>their length</dt><dd>'+f(tail,4)+'</dd><dt>misfit |y − line|</dt><dd>'+f(resid,4)+'  ← same number</dd>';
+}
+function draw5b(){
+  const beta=+$('beta').value,tt=+$('tt').value;$('betav').textContent=f(beta,1);$('ttv').textContent=f(tt,2);
+  const a=[3,4],n2=25;const x0=[a[0]*beta/n2,a[1]*beta/n2];const d=[4/5,-3/5];const x=[x0[0]+tt*5*d[0],x0[1]+tt*5*d[1]];
+  const cv=setup($('c5b'));const F=frame(cv,3.6);
+  const far=12;line(F,[x0[0]-d[0]*far,x0[1]-d[1]*far],[x0[0]+d[0]*far,x0[1]+d[1]*far],col('--muted'),1.6);
+  label(F,[x0[0]+d[0]*2.4,x0[1]+d[1]*2.4],'all solutions',col('--muted'),6,-6);
+  line(F,[0,0],x0,col('--out'),1,[3,3]);
+  arrow(F,[0,0],x,col('--in'),2.2);label(F,x,'x = x_min + t·d',col('--in'),6,14);
+  arrow(F,[0,0],x0,col('--out'),3);label(F,x0,'x_min',col('--out'));
+  $('r5b').innerHTML='<dt>x_min</dt><dd>β/(3²+4²)·(3, 4) = '+vec(x0,3)+'</dd><dt>|x_min|</dt><dd>'+f(Math.hypot(...x0),3)+'</dd>'+
+    '<dt>your x</dt><dd>'+vec(x,3)+', check 3x₀ + 4x₁ = '+f(3*x[0]+4*x[1],3)+'</dd><dt>|x|</dt><dd>'+f(Math.hypot(...x),3)+(Math.abs(tt)<0.005?'  = the smallest':'  > |x_min|')+'</dd>';
+}
+$('ty').addEventListener('input',draw5a);['beta','tt'].forEach(id=>$(id).addEventListener('input',draw5b));
+
+const redraw=()=>{draw1();draw2();draw3();draw4();draw5a();draw5b()};
+window.addEventListener('resize',()=>{draw1();draw3();draw5a();draw5b()});
+if(window.matchMedia)matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change',redraw);
+new MutationObserver(redraw).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+redraw();
+})();
+</script>
