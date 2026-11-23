@@ -310,8 +310,6 @@ $$\mathbf P = \begin{bmatrix}1 & 0.7961 & −0.5814 \\ 0.7961 & 1 & 0 \\ −0.58
 
 Fit $P = c + aT + bW$. This is sl.22's "add a column to X", with a wind column next to the traffic column, and r² measures how well it fits.
 
-**Shortcut *(added, but it follows from sl.15)*.** The best fit passes through the mean point, so work with the deviations and c drops out:
-
 $$\begin{bmatrix} T\cdot T & T\cdot W\\ T\cdot W & W\cdot W\end{bmatrix}\begin{bmatrix}a\\b\end{bmatrix} = \begin{bmatrix}T\cdot P\\ W\cdot P\end{bmatrix}$$
 
 All these dot products come from AᵀA in Q2:
@@ -324,7 +322,65 @@ $$c = \bar P - a\bar T - b\bar W = 40 - 0.6(50) - (−4)(3) = 40 - 30 + 12 = 22$
 
 $$\boxed{P = 22 + 0.6\,T − 4\,W}$$
 
-**Cross-check with the full 3×3 normal equations (sl.20, XᵀX v = XᵀP):**
+**Shortcut *(added, but it follows from sl.15)*.** The best fit passes through the mean point, so work with the deviations and c drops out:
+
+---
+
+<details>
+<summary>Derivation for shortcut (its Part2 theory above)</summary>
+
+**Step 1**: one equation per day, stacked into a matrix
+
+$\tilde P = a\tilde T + b\tilde W$ has to hold, as closely as possible, on all 6 days. The numbers come from the columns of A:
+
+$$\underbrace{\begin{bmatrix}-10 & 0.5\\ -5 & -1\\ 0 & 0.5\\ 0 & -0.5\\ 5 & 1\\ 10 & -0.5\end{bmatrix}}_{\mathbf D\ (6\times2):\ [\tilde T\ \ \tilde W]}\begin{bmatrix}a\\b\end{bmatrix} \approx \underbrace{\begin{bmatrix}-7\\1\\-3\\1\\-1\\9\end{bmatrix}}_{\tilde{\mathbf P}}$$
+
+That's 6 equations with 2 unknowns, so there's no exact solution. This is the same setup as Xv ≈ y in sl.20, with D in place of X. D has no column of 1s because c already cancelled.
+
+**Step 2**: least squares, so multiply both sides by Dᵀ
+
+$$\mathbf D^T\mathbf D\begin{bmatrix}a\\b\end{bmatrix} = \mathbf D^T\tilde{\mathbf P}$$
+
+Each entry is a column of D dotted with another column, or with P̃:
+
+$$\mathbf D^T\mathbf D = \begin{bmatrix}\tilde T\cdot\tilde T & \tilde T\cdot\tilde W\\ \tilde W\cdot\tilde T & \tilde W\cdot\tilde W\end{bmatrix} = \begin{bmatrix}250 & 0\\0 & 3\end{bmatrix},\qquad \mathbf D^T\tilde{\mathbf P} = \begin{bmatrix}\tilde T\cdot\tilde P\\ \tilde W\cdot\tilde P\end{bmatrix} = \begin{bmatrix}150\\-12\end{bmatrix}$$
+
+That's the boxed system. "T·T" in the notes is shorthand for $\tilde T\cdot\tilde T$.
+</details>
+
+---
+<details>
+<summary>Cross-check with the full 3×3 normal equations (sl.20, XᵀX v = XᵀP)</summary>
+
+X is the **raw** data with a column of 1s for c, one row per day [1, Tᵢ, Wᵢ]. This is not A: no means are removed, and P is not a column of X.
+
+$$\mathbf X = \begin{bmatrix}1 & 40 & 3.5\\ 1 & 45 & 2\\ 1 & 50 & 3.5\\ 1 & 50 & 2.5\\ 1 & 55 & 4\\ 1 & 60 & 2.5\end{bmatrix}\ (6\times3),\qquad \mathbf v = \begin{bmatrix}c\\a\\b\end{bmatrix}$$
+
+Each entry of XᵀX is a column of X dotted with a column of X, so every entry is a raw sum. It's the same pattern as the 2×2 in Part 1, with a wind row and column added:
+
+$$\begin{aligned}
+N &= 6 \\
+\textstyle\sum T &= 40+45+50+50+55+60 = 300 \\
+\textstyle\sum W &= 3.5+2+3.5+2.5+4+2.5 = 18 \\
+\textstyle\sum T^2 &= 1600+2025+2500+2500+3025+3600 = 15250 \\
+\textstyle\sum TW &= 140+90+175+125+220+150 = 900 \\
+\textstyle\sum W^2 &= 12.25+4+12.25+6.25+16+6.25 = 57 \\
+\textstyle\sum P &= 240 \\
+\textstyle\sum TP &= 1320+1845+1850+2050+2145+2940 = 12150 \\
+\textstyle\sum WP &= 115.5+82+129.5+102.5+156+122.5 = 708
+\end{aligned}$$
+
+$$\mathbf X^T\mathbf X = \begin{bmatrix}N & \sum T & \sum W\\ \sum T & \sum T^2 & \sum TW\\ \sum W & \sum TW & \sum W^2\end{bmatrix},\quad \mathbf X^T\mathbf P = \begin{bmatrix}\sum P\\ \sum TP\\ \sum WP\end{bmatrix}$$
+
+XᵀX is (3×6)(6×3) = 3×3. (XXᵀ would be 6×6 and is not used here.) XᵀP is (3×6)(6×1) = 3×1: each row of Xᵀ is one column of X, dotted with P:
+
+$$\underbrace{\begin{bmatrix}1&1&1&1&1&1\\40&45&50&50&55&60\\3.5&2&3.5&2.5&4&2.5\end{bmatrix}}_{\mathbf X^T}\underbrace{\begin{bmatrix}33\\41\\37\\41\\39\\49\end{bmatrix}}_{\mathbf P}=\begin{bmatrix}\sum P\\ \sum TP\\ \sum WP\end{bmatrix}=\begin{bmatrix}240\\12150\\708\end{bmatrix}$$
+
+The equation to satisfy is **(XᵀX) v = XᵀP**. The 3×3 multiplies the unknowns **v = [c, a, b]**, not P. P only enters through XᵀP, which is built separately from the data:
+
+$$\begin{bmatrix}6 & 300 & 18 \\ 300 & 15250 & 900 \\ 18 & 900 & 57\end{bmatrix}\begin{bmatrix}c\\a\\b\end{bmatrix} = \begin{bmatrix}240 \\ 12150 \\ 708\end{bmatrix}$$
+
+Check: substitute v = [22, 0.6, −4] (row of XᵀX · v) and confirm that each row gives back the matching entry of XᵀP:
 
 $$\mathbf X^T\mathbf X = \begin{bmatrix}6 & 300 & 18 \\ 300 & 15250 & 900 \\ 18 & 900 & 57\end{bmatrix},\quad \mathbf X^T\mathbf P = \begin{bmatrix}240 \\ 12150 \\ 708\end{bmatrix}$$
 
@@ -333,6 +389,10 @@ $$\begin{aligned}
 300(22) + 15250(0.6) + 900(−4) &= 6600 + 9150 + (−3600) = 12150 = 12150\ ✓ \\
 18(22) + 900(0.6) + 57(−4) &= 396 + 540 + (−228) = 708 = 708\ ✓
 \end{aligned}$$
+
+</details>
+
+---
 
 **r²:**
 
