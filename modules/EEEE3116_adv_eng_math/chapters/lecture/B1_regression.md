@@ -471,6 +471,34 @@ This matches (b) ✓, and the slide gives u = (0.749, 0.663) ✓. The variances 
 
 ---
 
+<details>
+<summary>Extra: Link</summary>
+
+**The link: why rotating turns into an eigen problem** *(added; [lab](B1_regression_lab.html) panel 4, "Why the eigenvector", has the picture)*
+
+Give R's two rows names. $\mathbf u = (\cos\theta, \sin\theta)$ is the x′ axis and $\mathbf v = (-\sin\theta, \cos\theta)$ is the y′ axis. Each entry of $\mathbf S^R = \mathbf R\mathbf S\mathbf R^T$ is (row of R) · S · (row of R):
+
+$$\mathbf S^R = \begin{bmatrix}\mathbf u\cdot\mathbf{Su} & \mathbf v\cdot\mathbf{Su}\\ \mathbf u\cdot\mathbf{Sv} & \mathbf v\cdot\mathbf{Sv}\end{bmatrix}$$
+
+So the new covariance is $\mathbf v\cdot\mathbf{Su}$, which measures how far the vector **Su** sticks out sideways from u (along v).
+
+- You already have Su from (a). Row 0 of RS is (16.7487, 14.8186), which is just S applied to u at 41.42°. It points at tan⁻¹(14.8186/16.7487) = **41.50°**, not 41.42°. So Su leans slightly off u. Its sideways part is v·Su = 0.0326, which is the leftover covariance in (a).
+- To get cov′ = 0, pick u so that Su has **no sideways part**. Then Su points along u, so **Su = λu**. That's exactly A3's definition of an eigenvector. Asking for zero covariance is enough to force it.
+- The variance on x′ is then u·Su = u·(λu) = λ (since |u| = 1). **The eigenvalue is the variance on the new axis.**
+
+The same thing in matrix form: if Sᴿ is diagonal (= K), then S = RᵀKR. That's A3's S = X K Xᵀ with X = Rᵀ, so the columns of X, which are the rows of R, are the eigenvectors.
+
+"Find the best θ" is therefore the same problem as "find u with Su = λu". The A3 recipe does it in two steps: λ first (det = 0), then u.
+
+**Why only one row, and why only u** *(added)*:
+- **Only row 0:** at λ = λ₀, det(S − λ₀I) = 0, so the two rows of S − λ₀I are multiples of each other (in A3 terms, one direction gets flattened). Row 1 gives the same ratio: $11.08u_0 + (9.84 - 22.3632)u_1 = 0 \Rightarrow u_1/u_0 = 11.08/12.5232 = 0.8848$ ✓. That's one real equation for two unknowns, so it fixes only the **direction**. Normalising fixes the length.
+- **Only u (the λ₀ one):** u *is* the x′ axis, and θ comes straight from it. The y′ axis is u turned by 90°, v = (−0.6627, 0.7489), and that's the λ₁ eigenvector. S is symmetric, so its eigenvectors are perpendicular, which means in 2D you never have to solve for the second one.
+- **Why λ₀ and not λ₁:** λ₀ is the larger one, so x′ becomes the axis that carries the variance. Starting from λ₁ gives the same pair of axes with their names swapped (θ = 131.5°).
+
+</details>
+
+---
+
 ## Part 7: practical Q2, sending one channel instead of two
 
 A 2-axis accelerometer is tilted, so both channels see the vibration. LoRa only allows a small payload. Six samples, with the means already removed (m/s²):
@@ -480,7 +508,13 @@ A 2-axis accelerometer is tilted, so both channels see the vibration. LoRa only 
 | x | 3.7 | −7.7 | 12 | −4.3 | 8.3 | −12 |
 | y | 3.4 | −6.4 | 9 | −2.6 | 5.6 | −9 |
 
-Questions (verbatim): 1. Compute the covariance matrix S (divide by N = 6) and the correlation coefficient. 2. Find the rotation angle θ that removes the covariance between the new axes. 3. Rotate the data to get x′ and y′. 4. What fraction of the total energy lies on x′? 5. Send x′ only. Reconstruct x and y and find the reconstruction SNR. 6. Compare with dropping y without rotating (θ = 0) and with guessing θ = 45°.
+Questions (verbatim): 
+1. Compute the covariance matrix S (divide by N = 6) and the correlation coefficient. 
+2. Find the rotation angle θ that removes the covariance between the new axes. 
+3. Rotate the data to get x′ and y′. 
+4. What fraction of the total energy lies on x′? 
+5. Send x′ only. Reconstruct x and y and find the reconstruction SNR. 
+6. Compare with dropping y without rotating (θ = 0) and with guessing θ = 45°.
 
 Check the means are 0: Σx = 0, Σy = 0 ✓, so A is just the data.
 

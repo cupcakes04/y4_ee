@@ -2,7 +2,7 @@
 
 To continue in a new session, say: *"adv math, continue from progress.md"* (and name the section: A or B).
 
-**Now on:** Section B, B1 (started 2026-11-23). Next step: go through the B1 lab (panel 4 first, then 3), explain it back, then work `B1_regression.md` by hand. Section A has open items: see *Section A → Next*.
+**Now on:** Section B, B2 + B3 together (started 2026-11-23). Next step: answer the 8-question B2/B3 probe, then the lab and md get built, weighted by the answers. B1 still has its own to-dos: the lab (panel 4 first, then 3), explain it back, then work `B1_regression.md` by hand. Section A has open items: see *Section A → Next*.
 
 # Section A — matrices (A1–A5)
 
@@ -87,8 +87,10 @@ That last step is where Section A comes back: the best rotation is the eigenvect
 | Lecture | Topic | Link back to A |
 |---|---|---|
 | B1 | linear regression, covariance and correlation, axis rotation | XᵀX v = Xᵀy is a tall-system solve (A2 sl.57, QR); best θ = eigenvector of S (A3) |
-| B2 | data, vectors, transformations | — (not read yet) |
-| B3 | Gram–Schmidt orthogonalisation | QR (A2) — (not read yet) |
+| B2 | data, vectors, transformations: rows of R (or B) = basis vectors, coefficient Xᵢ = Bᵢ·x, rebuild with Bᵀ, keep M of N for compression | A3's d = Xᵀb (with rows instead of columns), A1's RᵀR = I, A4's truncation |
+| B3 | Gram–Schmidt: u₂ = v₂ − αu₁, α = u₁·v₂ / u₁·u₁; QR via Gram–Schmidt (Q = the u's, R = QᵀA) | A2's QR, a third route after Givens and Householder |
+
+B2 and B3 are really one lecture (25 + 22 slides). B2 says *what* an orthonormal basis does for data, and B3 says *how to build one*.
 
 ### Status
 
@@ -96,7 +98,15 @@ That last step is where Section A comes back: the best rotation is the eigenvect
 |---|---|---|---|---|
 | B1 | Part 1: regression (normal equations, XᵀX, gradient descent, r²) | probe 2026-11-23: ✓ why square; ½ XᵀX (said rank; it's tall + noisy); ½ μ (missed zig-zag); ½ r² (missed r² = 0) | [`B1_regression.md`](B1_regression.md) Parts 1–3, **to do** | `B1_regression_lab.html` panels 1–2, **to do** |
 | B1 | Part 2: covariance, S = (1/N)AᵀA, ρ, z-scores | ✓ cov sign, z-score; ✗ ρ (forgot); missed cov(x,x) = var | Parts 4–5 (5 = practical Q3), **to do** | panel 3, **to do** |
-| B1 | Part 3: axis rotation, Sᴿ = RSRᵀ, eigenvector of S | ✗ what rotation changes and why eigenvector → lab | Parts 6–7 (7 = practical Q2), **to do** | panel 4, **to do** |
+| B1 | Part 3: axis rotation, Sᴿ = RSRᵀ, eigenvector of S | ✗ what rotation changes and why eigenvector → lab | Parts 6–7 (7 = practical Q2), **to do**. 6c now has "the link" (cov′ = v·Su → Su = λu) and "why only one row / only u" | panel 4, **to do** |
+| B2 | basis vectors, transform coefficients, rebuild, compression | probe 2026-11-23, **to do** | not built yet | not built yet |
+| B3 | Gram–Schmidt (2D and 3D), QR via Gram–Schmidt, practical Q1 (CDMA) | probe 2026-11-23, **to do** | not built yet | not built yet |
+
+### B2/B3 facts checked (sympy, 2026-11-23)
+- B2 sl.7: (3, 5) rotated by 45° gives (8/√2, 2/√2) = (5.66, 1.41) ✓. sl.9: (4, 4) gives (5.66, 0) ✓.
+- B3 sl.10–12: α = 19/29 = 0.6552 and u₂ = (−2.276, 5.690), with u₁·u₂ = 0 ✓. sl.16–21: α₁₂ = 2, α₁₃ = 4, α₂₃ = 6, R = [1 2 4; 0 3 6; 0 0 5] ✓.
+- Practical Q1 (CDMA): c₁·c₂ = 2, so the codes are not orthogonal. With the plain correlator, z₁ = −1/2, which decodes A's +1 as **−1 (wrong)**, and z₂ = −5/2, which decodes B correctly as −1. Gram–Schmidt gives α = 1/2, u₂ = (½, ½, ½, −3/2) and |u₂|² = 3, so R = [2 1; 0 √3] and Qᵀr = (−1, −3√3). Back-substituting gives s = (1, −3), which is **both bits exactly**.
+- Rendered slides checked: no typos. One note: B3 sl.17 defines QR for a square m×m A with QQᵀ = I. In the practical, C is 4×2 (tall), so QᵀQ = I but QQᵀ ≠ I (the same economy form as A4).
 
 ### B1 facts checked (numpy, 2026-11-23)
 All of the slides' numbers check out:
