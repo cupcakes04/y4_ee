@@ -3,7 +3,7 @@
 **What this page is for:** worked calculations, every step written out. Read an example, cover the solution, then redo it on paper.
 **Concepts and gaps** live in the [A4 SVD lab](https://claude.ai/artifact/FhzUauXrbSSswToXwniqws) (`A4_svd_lab.html`, same folder). Panel 4 there derives the three facts below.
 Notation follows the A4 slides: $\mathbf A = \mathbf Q\boldsymbol\sigma\mathbf P^T$, singular values $\sigma_0 \ge \sigma_1 \ge \dots$, columns $\mathbf q_i$ of $\mathbf Q$ and $\mathbf p_i$ of $\mathbf P$ (counting from 0).
-Progress across Section A: [`section_A_progress.md`](section_A_progress.md).
+Progress: [`progress.md`](progress.md).
 
 Sources: Part B is the practical's problem (`../../drills/svd/`), kept exactly as given. Part C uses the slides' own examples (sl.26–28, 37, 38, 41), with numbers verbatim. Every number here was recomputed with numpy/sympy (2026-11-21). Tips I added that aren't on the slides are tagged *(added)*.
 

@@ -1,8 +1,12 @@
-# EEEE3116 Section A — progress
+# EEEE3116 — progress
 
-To continue in a new session, say: *"adv math, continue Section A from section_A_progress.md"*.
+To continue in a new session, say: *"adv math, continue from progress.md"* (and name the section: A or B).
 
-## The storyline (A2 sl.2–3, 10)
+**Now on:** Section B, B1 (started 2026-11-23). Next step: go through the B1 lab (panel 4 first, then 3), explain it back, then work `B1_regression.md` by hand. Section A has open items: see *Section A → Next*.
+
+# Section A — matrices (A1–A5)
+
+### The storyline (A2 sl.2–3, 10)
 Multiplying is easy and solving is hard. Only diagonal, bidiagonal and triangular matrices are easy to solve.
 Every method in Section A is a way of turning a hard **A** into a product of easy ones.
 
@@ -14,14 +18,14 @@ Every method in Section A is a way of turning a hard **A** into a product of eas
 | A4 | SVD | U Σ Vᵀ (works for any matrix) |
 | A5 | Sparse / iterative | no factorisation: guess → residual → adjust |
 
-## Where things live
+### Where things live
 Work happens in `chapters/lecture/`. `drills/` holds the lecturer's practical notebooks and is kept untouched, as a reference.
 
 Every lecture has two files. Their weights differ by lecture, but both exist:
 - **`<lecture>_<topic>_lab.html` (concept page):** go here to *understand* an idea or close a gap. Sliders, predict-first prompts, and derivations behind reveal buttons.
 - **`<lecture>_<topic>.md` (worked examples):** go here to *practise the steps* for the exam. Every calculation is written out in full with nothing hidden, and exact answers are given. The practicals' problems are kept as given.
 
-## Status
+### Status
 
 | Lecture | Topic | Understanding | Worked examples (md) | Concept page (html) |
 |---|---|---|---|---|
@@ -35,7 +39,7 @@ Every lecture has two files. Their weights differ by lecture, but both exist:
 | A4 | SVD A = QσPᵀ (same picture, two sets of axes) | mostly ✓ 2026-11-21 (open: P–Q link → lab panel 4, Fact 1) | [`A4_svd.md`](A4_svd.md), done by hand 2026-11-22 | [A4 SVD lab](https://claude.ai/artifact/FhzUauXrbSSswToXwniqws) (`A4_svd_lab.html`) panels 1–4 |
 | A5 | sparse, fill-in, CSR, power method, SD / MRA / CG, Jacobi / Gauss-Seidel, preconditioning, domain decomposition | probe 2026-11-22: ✓ fill-in, residual; half ✓ power method (got size, missed shape); ✓ d intuition; ✗ Jacobi/GS, CG, preconditioning, domain decomp → lab | [`A5_iterative.md`](A5_iterative.md) Parts 0–9, **to do** | [A5 iterative lab](https://claude.ai/artifact/8ANFiz2BFrzNQd6iMsey6v) (`A5_iterative_lab.html`) panels 1–6, **to do** |
 
-## What clicked for A3 (2026-11-19)
+### What clicked for A3 (2026-11-19)
 - Eigenvectors are the input directions where A only scales. k is the scale and depends only on A, not on |x| (because A is linear).
 - To solve: Xᵀ takes b into eigen axes (these are projections), divide each part by k, then X brings the result back. So A⁻¹ = X K⁻¹ Xᵀ.
 - "Orthogonal" means perpendicular **and** length 1. Only a symmetric A guarantees perpendicular eigen axes.
@@ -45,7 +49,7 @@ Every lecture has two files. Their weights differ by lecture, but both exist:
 - **A − sI:** subtracting s lowers every stretch by s. When s = kᵢ that axis flattens and det = 0, which is why det(A − kI) = 0 gives the
   eigen**values**. The eigen**vector** is the flattened direction: solve (A − kᵢI)x = 0.
 
-## Slide typos (human errors, so use the corrected form)
+### Slide typos (human errors, so use the corrected form)
 | Slide | Slide says | Use |
 |---|---|---|
 | A4 sl.36 | amount of Pᵢ in x = σᵢ × amount of Qᵢ in b | **÷ σᵢ** |
@@ -56,7 +60,7 @@ Every lecture has two files. Their weights differ by lecture, but both exist:
 | A5 sl.19 | x₂ = Ax₂ | x₂ = Ax₁ |
 | A5 sl.29 (CG) | x₊ = x + α**r**,  p₊ = **r_k** + βp | x₊ = x + α**p**,  p₊ = **r_{k+1}** + βp |
 
-## How we work (see `.agents/learn/modules/EEEE3116.md`)
+### How we work (see `.agents/learn/modules/EEEE3116.md`)
 1. Concept page for the idea: sliders and predict-first prompts.
 2. You explain it back in your own words.
 3. The AI names the specific gaps, and the concept page gets a fix if a gap needs one.
@@ -64,7 +68,7 @@ Every lecture has two files. Their weights differ by lecture, but both exist:
 
 How much goes into each file depends on the lecture. Abstract lectures (A3, A4) lean on the html. Procedural ones (A2) lean on the md. Every lecture still gets both.
 
-## Next
+### Next
 1. **A3/A4 confirmation check** (parked 2026-11-22): start with the P–Q link (A4 lab panel 4, Fact 1).
 2. **A2:** concepts in the A2 QR lab, then work through `A2_qr_lu.md` by hand.
 3. **A5:** go through lab panels 2, 4, 5, 6 (the probe gaps) and explain each back, then work `A5_iterative.md` by hand.
@@ -72,3 +76,40 @@ How much goes into each file depends on the lecture. Abstract lectures (A3, A4) 
    - The matrix nearest x acts first: in QσPᵀx, Pᵀ goes first.
    - PA reorders rows, AP reorders columns.
    - R = [c −s; s c], and RᵀR = I keeps lengths the same.
+
+# Section B — signal representation (B1–B3)
+
+### The storyline (B1 sl.4, 73)
+How can data be represented so that its content becomes more obvious? Section B uses one dataset (5 current–voltage points) and looks at it three ways:
+fit a line → measure how the variables move together → rotate the axes so one coordinate carries almost everything.
+That last step is where Section A comes back: the best rotation is the eigenvectors of the covariance matrix (A3), and B2 and B3 lead into PCA and the eigenfaces coursework.
+
+| Lecture | Topic | Link back to A |
+|---|---|---|
+| B1 | linear regression, covariance and correlation, axis rotation | XᵀX v = Xᵀy is a tall-system solve (A2 sl.57, QR); best θ = eigenvector of S (A3) |
+| B2 | data, vectors, transformations | — (not read yet) |
+| B3 | Gram–Schmidt orthogonalisation | QR (A2) — (not read yet) |
+
+### Status
+
+| Lecture | Topic | Understanding | Worked examples (md) | Concept page (html) |
+|---|---|---|---|---|
+| B1 | Part 1: regression (normal equations, XᵀX, gradient descent, r²) | probe 2026-11-23: ✓ why square; ½ XᵀX (said rank; it's tall + noisy); ½ μ (missed zig-zag); ½ r² (missed r² = 0) | [`B1_regression.md`](B1_regression.md) Parts 1–3, **to do** | `B1_regression_lab.html` panels 1–2, **to do** |
+| B1 | Part 2: covariance, S = (1/N)AᵀA, ρ, z-scores | ✓ cov sign, z-score; ✗ ρ (forgot); missed cov(x,x) = var | Parts 4–5 (5 = practical Q3), **to do** | panel 3, **to do** |
+| B1 | Part 3: axis rotation, Sᴿ = RSRᵀ, eigenvector of S | ✗ what rotation changes and why eigenvector → lab | Parts 6–7 (7 = practical Q2), **to do** | panel 4, **to do** |
+
+### B1 facts checked (numpy, 2026-11-23)
+All of the slides' numbers check out:
+- c = 2.0127, m = 0.8822; at x = 6, y = 7.31
+- var y = 9.84, TSS = 49.2, SS_res = 0.328, r² = 0.9933
+- S = [12.56 11.08; 11.08 9.84], ρ = 0.9967
+- θ = tan⁻¹ m = 41.4°. After rotating, Sᴿ = [22.363 0.033; 0.033 0.037], so 99.8% of the variance is on x′.
+- eig(S) = 22.363, 0.037. The eigenvector angle is **41.5°**, not quite the regression's 41.4° (sl.69: vertical vs perpendicular errors).
+- sl.23 exercise: c = −2.1724, m = 1.2931, r² = 0.9896.
+- sl.26 gradient descent (μ = 0.0018, c fixed at 2.01): m = 4 → 1.778 → 1.140 → 0.956 → 0.904 → 0.889 → 0.884.
+
+The Section B practical (`drills/data_vec_tf/q1–q3.png`) covers B1: **Q2 = rotation**, **Q3 = covariance and multiple regression**. Q1 (Gram–Schmidt) belongs to B3. sl.23's exercise is the other official example.
+- Practical Q2: tan 2θ = 24/7, so θ = 36.87° (a 3-4-5 triangle) and x′ = ±5, ±10, ±15. 99.86 % of the energy is on x′. SNR: 28.46 dB, against 4.43 dB at θ = 0 and 16.70 dB at θ = 45°. The SNR definition (total energy / error energy) is added; the slides don't define it.
+- Practical Q3: cov(traffic, wind) = 0. ρ(PM, traffic) = 0.796 and ρ(PM, wind) = −0.581 (not weak: wind's σ is just small). PM = 22 + 0.6T − 4W, and r² = 69/71 = 0.9718.
+
+**Slide check (rendered equation slides, 2026-11-23):** no typos found in sl.9–69. sl.27 already derives μ < 2/396. Note that sl.66's R rotates the *axes*; it's the transpose of A1's R, which rotates points.

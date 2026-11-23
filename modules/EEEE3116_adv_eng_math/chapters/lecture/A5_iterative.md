@@ -2,7 +2,7 @@
 
 **What this page is for:** worked calculations, every step written out. Read an example, cover the solution, then redo it on paper.
 **Concepts and gaps** live in the [A5 iterative lab](https://claude.ai/artifact/8ANFiz2BFrzNQd6iMsey6v) (`A5_iterative_lab.html`, same folder).
-Progress across Section A: [`section_A_progress.md`](section_A_progress.md).
+Progress: [`progress.md`](progress.md).
 
 Sources: Parts 1–5 use the practical session's problem (`drills/iterative_revolution`), kept exactly as given. The algorithms are A5 sl.25 (steepest descent), sl.27 (minimal residual), sl.29 (CG, with the typo fixed: see the card), and sl.33 (Jacobi). Gauss-Seidel is "search the web" on sl.33, so its form here is the standard one *(added)*. Part 6 runs sl.19–20's power method on the same A, from a start vector I picked *(added)*. Part 7 uses sl.9 and sl.11. Part 8 runs the sl.52–53 block-LU route on a small chain I made up *(added numbers)*. Every number was recomputed with exact fractions in Python (2026-11-22).
 

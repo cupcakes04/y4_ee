@@ -3,7 +3,7 @@
 **What this page is for:** worked calculations, every step written out. Read an example, cover the solution, then redo it on paper.
 **Concepts and gaps** live in the [A3 eigen lab](https://claude.ai/artifact/2snCA8AUw4sUWqbbmrHcdb) (`A3_eigen_lab.html`, same folder).
 Notation follows the A3 slides: eigenvalues $k_i$, eigenvectors as the columns of $\mathbf X$, $\mathbf d = \mathbf X^T\mathbf b$, $c_i = d_i/k_i$, $\mathbf x = \mathbf X\mathbf c$.
-Progress across Section A: [`section_A_progress.md`](section_A_progress.md).
+Progress: [`progress.md`](progress.md).
 
 Sources: Part A is A3 sl.34–35, numbers verbatim. Part B's problem comes from the practical session and is kept exactly as given. Part C applies A3 sl.30–32 and 39–41 to Part B's matrix. Every number here was recomputed with sympy (2026-11-19). Tips I added that aren't on the slides are tagged *(added)*.
 

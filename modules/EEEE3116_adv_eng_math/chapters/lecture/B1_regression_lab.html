@@ -1,0 +1,399 @@
+<title>B1 Regression Lab</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=Space+Grotesk:wght@500;600&display=swap">
+<style>
+/* Same graph-paper bench as the A-labs. Equation strip on top, one panel per idea below */
+:root{
+  --bg:#f3f6f7; --panel:#ffffff; --ink:#18222b; --muted:#5b6872; --rule:#d9e1e5; --grid:#e8eef1;
+  --in:#0f8a7e;      /* x′ axis, main direction, model line */
+  --out:#d0661b;     /* y′ axis, residuals, what gets dropped */
+  --sig:#6b4fc8;     /* covariance, accent */
+  --ok:#1d8a3a; --warn:#b42318;
+  --pos:rgba(29,138,58,.16); --neg:rgba(180,35,24,.16);
+  --f-display:"Space Grotesk",system-ui,sans-serif;
+  --f-body:"IBM Plex Sans",system-ui,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#11171c; --panel:#182027; --ink:#e4ecf0; --muted:#93a3ad; --rule:#2a353e; --grid:#1f2930;
+  --in:#3cc7b8; --out:#f39a52; --sig:#a993f5; --ok:#4cc46c; --warn:#ff7b6b;
+  --pos:rgba(76,196,108,.18); --neg:rgba(255,123,107,.18); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#11171c; --panel:#182027; --ink:#e4ecf0; --muted:#93a3ad; --rule:#2a353e; --grid:#1f2930;
+  --in:#3cc7b8; --out:#f39a52; --sig:#a993f5; --ok:#4cc46c; --warn:#ff7b6b;
+  --pos:rgba(76,196,108,.18); --neg:rgba(255,123,107,.18); color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.5;margin:0;
+  padding:24px max(16px,env(safe-area-inset-right,0px)) 48px max(16px,env(safe-area-inset-left,0px))}
+.wrap{max-width:1100px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+h1{font-family:var(--f-display);font-weight:600;font-size:1.7rem;margin:0;text-wrap:balance}
+h2{font-family:var(--f-display);font-weight:600;font-size:1.2rem;margin:0 0 4px;text-wrap:balance}
+h3{font-family:var(--f-display);font-weight:600;font-size:.98rem;margin:0}
+.lede{color:var(--muted);max-width:75ch;margin:4px 0 0}
+.src{font-family:var(--f-mono);font-size:.75rem;color:var(--muted);letter-spacing:.02em;margin:4px 0 0}
+.bar,.panel{background:var(--panel);border:1px solid var(--rule);border-radius:8px;padding:16px}
+.strip{display:flex;flex-direction:column;gap:6px}
+.eqline{font-family:var(--f-mono);font-size:.88rem;overflow-wrap:anywhere}
+.panel{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:20px}
+.panel>header{grid-column:1/-1}
+@media (max-width:820px){.panel{grid-template-columns:minmax(0,1fr)}}
+.plot{position:relative;width:100%;aspect-ratio:4/3}
+.plot.sq{aspect-ratio:1}
+canvas{width:100%;height:100%;display:block;border-radius:6px;background:var(--bg)}
+.side{display:flex;flex-direction:column;gap:12px;min-width:0}
+.sliders{display:grid;grid-template-columns:auto minmax(100px,1fr) 8ch;gap:4px 10px;align-items:center;font-family:var(--f-mono);font-size:.85rem}
+.sliders output{text-align:right;font-variant-numeric:tabular-nums}
+input[type=range]{width:100%;accent-color:var(--sig)}
+.row{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+button{font:inherit;font-size:.82rem;padding:5px 10px;border-radius:5px;border:1px solid var(--rule);background:var(--bg);color:var(--ink);cursor:pointer}
+button:hover{border-color:var(--muted)}
+button[aria-pressed="true"]{background:var(--sig);color:#fff;border-color:var(--sig)}
+button:focus-visible,input:focus-visible{outline:2px solid var(--sig);outline-offset:2px}
+label.chk{display:flex;gap:6px;align-items:center;font-size:.85rem}
+.read{font-family:var(--f-mono);font-size:.84rem;font-variant-numeric:tabular-nums;display:grid;grid-template-columns:auto minmax(0,1fr);gap:3px 14px;margin:0}
+.read dt{color:var(--muted)} .read dd{margin:0;overflow-wrap:anywhere}
+.pill{display:inline-block;font-family:var(--f-mono);font-size:.78rem;padding:2px 9px;border-radius:99px;border:1px solid currentColor}
+.pill.on{color:var(--ok)} .pill.off{color:var(--muted)} .pill.bad{color:var(--warn)}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:.8rem;color:var(--muted)}
+.sw{display:inline-block;width:14px;height:3px;border-radius:2px;vertical-align:middle;margin-right:5px}
+.note{font-size:.88rem;color:var(--muted);max-width:70ch;margin:0}
+.note b{color:var(--ink);font-weight:600}
+.predict{border-left:3px solid var(--sig);padding:6px 10px;font-size:.9rem;background:var(--bg);border-radius:0 6px 6px 0}
+.predict summary{cursor:pointer;color:var(--sig);font-size:.85rem;margin-top:4px}
+.tag{font-family:var(--f-mono);font-size:.7rem;color:var(--muted);border:1px dashed var(--rule);padding:1px 6px;border-radius:4px;white-space:nowrap}
+.grid2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;grid-column:1/-1}
+.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;grid-column:1/-1}
+@media (max-width:820px){.grid2,.grid3{grid-template-columns:minmax(0,1fr)}}
+.cell{display:flex;flex-direction:column;gap:8px;min-width:0}
+.cap{font-size:.8rem;color:var(--muted);margin:0}
+.full{grid-column:1/-1}
+.mat{display:inline-grid;grid-template-columns:auto auto;gap:0 12px;padding:1px 7px;border-left:2px solid var(--ink);border-right:2px solid var(--ink);text-align:right;font-family:var(--f-mono);font-size:.84rem;font-variant-numeric:tabular-nums;vertical-align:middle}
+.mats{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;font-family:var(--f-mono);font-size:.84rem}
+.cin{color:var(--in);font-weight:500} .cout{color:var(--out);font-weight:500} .csig{color:var(--sig);font-weight:500}
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>B1 regression, covariance and rotation lab</h1>
+    <p class="lede">One dataset, three views. <b>Fit</b> a line by making the squared residuals small. <b>Measure</b> how two variables move together (covariance, then the unit-free ρ). <b>Rotate</b> the axes so one coordinate carries nearly all the variance, which is the A3 eigen problem on the matrix S.</p>
+    <p class="src">Source: EEEE3116 B1 “Linear regression, covariance and axis rotation”, sl.8–32, 41–50, 57, 65–69, and the Section B practical (Q2, Q3). Anything not from the slides is tagged <span class="tag">added</span>.</p>
+  </header>
+
+  <section class="bar strip" aria-label="Key equations">
+    <div class="eqline"><b>Fit</b>: rᵢ = yᵢ − (c + m xᵢ), &nbsp;SS<sub>res</sub> = Σ rᵢ², &nbsp;X v = y is tall (N×2) → <b>XᵀX v = Xᵀy</b>, &nbsp;r² = 1 − SS<sub>res</sub>/SS<sub>tot</sub> <span class="tag">sl.12–20, 30</span></div>
+    <div class="eqline"><b>Together</b>: cov(x,y) = (1/N) Σ (xᵢ−x̄)(yᵢ−ȳ), &nbsp;cov(x,x) = σₓ², &nbsp;<b>ρ = cov / (σₓσᵧ)</b>, &nbsp;S = (1/N) AᵀA <span class="tag">sl.42–48</span></div>
+    <div class="eqline"><b>Rotate</b>: [x′; y′] = R [x; y], R = [cos θ  sin θ; −sin θ  cos θ], &nbsp;<b>Sᴿ = R S Rᵀ</b>, &nbsp;trace Sᴿ = trace S <span class="tag">sl.66–67</span></div>
+    <div class="eqline"><b>Best θ</b>: tan 2θ = 2 cov / (σₓ² − σᵧ²) &nbsp;⇔&nbsp; x′ axis = top eigenvector of S, &nbsp;variances on the new axes = eigenvalues <span class="tag">sl.69</span></div>
+  </section>
+
+  <!-- ============ PANEL 1 ============ -->
+  <section class="panel" aria-labelledby="h1p">
+    <header>
+      <h2 id="h1p">1 · The fit and its score (r²)</h2>
+      <p class="note">Move the line by hand. The <span class="cout">orange sticks</span> are the residuals. Least squares picks the c and m that make Σ(stick length)² smallest.</p>
+    </header>
+    <div class="cell">
+      <div class="plot"><canvas id="c1" aria-label="Data, line and residuals"></canvas></div>
+      <div class="legend"><span><span class="sw" style="background:var(--in)"></span>your line</span><span><span class="sw" style="background:var(--out)"></span>residual rᵢ</span><span><span class="sw" style="background:var(--muted)"></span>ȳ (mean)</span></div>
+    </div>
+    <div class="side">
+      <div class="row" role="group" aria-label="Dataset"><span class="cap">data:</span>
+        <button data-d1="circuit" aria-pressed="true">circuit (sl.8)</button>
+        <button data-d1="ex23" aria-pressed="false">exercise (sl.23)</button></div>
+      <div class="sliders">
+        <label for="s1c">c</label><input id="s1c" type="range" min="-6" max="10" step="0.01" value="4"><output id="o1c"></output>
+        <label for="s1m">m</label><input id="s1m" type="range" min="-1" max="3" step="0.005" value="0.5"><output id="o1m"></output>
+      </div>
+      <div class="row"><button id="b1best">best fit (least squares)</button><button id="b1flat">flat at ȳ</button></div>
+      <dl class="read" id="r1"></dl>
+      <div class="predict">Press <b>flat at ȳ</b>. Predict r² first. Then tilt the line badly the wrong way. Can r² go below 0?
+        <details><summary>check</summary><p class="note">Flat at ȳ means SS<sub>res</sub> = SS<sub>tot</sub>, so r² = 0: the line explains nothing that “always guess ȳ” didn't (sl.31). A line <i>worse</i> than that gives r² &lt; 0. The slide's 0 ≤ r² ≤ 1 holds for the least-squares line, which is never worse than the flat one. <span class="tag">added</span></p></details></div>
+      <p class="note">Why the 5 equations can't all be met: X (5×2) has rank 2, so its columns are fine. The noise makes the 5 equations disagree with each other. Multiplying by Xᵀ gives the 2×2 system XᵀX v = Xᵀy, which is A2's tall, best-fit case (A2 sl.57). XᵀX is exactly the normal-equation matrix [N Σx; Σx Σx²] (sl.20).</p>
+    </div>
+  </section>
+
+  <!-- ============ PANEL 2 ============ -->
+  <section class="panel" aria-labelledby="h2p">
+    <header>
+      <h2 id="h2p">2 · Walking downhill (gradient descent)</h2>
+      <p class="note">Left: c is held at 2.01 and only m moves (sl.25–27). Right: c and m move together on the 2-D bowl (sl.28), using the raw x versus the z-scored x.</p>
+    </header>
+    <div class="grid2">
+      <div class="cell">
+        <h3>1-D: m only, c = 2.01</h3>
+        <div class="plot"><canvas id="c2a" aria-label="SS_res against m with gradient steps"></canvas></div>
+        <div class="sliders"><label for="s2mu">μ</label><input id="s2mu" type="range" min="0.0002" max="0.006" step="0.0001" value="0.0018"><output id="o2mu"></output></div>
+        <dl class="read" id="r2a"></dl>
+        <p class="note">Near the bottom, the slope is 396(m − m*). One step does (m − m*) ← <b>(1 − 396μ)</b>(m − m*). So |1 − 396μ| &lt; 1 is the stability condition, giving μ &lt; 2/396 ≈ 0.0051 (sl.27). This is the discrete version of “the pole must be inside the unit circle”. <span class="tag">added: the pole framing</span></p>
+      </div>
+      <div class="cell">
+        <h3>2-D: c and m together</h3>
+        <div class="plot sq"><canvas id="c2b" aria-label="Contours of SS_res with gradient path"></canvas></div>
+        <div class="row" role="group" aria-label="x scaling"><button data-z="raw" aria-pressed="true">raw x (mA)</button><button data-z="z" aria-pressed="false">z-scored x</button></div>
+        <div class="sliders"><label for="s2f">μ / limit</label><input id="s2f" type="range" min="0.1" max="1.04" step="0.01" value="0.9"><output id="o2f"></output></div>
+        <dl class="read" id="r2b"></dl>
+        <p class="note">Both views start from the <b>same line</b>; they only label it with different parameters. Raw x gives a long, thin valley: the step that is safe across the valley is tiny along it, so the path zig-zags and crawls. z-scoring x makes XᵀX = N·I, a round bowl. <span class="tag">added: the step counts and μ/limit scale</span></p>
+        <div class="predict">With z-scored x, set μ/limit to 0.5. How many steps? <details><summary>check</summary><p class="note">One. In a round bowl the gradient points straight at the bottom, and μ = 1/λ lands on it. That's why sl.28 recommends z-scoring first, and why A5's CG beats steepest descent.</p></details></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ PANEL 3 ============ -->
+  <section class="panel" aria-labelledby="h3p">
+    <header>
+      <h2 id="h3p">3 · Covariance as rectangles; ρ as the unit-free version</h2>
+      <p class="note">Each point draws a rectangle from the mean point (x̄, ȳ) to itself. Its signed area is (xᵢ − x̄)(yᵢ − ȳ): <span style="color:var(--ok)">green = +</span> (both above or both below the mean), <span style="color:var(--warn)">red = −</span>. <b>cov = the average signed area.</b> cov(x, x) uses squares, so it's σₓ².</p>
+    </header>
+    <div class="cell">
+      <div class="plot"><canvas id="c3" aria-label="Scatter with deviation rectangles"></canvas></div>
+    </div>
+    <div class="side">
+      <div class="row" role="group" aria-label="Dataset" id="d3"></div>
+      <label class="chk"><input type="checkbox" id="k3u"> measure x in units 1000× bigger (e.g. A instead of mA)</label>
+      <label class="chk"><input type="checkbox" id="k3z"> z-score both variables (sl.57)</label>
+      <dl class="read" id="r3"></dl>
+      <div class="predict">Practical Q3: PM2.5–traffic cov = 25, PM2.5–wind cov = −2. Is wind the weak link? Switch between the two and compare ρ.
+        <details><summary>check</summary><p class="note">No. Wind's σ is only 0.71 m/s, so its covariances are small numbers <i>because of its units</i>. ρ(PM, wind) = −0.58, a moderate negative link (more wind, less PM). Covariance alone can't tell you “strong”; ρ can, because it divides the units out.</p></details></div>
+      <div class="predict">Try <b>circle</b> and <b>parabola</b>: y depends completely on x. What's ρ? Then try <b>one outlier</b>.
+        <details><summary>check</summary><p class="note">ρ ≈ 0 for both: the green and red rectangles cancel. ρ only measures a <b>linear</b> link (sl.50). One far point makes a huge rectangle and fakes a strong ρ.</p></details></div>
+      <p class="note">ρ² equals r² of the least-squares line through the same points (sl.49). The readout computes r² separately from the residuals, so you can check this.</p>
+    </div>
+  </section>
+
+  <!-- ============ PANEL 4 ============ -->
+  <section class="panel" aria-labelledby="h4p">
+    <header>
+      <h2 id="h4p">4 · Rotate the axes (and why the answer is an eigenvector)</h2>
+      <p class="note">Data with the means removed. The rotation doesn't move the points; it changes the axes we read them in (sl.66). Each point's <span class="cin">x′</span> is its shadow on the <span class="cin">x′ axis</span>, and its <span class="cout">y′</span> is the perpendicular stick.</p>
+    </header>
+    <div class="full row" role="group" aria-label="Dataset"><span class="cap">data:</span>
+      <button data-d4="circuit" aria-pressed="true">circuit (sl.8, 68)</button>
+      <button data-d4="accel" aria-pressed="false">accelerometer (practical Q2)</button></div>
+    <div class="full sliders" style="grid-template-columns:auto minmax(140px,1fr) 8ch">
+      <label for="s4t">θ</label><input id="s4t" type="range" min="0" max="180" step="0.01" value="0"><output id="o4t"></output>
+    </div>
+    <div class="full row"><button data-th="0">θ = 0</button><button data-th="45">θ = 45°</button><button data-th="reg">θ = tan⁻¹ m (regression, sl.65)</button><button data-th="eig">best θ (eigenvector, sl.69)</button>
+      <label class="chk"><input type="checkbox" id="k4v"> also show regression's vertical residuals</label>
+      <label class="chk"><input type="checkbox" id="k4r"> send x′ only → reconstruct</label></div>
+    <div class="predict full">Before you move θ: at which angle does the covariance between x′ and y′ hit 0? Is it the same angle where the variance on x′ peaks?
+      <details><summary>check</summary><p class="note">The same angle, and not by luck. Differentiate σ²ₓ′(θ) from sl.69: dσ²ₓ′/dθ = <b>2·cov′(θ)</b>. So the peak of the variance is exactly where cov′ = 0. Setting it to 0 gives sl.69's tan 2θ = 2cov/(σₓ² − σᵧ²). <span class="tag">added: the derivative step</span></p></details></div>
+    <div class="grid3">
+      <div class="cell"><h3>The data in rotated axes</h3><div class="plot sq"><canvas id="c4a" aria-label="Points with rotated axes"></canvas></div>
+        <div class="legend"><span><span class="sw" style="background:var(--in)"></span>x′ axis</span><span><span class="sw" style="background:var(--out)"></span>y′ (perpendicular) sticks</span><span><span class="sw" style="background:var(--muted)"></span>vertical residuals</span></div></div>
+      <div class="cell"><h3>What the rotation moves</h3><div class="plot sq"><canvas id="c4b" aria-label="Variance on x′, y′ and covariance versus θ"></canvas></div>
+        <div class="legend"><span><span class="sw" style="background:var(--in)"></span>σ²ₓ′</span><span><span class="sw" style="background:var(--out)"></span>σ²ᵧ′</span><span><span class="sw" style="background:var(--sig)"></span>cov′</span></div></div>
+      <div class="cell"><h3>The A3 view: S acting on u</h3><div class="plot sq"><canvas id="c4c" aria-label="Unit vector u and S times u"></canvas></div>
+        <div class="legend"><span><span class="sw" style="background:var(--in)"></span>u = x′ direction (×λ₀)</span><span><span class="sw" style="background:var(--sig)"></span>Su</span><span><span class="sw" style="background:var(--muted)"></span>S·(unit circle)</span></div></div>
+    </div>
+    <div class="grid2">
+      <div class="cell"><div class="mats" id="m4"></div><dl class="read" id="r4"></dl></div>
+      <div class="cell">
+        <p class="note"><b>Why the eigenvector.</b> Write u = (cos θ, sin θ) for the x′ direction and v = (−sin θ, cos θ) for y′. These are R's two rows. Then the entries of Sᴿ = R S Rᵀ are just dot products with <span class="csig">Su</span>:</p>
+        <p class="note">σ²ₓ′ = u·(Su), &nbsp; cov′ = v·(Su).</p>
+        <p class="note">cov′ = 0 means Su has no part along v, so <b>Su points along u: Su = λu</b>. That's A3's definition of an eigenvector, and then σ²ₓ′ = u·λu = λ. In eigen axes, Sᴿ = K is diagonal. S is symmetric, so its eigen axes are perpendicular, and R is a proper rotation (A3: S = X K Xᵀ, with R = Xᵀ). <span class="tag">added: the u·Su / v·Su framing</span></p>
+        <p class="note"><b>Regression angle vs eigen angle:</b> 41.4° vs 41.5° on the circuit data. Regression minimises the <i>vertical</i> sticks, and the eigenvector minimises the <i>perpendicular</i> ones (sl.69). Tick the box to see both.</p>
+        <p class="note"><b>Careful with R:</b> sl.66's R = [cos sin; −sin cos] rotates the <i>axes</i> by +θ. A1's R = [cos −sin; sin cos] rotates <i>points</i>. They are transposes of each other: turning the axes by +θ looks like turning the points by −θ.</p>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script>
+(()=>{
+const $=id=>document.getElementById(id);
+const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const f=(v,d=3)=>{if(!isFinite(v))return '∞';const s=Math.abs(v)<1e-12?0:v;return s.toFixed(d).replace(/^-(0\.0*)$/,'$1')};
+const avg=a=>a.reduce((s,v)=>s+v,0)/a.length;
+
+/* ---------- data (slides and practical are verbatim; shapes are invented) ---------- */
+const D={
+  circuit:{x:[0,3,5,8,10],y:[2,5,6,9,11],xl:'current x (mA)',yl:'voltage y (V)',name:'circuit (sl.8)'},
+  ex23:{x:[-1,2,4,6,9],y:[-3,0,3,5,10],xl:'x',yl:'y',name:'exercise (sl.23)'},
+  accel:{x:[3.7,-7.7,12,-4.3,8.3,-12],y:[3.4,-6.4,9,-2.6,5.6,-9],xl:'x (m/s²)',yl:'y (m/s²)',name:'accel (Q2)'},
+  pmT:{x:[40,45,50,50,55,60],y:[33,41,37,41,39,49],xl:'traffic (×1000)',yl:'PM2.5 (µg/m³)',name:'PM–traffic (Q3)'},
+  pmW:{x:[3.5,2,3.5,2.5,4,2.5],y:[33,41,37,41,39,49],xl:'wind (m/s)',yl:'PM2.5 (µg/m³)',name:'PM–wind (Q3)'},
+  circle:{x:[],y:[],xl:'x',yl:'y',name:'circle',added:true},
+  parab:{x:[],y:[],xl:'x',yl:'y',name:'parabola',added:true},
+  outl:{x:[1,2,3,4,5,1.5,2.5,3.5,4.5,20],y:[3,1,4,2,3,2,4,1,3,20],xl:'x',yl:'y',name:'one outlier',added:true},
+};
+for(let k=0;k<12;k++){const a=k*Math.PI/6;D.circle.x.push(5+3*Math.cos(a));D.circle.y.push(5+3*Math.sin(a));}
+for(let k=-6;k<=6;k++){D.parab.x.push(k/2);D.parab.y.push(k*k/4);}
+
+function stats(x,y){const N=x.length,mx=avg(x),my=avg(y);let sxx=0,syy=0,sxy=0;
+  for(let i=0;i<N;i++){const a=x[i]-mx,b=y[i]-my;sxx+=a*a;syy+=b*b;sxy+=a*b;}
+  sxx/=N;syy/=N;sxy/=N;const m=sxy/sxx,c=my-m*mx;return{N,mx,my,sxx,syy,sxy,m,c,rho:sxy/Math.sqrt(sxx*syy)};}
+
+/* ---------- drawing helpers ---------- */
+function prep(cv){const r=cv.getBoundingClientRect(),d=window.devicePixelRatio||1,w=Math.max(20,r.width),h=Math.max(20,r.height);
+  const W=Math.round(w*d),H=Math.round(h*d);if(cv.width!==W||cv.height!==H){cv.width=W;cv.height=H;}
+  const g=cv.getContext('2d');g.setTransform(d,0,0,d,0,0);g.clearRect(0,0,w,h);return{g,w,h};}
+function view(w,h,x0,x1,y0,y1,equal){const L=44,R=w-10,T=10,B=h-34;
+  if(equal){const s=Math.min((R-L)/(x1-x0),(B-T)/(y1-y0)),cx=(x0+x1)/2,cy=(y0+y1)/2;x0=cx-(R-L)/s/2;x1=cx+(R-L)/s/2;y0=cy-(B-T)/s/2;y1=cy+(B-T)/s/2;}
+  return{x0,x1,y0,y1,L,R,T,B,X:x=>L+(x-x0)/(x1-x0)*(R-L),Y:y=>B-(y-y0)/(y1-y0)*(B-T)};}
+function nice(r){const t=r/5,p=Math.pow(10,Math.floor(Math.log10(t))),m=t/p;return(m<1.5?1:m<3.5?2:m<7.5?5:10)*p;}
+function axes(g,v,xl,yl){g.save();g.font='11px "IBM Plex Mono",monospace';g.lineWidth=1;
+  const sx=nice(v.x1-v.x0),sy=nice(v.y1-v.y0);g.fillStyle=css('--muted');
+  for(let x=Math.ceil(v.x0/sx)*sx;x<=v.x1+1e-9;x+=sx){const X=v.X(x);g.strokeStyle=css('--grid');g.beginPath();g.moveTo(X,v.T);g.lineTo(X,v.B);g.stroke();g.textAlign='center';g.fillText(+x.toFixed(6),X,v.B+13);}
+  for(let y=Math.ceil(v.y0/sy)*sy;y<=v.y1+1e-9;y+=sy){const Y=v.Y(y);g.strokeStyle=css('--grid');g.beginPath();g.moveTo(v.L,Y);g.lineTo(v.R,Y);g.stroke();g.textAlign='right';g.fillText(+y.toFixed(6),v.L-4,Y+4);}
+  g.strokeStyle=css('--rule');g.strokeRect(v.L,v.T,v.R-v.L,v.B-v.T);
+  g.textAlign='center';g.fillText(xl,(v.L+v.R)/2,v.B+28);
+  g.save();g.translate(11,(v.T+v.B)/2);g.rotate(-Math.PI/2);g.fillText(yl,0,0);g.restore();g.restore();}
+function clip(g,v){g.save();g.beginPath();g.rect(v.L,v.T,v.R-v.L,v.B-v.T);g.clip();}
+function line(g,x1,y1,x2,y2,col,w=1.5,dash){g.strokeStyle=col;g.lineWidth=w;g.setLineDash(dash||[]);g.beginPath();g.moveTo(x1,y1);g.lineTo(x2,y2);g.stroke();g.setLineDash([]);}
+function dot(g,x,y,col,r=4,hollow){g.beginPath();g.arc(x,y,r,0,7);if(hollow){g.strokeStyle=col;g.lineWidth=1.5;g.stroke();}else{g.fillStyle=col;g.fill();}}
+function arrow(g,x1,y1,x2,y2,col,w=2){line(g,x1,y1,x2,y2,col,w);const a=Math.atan2(y2-y1,x2-x1),h=8;g.fillStyle=col;g.beginPath();g.moveTo(x2,y2);g.lineTo(x2-h*Math.cos(a-.4),y2-h*Math.sin(a-.4));g.lineTo(x2-h*Math.cos(a+.4),y2-h*Math.sin(a+.4));g.closePath();g.fill();}
+function dl(el,rows){el.innerHTML=rows.map(([k,v])=>`<dt>${k}</dt><dd>${v}</dd>`).join('');}
+function press(sel,attr,val){document.querySelectorAll(sel).forEach(b=>b.setAttribute('aria-pressed',b.getAttribute(attr)===val?'true':'false'));}
+
+/* ================= PANEL 1 ================= */
+let d1='circuit';
+function draw1(){const d=D[d1],st=stats(d.x,d.y),c=+$('s1c').value,m=+$('s1m').value;
+  $('o1c').textContent=f(c,2);$('o1m').textContent=f(m,3);
+  const {g,w,h}=prep($('c1'));const xs=d.x,ys=d.y;
+  const v=view(w,h,Math.min(...xs)-1,Math.max(...xs)+1,Math.min(...ys)-3,Math.max(...ys)+3);
+  axes(g,v,d.xl,d.yl);clip(g,v);
+  line(g,v.L,v.Y(st.my),v.R,v.Y(st.my),css('--muted'),1,[4,4]);
+  line(g,v.X(v.x0),v.Y(c+m*v.x0),v.X(v.x1),v.Y(c+m*v.x1),css('--in'),2);
+  let ss=0,sst=0;const rs=[];
+  xs.forEach((x,i)=>{const fi=c+m*x,r=ys[i]-fi;ss+=r*r;sst+=(ys[i]-st.my)**2;rs.push(r);line(g,v.X(x),v.Y(ys[i]),v.X(x),v.Y(fi),css('--out'),2);dot(g,v.X(x),v.Y(ys[i]),css('--ink'));});
+  g.restore();
+  const best=Math.abs(c-st.c)<0.02&&Math.abs(m-st.m)<0.006,r2=1-ss/sst;
+  dl($('r1'),[['rᵢ',rs.map(r=>f(r,2)).join(', ')],['SS_res = Σrᵢ²',f(ss,3)],['SS_tot = Σ(yᵢ−ȳ)²',f(sst,3)],
+    ['r² = 1 − SS_res/SS_tot',`<b>${f(r2,4)}</b> ${r2<0?'<span class="pill bad">worse than ȳ</span>':''}`],
+    ['least squares',`c = ${f(st.c,4)}, m = ${f(st.m,4)}, r² = ${f(st.rho**2,4)}`],
+    ['status',best?'<span class="pill on">at the minimum</span>':'<span class="pill off">not the best line</span>']]);}
+function set1(c,m){$('s1c').value=c;$('s1m').value=m;draw1();}
+$('s1c').oninput=$('s1m').oninput=draw1;
+$('b1best').onclick=()=>{const s=stats(D[d1].x,D[d1].y);set1(s.c,s.m);};
+$('b1flat').onclick=()=>{set1(avg(D[d1].y),0);};
+document.querySelectorAll('[data-d1]').forEach(b=>b.onclick=()=>{d1=b.dataset.d1;press('[data-d1]','data-d1',d1);draw1();});
+
+/* ================= PANEL 2a: 1-D ================= */
+const CX=D.circuit.x,CY=D.circuit.y,cFix=2.01;
+const SSm=m=>CX.reduce((s,x,i)=>s+(CY[i]-cFix-m*x)**2,0);
+const dSS=m=>-2*CX.reduce((s,x,i)=>s+x*(CY[i]-cFix-m*x),0);
+function draw2a(){const mu=+$('s2mu').value;$('o2mu').textContent=mu.toFixed(4);
+  const {g,w,h}=prep($('c2a'));const v=view(w,h,-1.5,5,-150,2600);axes(g,v,'gradient m (c fixed at 2.01)','SS_res');clip(g,v);
+  g.strokeStyle=css('--ink');g.lineWidth=1.5;g.beginPath();for(let k=0;k<=200;k++){const m=-1.5+6.5*k/200;const Y=v.Y(SSm(m));k?g.lineTo(v.X(m),Y):g.moveTo(v.X(m),Y);}g.stroke();
+  const ms=[4];for(let k=0;k<25;k++){const m=ms[ms.length-1];const n=m-mu*dSS(m);ms.push(n);if(Math.abs(n)>1e4)break;}
+  for(let k=1;k<ms.length;k++)line(g,v.X(ms[k-1]),v.Y(SSm(ms[k-1])),v.X(ms[k]),v.Y(SSm(ms[k])),css('--out'),1.2);
+  ms.forEach((m,k)=>dot(g,v.X(m),v.Y(SSm(m)),k?css('--out'):css('--sig'),k?3:5));
+  g.restore();const fac=1-396*mu,div=Math.abs(fac)>=1;
+  dl($('r2a'),[['factor 1 − 396μ',`<b>${f(fac,3)}</b> ${div?'<span class="pill bad">|factor| ≥ 1 → diverges</span>':fac<0?'<span class="pill off">overshoots, converges</span>':'<span class="pill on">smooth</span>'}`],
+    ['limit 2/396',f(2/396,4)],['m₀ … m₅',ms.slice(0,6).map(m=>Math.abs(m)>999?f(m,0):f(m,3)).join(' → ')]]);}
+$('s2mu').oninput=draw2a;
+
+/* ================= PANEL 2b: 2-D ================= */
+let zmode='raw';
+function bowl(){const x=CX,y=CY,N=x.length,st=stats(x,y),sd=Math.sqrt(st.sxx);
+  const col=zmode==='z'?x.map(v=>(v-st.mx)/sd):x;
+  const a=N,b=col.reduce((s,v)=>s+v,0),d=col.reduce((s,v)=>s+v*v,0),p=y.reduce((s,v)=>s+v,0),q=col.reduce((s,v,i)=>s+v*y[i],0);
+  const det=a*d-b*b,vs=[(d*p-b*q)/det,(a*q-b*p)/det];
+  const tr=a+d,disc=Math.sqrt((a-d)**2+4*b*b),l1=(tr+disc)/2,l2=(tr-disc)/2;
+  const e1=Math.abs(b)>1e-12?[l1-d,b]:(a>=d?[1,0]:[0,1]);const n1=Math.hypot(...e1);const u1=[e1[0]/n1,e1[1]/n1],u2=[-u1[1],u1[0]];
+  const start=zmode==='z'?[6+(-0.5)*st.mx,-0.5*sd]:[6,-0.5];
+  return{M:[[a,b],[b,d]],rhs:[p,q],vs,l1,l2,u1,u2,start};}
+function draw2b(){const B=bowl(),fr=+$('s2f').value;$('o2f').textContent=fr.toFixed(2);
+  const mu=fr*2/(2*B.l1);   // Hessian = 2XᵀX, so the limit is 2/(2λmax)
+  const {g,w,h}=prep($('c2b'));const half=Math.max(Math.abs(B.start[0]-B.vs[0]),Math.abs(B.start[1]-B.vs[1]))*1.25;
+  const v=view(w,h,B.vs[0]-half,B.vs[0]+half,B.vs[1]-half,B.vs[1]+half,true);
+  axes(g,v,zmode==='z'?"c′ (intercept at mean x)":'c',zmode==='z'?"m′ (slope per σₓ)":'m');clip(g,v);
+  const ds=B.start.map((s,i)=>s-B.vs[i]),q0=ds[0]*(B.M[0][0]*ds[0]+B.M[0][1]*ds[1])+ds[1]*(B.M[1][0]*ds[0]+B.M[1][1]*ds[1]);
+  g.strokeStyle=css('--muted');g.lineWidth=1;
+  for(const lv of [0.02,0.08,0.25,0.6,1,1.6]){const L=q0*lv;g.beginPath();for(let k=0;k<=120;k++){const t=k/60*Math.PI,A=Math.sqrt(L/B.l1)*Math.cos(t),Bb=Math.sqrt(L/B.l2)*Math.sin(t);
+    const px=B.vs[0]+A*B.u1[0]+Bb*B.u2[0],py=B.vs[1]+A*B.u1[1]+Bb*B.u2[1];k?g.lineTo(v.X(px),v.Y(py)):g.moveTo(v.X(px),v.Y(py));}g.stroke();}
+  let p=B.start.slice(),n=0;const path=[p.slice()];
+  while(n<5000){const gr=[2*(B.M[0][0]*p[0]+B.M[0][1]*p[1]-B.rhs[0]),2*(B.M[1][0]*p[0]+B.M[1][1]*p[1]-B.rhs[1])];
+    p=[p[0]-mu*gr[0],p[1]-mu*gr[1]];n++;if(path.length<400)path.push(p.slice());
+    const e=Math.hypot(p[0]-B.vs[0],p[1]-B.vs[1]);if(e<1e-3||e>1e6)break;}
+  const err=Math.hypot(p[0]-B.vs[0],p[1]-B.vs[1]);
+  g.strokeStyle=css('--out');g.lineWidth=1.3;g.beginPath();path.forEach((q,k)=>k?g.lineTo(v.X(q[0]),v.Y(q[1])):g.moveTo(v.X(q[0]),v.Y(q[1])));g.stroke();
+  dot(g,v.X(B.start[0]),v.Y(B.start[1]),css('--sig'),5);dot(g,v.X(B.vs[0]),v.Y(B.vs[1]),css('--in'),5);g.restore();
+  dl($('r2b'),[['XᵀX',`[${f(B.M[0][0],1)} ${f(B.M[0][1],1)}; ${f(B.M[1][0],1)} ${f(B.M[1][1],1)}]`],['bowl stretch λmax/λmin',f(B.l1/B.l2,1)],
+    ['steps to |error| < 0.001',err>1e6?'<span class="pill bad">diverged</span>':n>=5000?'&gt; 5000':`<b>${n}</b>`],
+    ['answer',zmode==='z'?`c′ = ${f(B.vs[0],3)} (= ȳ), m′ = ${f(B.vs[1],3)} (= m·σₓ)`:`c = ${f(B.vs[0],3)}, m = ${f(B.vs[1],3)}`]]);}
+$('s2f').oninput=draw2b;
+document.querySelectorAll('[data-z]').forEach(b=>b.onclick=()=>{zmode=b.dataset.z;press('[data-z]','data-z',zmode);draw2b();});
+
+/* ================= PANEL 3 ================= */
+let d3='circuit';
+$('d3').innerHTML='<span class="cap">data:</span>'+['circuit','pmT','pmW','accel','circle','parab','outl'].map(k=>`<button data-d3="${k}" aria-pressed="${k===d3}">${D[k].name}${D[k].added?' *':''}</button>`).join('')+'<span class="tag">* invented shapes (sl.50 idea)</span>';
+function draw3(){const d=D[d3];let x=d.x.slice(),y=d.y.slice(),xl=d.xl,yl=d.yl;
+  if($('k3u').checked){x=x.map(v=>v/1000);xl+=' ÷ 1000';}
+  if($('k3z').checked){const s=stats(x,y);x=x.map(v=>(v-s.mx)/Math.sqrt(s.sxx));y=y.map(v=>(v-s.my)/Math.sqrt(s.syy));xl='z of '+xl;yl='z of '+yl;}
+  const st=stats(x,y);const {g,w,h}=prep($('c3'));
+  const px=(Math.max(...x)-Math.min(...x))*0.12||1,py=(Math.max(...y)-Math.min(...y))*0.12||1;
+  const v=view(w,h,Math.min(...x)-px,Math.max(...x)+px,Math.min(...y)-py,Math.max(...y)+py);axes(g,v,xl,yl);clip(g,v);
+  let pos=0,neg=0;
+  x.forEach((xi,i)=>{const a=(xi-st.mx)*(y[i]-st.my);a>=0?pos+=a:neg+=a;g.fillStyle=a>=0?css('--pos'):css('--neg');
+    const X0=v.X(st.mx),Y0=v.Y(st.my),X1=v.X(xi),Y1=v.Y(y[i]);g.fillRect(Math.min(X0,X1),Math.min(Y0,Y1),Math.abs(X1-X0),Math.abs(Y1-Y0));
+    g.strokeStyle=a>=0?css('--ok'):css('--warn');g.lineWidth=.8;g.strokeRect(Math.min(X0,X1),Math.min(Y0,Y1),Math.abs(X1-X0),Math.abs(Y1-Y0));});
+  line(g,v.X(st.mx),v.T,v.X(st.mx),v.B,css('--muted'),1,[4,4]);line(g,v.L,v.Y(st.my),v.R,v.Y(st.my),css('--muted'),1,[4,4]);
+  x.forEach((xi,i)=>dot(g,v.X(xi),v.Y(y[i]),css('--ink')));g.restore();
+  let ss=0,sst=0;x.forEach((xi,i)=>{ss+=(y[i]-st.c-st.m*xi)**2;sst+=(y[i]-st.my)**2;});
+  const N=st.N,dd=Math.abs(st.sxy)<1e-3||Math.abs(st.sxy)>1e5?4:3;
+  dl($('r3'),[['N',N],['x̄, ȳ',`${f(st.mx,dd)}, ${f(st.my,3)}`],['σₓ, σᵧ',`${f(Math.sqrt(st.sxx),dd+1)}, ${f(Math.sqrt(st.syy),3)}`],
+    ['Σ green, Σ red',`${f(pos,dd)}, ${f(neg,dd)}`],['<span class="csig">cov = (Σ green + Σ red)/N</span>',`<b>${f(st.sxy,dd+1)}</b>`],
+    ['ρ = cov/(σₓσᵧ)',`<b>${f(st.rho,4)}</b>`],['ρ²',f(st.rho**2,4)],['r² of LS line (from residuals)',f(1-ss/sst,4)]]);}
+document.querySelectorAll('[data-d3]').forEach(b=>b.onclick=()=>{d3=b.dataset.d3;press('[data-d3]','data-d3',d3);draw3();});
+$('k3u').onchange=$('k3z').onchange=draw3;
+
+/* ================= PANEL 4 ================= */
+let d4='circuit';
+function S4(){const d=D[d4],st=stats(d.x,d.y);return{d,st,S:[[st.sxx,st.sxy],[st.sxy,st.syy]],ax:d.x.map(v=>v-st.mx),ay:d.y.map(v=>v-st.my)};}
+function angles(st){const eig=0.5*Math.atan2(2*st.sxy,st.sxx-st.syy)*180/Math.PI;return{reg:Math.atan(st.m)*180/Math.PI,eig:(eig+180)%180};}
+function rot(S,t){const c=Math.cos(t),s=Math.sin(t),u=[c,s],v=[-s,c],Su=[S[0][0]*c+S[0][1]*s,S[1][0]*c+S[1][1]*s],Sv=[S[0][0]*v[0]+S[0][1]*v[1],S[1][0]*v[0]+S[1][1]*v[1]];
+  return{u,v,Su,vx:u[0]*Su[0]+u[1]*Su[1],vy:v[0]*Sv[0]+v[1]*Sv[1],cv:v[0]*Su[0]+v[1]*Su[1]};}
+function draw4(){const {d,st,S,ax,ay}=S4(),th=+$('s4t').value,t=th*Math.PI/180,A=angles(st),r=rot(S,t),N=st.N;
+  $("o4t").textContent=f(th,2)+"°";
+  const tr=S[0][0]+S[1][1],lam0=(tr+Math.sqrt((S[0][0]-S[1][1])**2+4*S[0][1]**2))/2,lam1=tr-lam0;
+  /* --- a: points --- */
+  {const {g,w,h}=prep($('c4a'));const R=Math.max(...ax.map(Math.abs),...ay.map(Math.abs))*1.15;
+   const v=view(w,h,-R,R,-R,R,true);axes(g,v,d.xl+' − mean',d.yl+' − mean');clip(g,v);
+   const L=R*2;line(g,v.X(-L*r.u[0]),v.Y(-L*r.u[1]),v.X(L*r.u[0]),v.Y(L*r.u[1]),css('--in'),2);
+   line(g,v.X(-L*r.v[0]),v.Y(-L*r.v[1]),v.X(L*r.v[0]),v.Y(L*r.v[1]),css('--out'),1.2,[5,4]);
+   if($('k4v').checked){line(g,v.X(-R),v.Y(-R*st.m),v.X(R),v.Y(R*st.m),css('--muted'),1,[2,3]);ax.forEach((x,i)=>line(g,v.X(x)+2,v.Y(ay[i]),v.X(x)+2,v.Y(st.m*x),css('--muted'),2));}
+   ax.forEach((x,i)=>{const xp=x*r.u[0]+ay[i]*r.u[1];line(g,v.X(x),v.Y(ay[i]),v.X(xp*r.u[0]),v.Y(xp*r.u[1]),css('--out'),2);
+     if($('k4r').checked)dot(g,v.X(xp*r.u[0]),v.Y(xp*r.u[1]),css('--in'),4,true);dot(g,v.X(x),v.Y(ay[i]),css('--ink'));});
+   g.fillStyle=css('--in');g.font='12px "IBM Plex Mono",monospace';g.fillText("x′",v.X(R*.85*r.u[0])+6,v.Y(R*.85*r.u[1])-6);
+   g.fillStyle=css('--out');g.fillText("y′",v.X(R*.85*r.v[0])+6,v.Y(R*.85*r.v[1])-6);g.restore();}
+  /* --- b: curves vs θ --- */
+  {const {g,w,h}=prep($('c4b'));const lo=-Math.abs(S[0][1])*1.15,hi=lam0*1.1;const v=view(w,h,0,180,lo,hi);axes(g,v,'θ (degrees)','variance / covariance');clip(g,v);
+   line(g,v.L,v.Y(0),v.R,v.Y(0),css('--rule'),1);
+   for(const [key,col] of [['vx','--in'],['vy','--out'],['cv','--sig']]){g.strokeStyle=css(col);g.lineWidth=2;g.beginPath();
+     for(let k=0;k<=360;k++){const q=rot(S,k/2*Math.PI/180);const Y=v.Y(q[key]);k?g.lineTo(v.X(k/2),Y):g.moveTo(v.X(k/2),Y);}g.stroke();}
+   line(g,v.X(A.eig),v.T,v.X(A.eig),v.B,css('--ok'),1,[4,3]);line(g,v.X(A.reg),v.T,v.X(A.reg),v.B,css('--muted'),1,[1,3]);
+   line(g,v.X(th),v.T,v.X(th),v.B,css('--ink'),1.5);
+   dot(g,v.X(th),v.Y(r.vx),css('--in'));dot(g,v.X(th),v.Y(r.vy),css('--out'));dot(g,v.X(th),v.Y(r.cv),css('--sig'));
+   g.fillStyle=css('--ok');g.font='11px "IBM Plex Mono",monospace';g.fillText('eigen '+f(A.eig,1)+'°',v.X(A.eig)+4,v.T+12);g.restore();}
+  /* --- c: S acting on u --- */
+  {const {g,w,h}=prep($('c4c'));const R=lam0*1.2;const v=view(w,h,-R,R,-R,R,true);axes(g,v,'',''); clip(g,v);
+   g.strokeStyle=css('--muted');g.lineWidth=1;g.beginPath();for(let k=0;k<=120;k++){const a=k/60*Math.PI,c=Math.cos(a),s=Math.sin(a);const X=S[0][0]*c+S[0][1]*s,Y=S[1][0]*c+S[1][1]*s;k?g.lineTo(v.X(X),v.Y(Y)):g.moveTo(v.X(X),v.Y(Y));}g.stroke();
+   line(g,v.X(-R*r.v[0]),v.Y(-R*r.v[1]),v.X(R*r.v[0]),v.Y(R*r.v[1]),css('--out'),1,[5,4]);
+   arrow(g,v.X(0),v.Y(0),v.X(lam0*r.u[0]),v.Y(lam0*r.u[1]),css('--in'),1.5);
+   arrow(g,v.X(0),v.Y(0),v.X(r.Su[0]),v.Y(r.Su[1]),css('--sig'),2.5);
+   const pv=r.cv;line(g,v.X(r.Su[0]),v.Y(r.Su[1]),v.X(r.Su[0]-pv*r.v[0]),v.Y(r.Su[1]-pv*r.v[1]),css('--out'),2);
+   g.fillStyle=css('--muted');g.font='11px "IBM Plex Mono",monospace';g.fillText('orange stick = cov′ = v·Su',v.L+6,v.B-8);g.restore();}
+  /* --- matrices + readout --- */
+  const c=Math.cos(t),s=Math.sin(t),SR=[[r.vx,r.cv],[r.cv,r.vy]];
+  const M=(m,dd=3)=>`<span class="mat">${m.flat().map(x=>`<span>${f(x,dd)}</span>`).join('')}</span>`;
+  $('m4').innerHTML=`R = ${M([[c,s],[-s,c]],3)} &nbsp; S = ${M(S,3)} &nbsp;→&nbsp; Sᴿ = RSRᵀ = ${M(SR,3)}`;
+  const aligned=Math.abs(r.cv)<0.0005*lam0;
+  dl($('r4'),[['trace S → trace Sᴿ',`${f(tr,3)} → ${f(r.vx+r.vy,3)} <span class="pill on">kept</span>`],
+    ['share on x′ = σ²ₓ′/trace',`<b>${f(100*r.vx/tr,2)} %</b>`],['<span class="csig">cov′ = v·Su</span>',`<b>${f(r.cv,4)}</b> ${aligned?'<span class="pill on">Su ∥ u → eigenvector</span>':''}`],
+    ['eigenvalues of S',`λ₀ = ${f(lam0,4)}, λ₁ = ${f(lam1,4)}`],
+    ['regression vs eigen θ',`${f(A.reg,2)}° vs ${f(A.eig,2)}°`],
+    ['send x′ only: lost energy',`N·σ²ᵧ′ = ${f(N*r.vy,3)} of N·trace = ${f(N*tr,3)}`],
+    ['SNR = 10 log₁₀(total / lost) <span class="tag">added def.</span>',`${r.vy<1e-12?'∞':f(10*Math.log10(tr/r.vy),2)} dB`]]);}
+$('s4t').oninput=draw4;$('k4v').onchange=$('k4r').onchange=draw4;
+document.querySelectorAll('[data-th]').forEach(b=>b.onclick=()=>{const st=S4().st,A=angles(st),k=b.dataset.th;$('s4t').value=k==='reg'?A.reg:k==='eig'?A.eig:+k;draw4();});
+document.querySelectorAll('[data-d4]').forEach(b=>b.onclick=()=>{d4=b.dataset.d4;press('[data-d4]','data-d4',d4);draw4();});
+
+/* ---------- boot ---------- */
+function all(){draw1();draw2a();draw2b();draw3();draw4();}
+let raf=0;const again=()=>{cancelAnimationFrame(raf);raf=requestAnimationFrame(all);};
+new ResizeObserver(again).observe(document.body);
+try{matchMedia('(prefers-color-scheme: dark)').addEventListener('change',again);}catch(e){}
+all();
+})();
+</script>

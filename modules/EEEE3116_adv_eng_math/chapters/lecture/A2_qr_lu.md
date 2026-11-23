@@ -2,7 +2,7 @@
 
 **What this page is for:** worked calculations, with every multiplication written out entry by entry. Read one step, then cover it and redo it on paper. Numbers are carried at 4 dp, as you would by hand, so final answers can drift in the 4th dp. The exact answer is given at the end of each part.
 **Concepts and gaps** live in the [A2 QR lab](https://claude.ai/artifact/DvMjRDPedttK8nKWvHjXCa) (`A2_qr_lab.html`, same folder). It covers why multiplying by G keeps x, Givens as a rotation, zeroing order, Householder as a mirror, rank, and tall/wide problems.
-Progress across Section A: [`section_A_progress.md`](section_A_progress.md).
+Progress: [`progress.md`](progress.md).
 
 Sources: Part 1 is the lecture's 2×2 (A2 sl.14, verbatim). Part 2 is the **Givens practical** and Part 3 the **Householder practical** (`../../drills/givens_rotation/`, `../../drills/householder_reflection/`), kept exactly as given. Part 4's L and U are *(added)*: the LU of Part 2's A. Every number was checked with numpy/sympy (2026-11-22).
 
