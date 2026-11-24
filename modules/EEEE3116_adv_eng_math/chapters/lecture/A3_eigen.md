@@ -5,7 +5,12 @@
 Notation follows the A3 slides: eigenvalues $k_i$, eigenvectors as the columns of $\mathbf X$, $\mathbf d = \mathbf X^T\mathbf b$, $c_i = d_i/k_i$, $\mathbf x = \mathbf X\mathbf c$.
 Progress: [`progress.md`](progress.md).
 
-Sources: Part A is A3 sl.34–35, numbers verbatim. Part B's problem comes from the practical session and is kept exactly as given. Part C applies A3 sl.30–32 and 39–41 to Part B's matrix. Every number here was recomputed with sympy (2026-11-19). Tips I added that aren't on the slides are tagged *(added)*.
+<details>
+<summary>Note: sources</summary>
+
+Part A is A3 sl.34–35, numbers verbatim. Part B's problem comes from the practical session and is kept exactly as given. Part C applies A3 sl.30–32 and 39–41 to Part B's matrix. Every number here was recomputed with sympy (2026-11-19). Tips I added that aren't on the slides are tagged *(added)*.
+
+</details>
 
 **The recipe** (from A3 sl.24–35):
 1. $\det(\mathbf A - k\mathbf I) = 0$ → eigenvalues $k_i$
@@ -75,7 +80,12 @@ Set it to 0 and multiply by $-1$: $\;k^3 - 10k^2 + 27k - 18 = 0$.
 
 $$\boxed{k_0 = 1,\quad k_1 = 3,\quad k_2 = 6}$$
 
-**Quick checks** *(added)*: the eigenvalues add up to $\text{trace}(\mathbf A)$: $1+3+6 = 10 = 3+3+4$ ✓. They multiply to $\det\mathbf A$: $1\cdot3\cdot6 = 18$ ✓ (sl.32).
+<details>
+<summary>Note: quick checks on the eigenvalues (added)</summary>
+
+The eigenvalues add up to $\text{trace}(\mathbf A)$: $1+3+6 = 10 = 3+3+4$ ✓. They multiply to $\det\mathbf A$: $1\cdot3\cdot6 = 18$ ✓ (sl.32).
+
+</details>
 
 ### B2. Find an eigenvector for each $k_i$.
 
@@ -118,7 +128,12 @@ $$\boxed{k_0 = 1,\quad k_1 = 3,\quad k_2 = 6}$$
 
 $$\mathbf X = \begin{bmatrix} \tfrac{1}{\sqrt2} & \tfrac{1}{\sqrt6} & -\tfrac{1}{\sqrt3} \\[2pt] \tfrac{1}{\sqrt2} & -\tfrac{1}{\sqrt6} & \tfrac{1}{\sqrt3} \\[2pt] 0 & \tfrac{2}{\sqrt6} & \tfrac{1}{\sqrt3} \end{bmatrix},\qquad \mathbf X^T\mathbf X = \mathbf I$$
 
-You have to normalise. Without it, $\mathbf X^T\mathbf X$ is not $\mathbf I$, as we saw with $(1,2)$ and $(2,-1)$ in the session, where it came out as $5\mathbf I$.
+<details>
+<summary>Note: why normalise?</summary>
+
+Without it, $\mathbf X^T\mathbf X$ is not $\mathbf I$, as we saw with $(1,2)$ and $(2,-1)$ in the session, where it came out as $5\mathbf I$.
+
+</details>
 
 ### B4. Solve $\mathbf A\mathbf x = \mathbf b$ with the three moves: $\mathbf d = \mathbf X^T\mathbf b$, then $c_i = d_i/k_i$, then $\mathbf x = \mathbf X\mathbf c$.
 
@@ -145,9 +160,14 @@ Work it out in sixths:
 
 $$\boxed{\mathbf x = (1,\,2,\,3)}$$
 
-**Shortcut without square roots** *(added)*: you can skip normalising. Use the raw eigenvectors $\mathbf v_i$ and
+<details>
+<summary>Note: shortcut without square roots (added)</summary>
+
+You can skip normalising. Use the raw eigenvectors $\mathbf v_i$ and
 $$\text{amount of } \mathbf v_i \text{ in } \mathbf x = \frac{\mathbf v_i\cdot\mathbf b}{(\mathbf v_i\cdot\mathbf v_i)\,k_i}.$$
 Here that gives $\frac{3}{2\cdot1} = \frac32$, $\;\frac{15}{6\cdot3} = \frac56$, $\;\frac{24}{3\cdot6} = \frac43$, the same three numbers.
+
+</details>
 
 ### B5. Check your answer.
 
@@ -184,7 +204,14 @@ $$\mathbf A^M\mathbf b = \tfrac{3}{2}\cdot1^M(1,1,0) + \tfrac{15}{6}\cdot3^M(1,-
 **Check with $M = 1$:** $1.5(1,1,0) + 7.5(1,-1,2) + 48(-1,1,1) = (-39,\ 42,\ 63)$.
 Directly: $\mathbf A\mathbf b = (-12-14-13,\ \ 8+21+13,\ \ 4+7+52) = (-39,\ 42,\ 63)$ ✓
 
-**Large $M$:** the $6^M$ term swamps the others, so $\mathbf A^M\mathbf b$ points along $(-1,1,1)$. This is the fibre "settling to one pattern" (sl.38). It's also what the feedback-loop button in the A3 lab (panel 1) shows: repeated multiplication picks out the largest |k|.
+**Large $M$:** the $6^M$ term swamps the others, so $\mathbf A^M\mathbf b$ points along $(-1,1,1)$.
+
+<details>
+<summary>Note: link to sl.38 and the lab</summary>
+
+This is the fibre "settling to one pattern" (sl.38). It's also what the feedback-loop button in the A3 lab (panel 1) shows: repeated multiplication picks out the largest |k|.
+
+</details>
 
 ### C3. Feedback stability (sl.41): Using A's eigenvalues, put $\mathbf A$ in a loop with scalar feedback $\beta$, so that $(\mathbf I + \beta\mathbf A)\mathbf V_{out} = \mathbf A\mathbf V_{in}$. What are the eigenvalues of the overall system? For which values of $\beta$ does it go unstable?
 

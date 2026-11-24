@@ -1,0 +1,309 @@
+<title>B4 PCA Lab</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=Space+Grotesk:wght@500;600&display=swap">
+<style>
+/* Same graph-paper bench as the A- and B1-labs */
+:root{
+  --bg:#f3f6f7; --panel:#ffffff; --ink:#18222b; --muted:#5b6872; --rule:#d9e1e5; --grid:#e8eef1;
+  --in:#0f8a7e;      /* x′ axis, main direction, model line */
+  --out:#d0661b;     /* y′ axis, residuals, what gets dropped */
+  --sig:#6b4fc8;     /* covariance, accent */
+  --ok:#1d8a3a; --warn:#b42318;
+  --pos:rgba(29,138,58,.16); --neg:rgba(180,35,24,.16);
+  --f-display:"Space Grotesk",system-ui,sans-serif;
+  --f-body:"IBM Plex Sans",system-ui,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#11171c; --panel:#182027; --ink:#e4ecf0; --muted:#93a3ad; --rule:#2a353e; --grid:#1f2930;
+  --in:#3cc7b8; --out:#f39a52; --sig:#a993f5; --ok:#4cc46c; --warn:#ff7b6b;
+  --pos:rgba(76,196,108,.18); --neg:rgba(255,123,107,.18); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#11171c; --panel:#182027; --ink:#e4ecf0; --muted:#93a3ad; --rule:#2a353e; --grid:#1f2930;
+  --in:#3cc7b8; --out:#f39a52; --sig:#a993f5; --ok:#4cc46c; --warn:#ff7b6b;
+  --pos:rgba(76,196,108,.18); --neg:rgba(255,123,107,.18); color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.5;margin:0;
+  padding:24px max(16px,env(safe-area-inset-right,0px)) 48px max(16px,env(safe-area-inset-left,0px))}
+.wrap{max-width:1100px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+h1{font-family:var(--f-display);font-weight:600;font-size:1.7rem;margin:0;text-wrap:balance}
+h2{font-family:var(--f-display);font-weight:600;font-size:1.2rem;margin:0 0 4px;text-wrap:balance}
+h3{font-family:var(--f-display);font-weight:600;font-size:.98rem;margin:0}
+.lede{color:var(--muted);max-width:75ch;margin:4px 0 0}
+.src{font-family:var(--f-mono);font-size:.75rem;color:var(--muted);letter-spacing:.02em;margin:4px 0 0}
+.bar,.panel{background:var(--panel);border:1px solid var(--rule);border-radius:8px;padding:16px}
+.strip{display:flex;flex-direction:column;gap:6px}
+.eqline{font-family:var(--f-mono);font-size:.88rem;overflow-wrap:anywhere}
+.panel{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:20px}
+.panel>header{grid-column:1/-1}
+@media (max-width:820px){.panel{grid-template-columns:minmax(0,1fr)}}
+.plot{position:relative;width:100%;aspect-ratio:4/3}
+.plot.sq{aspect-ratio:1}
+canvas{width:100%;height:100%;display:block;border-radius:6px;background:var(--bg)}
+.side{display:flex;flex-direction:column;gap:12px;min-width:0}
+.sliders{display:grid;grid-template-columns:auto minmax(100px,1fr) 8ch;gap:4px 10px;align-items:center;font-family:var(--f-mono);font-size:.85rem}
+.sliders output{text-align:right;font-variant-numeric:tabular-nums}
+input[type=range]{width:100%;accent-color:var(--sig)}
+.row{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+button{font:inherit;font-size:.82rem;padding:5px 10px;border-radius:5px;border:1px solid var(--rule);background:var(--bg);color:var(--ink);cursor:pointer}
+button:hover{border-color:var(--muted)}
+button[aria-pressed="true"]{background:var(--sig);color:#fff;border-color:var(--sig)}
+button:focus-visible,input:focus-visible{outline:2px solid var(--sig);outline-offset:2px}
+label.chk{display:flex;gap:6px;align-items:center;font-size:.85rem}
+.read{font-family:var(--f-mono);font-size:.84rem;font-variant-numeric:tabular-nums;display:grid;grid-template-columns:auto minmax(0,1fr);gap:3px 14px;margin:0}
+.read dt{color:var(--muted)} .read dd{margin:0;overflow-wrap:anywhere}
+.pill{display:inline-block;font-family:var(--f-mono);font-size:.78rem;padding:2px 9px;border-radius:99px;border:1px solid currentColor}
+.pill.on{color:var(--ok)} .pill.off{color:var(--muted)} .pill.bad{color:var(--warn)}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:.8rem;color:var(--muted)}
+.sw{display:inline-block;width:14px;height:3px;border-radius:2px;vertical-align:middle;margin-right:5px}
+.note{font-size:.88rem;color:var(--muted);max-width:70ch;margin:0}
+.note b{color:var(--ink);font-weight:600}
+.predict{border-left:3px solid var(--sig);padding:6px 10px;font-size:.9rem;background:var(--bg);border-radius:0 6px 6px 0}
+.predict summary{cursor:pointer;color:var(--sig);font-size:.85rem;margin-top:4px}
+.tag{font-family:var(--f-mono);font-size:.7rem;color:var(--muted);border:1px dashed var(--rule);padding:1px 6px;border-radius:4px;white-space:nowrap}
+.grid2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;grid-column:1/-1}
+.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;grid-column:1/-1}
+@media (max-width:820px){.grid2,.grid3{grid-template-columns:minmax(0,1fr)}}
+.cell{display:flex;flex-direction:column;gap:8px;min-width:0}
+.cap{font-size:.8rem;color:var(--muted);margin:0}
+.full{grid-column:1/-1}
+.mat{display:inline-grid;grid-template-columns:auto auto;gap:0 12px;padding:1px 7px;border-left:2px solid var(--ink);border-right:2px solid var(--ink);text-align:right;font-family:var(--f-mono);font-size:.84rem;font-variant-numeric:tabular-nums;vertical-align:middle}
+.mats{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;font-family:var(--f-mono);font-size:.84rem}
+.cin{color:var(--in);font-weight:500} .cout{color:var(--out);font-weight:500} .csig{color:var(--sig);font-weight:500}
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>B4 PCA lab</h1>
+    <p class="lede">PCA is B1 Part 3 run as a pipeline: <b>centre → (z-score) → rotate onto the eigenvectors of S → (whiten)</b>. Watch S at every step. Only the <b>rotate</b> step removes the covariance.</p>
+    <p class="src">Source: EEEE3116 B4 “Principal Component Analysis” sl.3–6, 21–35, 41–45, using the slides' 5 voltage points. Covariance uses ÷(N−1), as MATLAB's <code>cov</code> does. Anything not from the slides is tagged <span class="tag">added</span>.</p>
+  </header>
+
+  <section class="bar strip" aria-label="Key equations">
+    <div class="eqline"><b>Covariance</b>: S = (1/(N−1)) Σ (centred point)(centred point)ᵀ &nbsp;(“S = XXᵀ” on the slides means X centred, then ÷(N−1)) <span class="tag">sl.6, 29</span></div>
+    <div class="eqline"><b>Rotate</b>: Y = A X, &nbsp;rows of A = eigenvectors of S_x (PC1 first) <span class="tag">sl.31, 34</span></div>
+    <div class="eqline"><b>Before → after</b>: S_y = A S_x Aᵀ = diag(λ₁, λ₂) &nbsp;(A3: S_x = X K Xᵀ, A = Xᵀ ⇒ S_y = K) <span class="tag">sl.33–35</span></div>
+    <div class="eqline"><b>Whiten</b>: divide each PC coordinate by √λᵢ ⇒ S = I <span class="tag">sl.45</span></div>
+    <details><summary class="cap" style="cursor:pointer">Words: slide term → what it means</summary>
+      <dl class="read" style="margin-top:6px">
+        <dt>PC1, PC2</dt><dd>the new axes: unit eigenvectors of S, biggest λ first. B1's x′, B2's B₁</dd>
+        <dt>eigenvalue λ</dt><dd>the variance of the data along that PC</dd>
+        <dt>S_x / S_y</dt><dd>covariance <b>before</b> rotating (correlated) / <b>after</b> (diagonal)</dd>
+        <dt>coeff</dt><dd>MATLAB: the PCs as <b>columns</b>. A = coeffᵀ</dd>
+        <dt>score</dt><dd>MATLAB: one <b>row per point</b>, its coordinates on PC1, PC2</dd>
+        <dt>latent</dt><dd>MATLAB: the λ's, largest first</dd>
+        <dt>decorrelate</dt><dd>rotate onto the PCs, so cov = 0</dd>
+        <dt>whiten</dt><dd>decorrelate, then ÷√λ, so every variance = 1 and S = I</dd>
+      </dl></details>
+  </section>
+
+  <!-- ============ PANEL 1 ============ -->
+  <section class="panel" aria-labelledby="h1p">
+    <header>
+      <h2 id="h1p">1 · The pipeline, with S at every step</h2>
+      <p class="note">Step through. The ellipse is the data's spread (2σ) read from S. Its long axis is <span class="cin">PC1</span> and its short axis is <span class="cout">PC2</span>. When the ellipse lines up with the plot's axes, cov = 0.</p>
+    </header>
+    <div class="cell">
+      <div class="plot sq"><canvas id="c1" aria-label="Data at the current pipeline step, with covariance ellipse"></canvas></div>
+      <div class="legend"><span><span class="sw" style="background:var(--in)"></span>PC1 of current S</span><span><span class="sw" style="background:var(--out)"></span>PC2 of current S</span><span><span class="sw" style="background:var(--sig)"></span>2σ ellipse</span><span><span class="sw" style="background:var(--ink)"></span>data</span></div>
+    </div>
+    <div class="side">
+      <div class="row" role="group" aria-label="Pipeline step">
+        <button data-st="0">1 raw</button><button data-st="1">2 centre</button><button data-st="2">3 z-score</button><button data-st="3">4 rotate</button><button data-st="4">5 whiten</button>
+      </div>
+      <label class="chk"><input type="checkbox" id="zon"> do step 3 (z-score, optional on sl.43)</label>
+      <div class="sliders">
+        <label for="s1t">θ</label><input id="s1t" type="range" min="0" max="180" step="0.1" value="41.5"><output id="o1t"></output>
+      </div>
+      <div class="row"><button id="snap">θ → PC1 of S_x</button><button id="zero">θ = 0 (no rotation)</button></div>
+      <p class="note" id="what"></p>
+      <div id="mats1" class="mats"></div>
+      <dl class="read" id="r1"></dl>
+      <div class="predict">Go to <b>2 centre</b>: S_x has 13.85 off the diagonal. Then go to <b>4 rotate</b> with θ at PC1. Predict S_y first.
+        <details><summary>check</summary><p class="note">diag(27.954, 0.046): the eigenvalues, which is MATLAB's <code>latent</code>. A = Xᵀ, so A(XKXᵀ)Aᵀ = K. S_x was never diagonal: it's the <i>before</i>.</p></details></div>
+      <div class="predict">Set <b>θ = 0</b> (skip the rotation), then go to <b>5 whiten</b>. Is S = I?
+        <details><summary>check</summary><p class="note">No. The diagonal is 1, but the off-diagonal is ρ = 0.997. Dividing by σ only rescales; it can't remove covariance. Only rotating onto the PCs does that, which is why whitening comes <i>after</i> PCA.</p></details></div>
+      <div class="predict">Tick <b>z-score</b>, then snap. Where does PC1 point now? <span class="tag">added</span>
+        <details><summary>check</summary><p class="note">45°. z-scoring makes S = [1 ρ; ρ 1], and any such matrix has its PCs at 45°, with λ = 1 ± ρ = 1.997, 0.003. So z-scoring changes the PCs, but ÷N vs ÷(N−1) doesn't (that only scales every λ by the same factor).</p></details></div>
+    </div>
+  </section>
+
+  <!-- ============ PANEL 2 ============ -->
+  <section class="panel" aria-labelledby="h2p">
+    <header>
+      <h2 id="h2p">2 · MATLAB's outputs, on the picture</h2>
+      <p class="note"><code>[coeff, score, latent] = pca(data)</code> on the slides' data (sl.22–28), and the two-step route <code>cov</code> → <code>eig</code> (sl.29–30). Pick a point: its <b>score</b> row is its two shadows on PC1 and PC2.</p>
+    </header>
+    <div class="cell">
+      <div class="plot sq"><canvas id="c2" aria-label="Centred data with PC axes and the selected point's shadows"></canvas></div>
+      <div class="legend"><span><span class="sw" style="background:var(--in)"></span>PC1 = coeff col 1</span><span><span class="sw" style="background:var(--out)"></span>PC2 = coeff col 2</span><span><span class="sw" style="background:var(--sig)"></span>selected point</span></div>
+    </div>
+    <div class="side">
+      <div class="row" role="group" aria-label="Pick a point"><span class="cap">point:</span>
+        <button data-pt="0">1</button><button data-pt="1">2</button><button data-pt="2">3</button><button data-pt="3">4</button><button data-pt="4">5</button></div>
+      <div id="mats2" class="mats"></div>
+      <dl class="read" id="r2"></dl>
+      <div class="row"><button id="eigbtn" aria-pressed="false">show the eig route (sl.29–30)</button></div>
+      <div id="eigbox" hidden>
+        <div id="mats3" class="mats"></div>
+        <p class="note" id="eignote"></p>
+      </div>
+      <div class="predict">Before opening the eig route: <code>eig</code> returns D = diag(0.0461, 27.9539). Which column of V is PC1?
+        <details><summary>check</summary><p class="note">Column 2. <code>eig</code> sorts λ smallest first, and PC1 goes with the biggest λ. That column is (−0.7489, −0.6626) = −PC1: the same axis with the arrow flipped, so it is still a valid eigenvector.</p></details></div>
+      <p class="note"><b>Layouts.</b> Notes (P×N, points in columns): Y = A X with A = coeffᵀ, so Y is 2×5. MATLAB (N×P, points in rows): score = data′·coeff, which is 5×2 = Yᵀ. Same numbers, transposed.</p>
+    </div>
+  </section>
+</div>
+<script>
+(()=>{
+const $=id=>document.getElementById(id);
+const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const f=(v,d=3)=>{if(!isFinite(v))return '∞';const s=Math.abs(v)<1e-12?0:v;return s.toFixed(d).replace(/^-(0\.0*)$/,'$1')};
+const rad=d=>d*Math.PI/180, deg=r=>r*180/Math.PI;
+const dotp=(a,b)=>a.reduce((s,v,i)=>s+v*b[i],0);
+
+/* ---------- drawing helpers (same as the B1 lab) ---------- */
+function prep(cv){const r=cv.getBoundingClientRect(),d=window.devicePixelRatio||1,w=Math.max(20,r.width),h=Math.max(20,r.height);
+  const W=Math.round(w*d),H=Math.round(h*d);if(cv.width!==W||cv.height!==H){cv.width=W;cv.height=H;}
+  const g=cv.getContext('2d');g.setTransform(d,0,0,d,0,0);g.clearRect(0,0,w,h);return{g,w,h};}
+function view(w,h,x0,x1,y0,y1,equal){const L=44,R=w-10,T=10,B=h-34;
+  if(equal){const s=Math.min((R-L)/(x1-x0),(B-T)/(y1-y0)),cx=(x0+x1)/2,cy=(y0+y1)/2;x0=cx-(R-L)/s/2;x1=cx+(R-L)/s/2;y0=cy-(B-T)/s/2;y1=cy+(B-T)/s/2;}
+  return{x0,x1,y0,y1,L,R,T,B,X:x=>L+(x-x0)/(x1-x0)*(R-L),Y:y=>B-(y-y0)/(y1-y0)*(B-T)};}
+function nice(r){const t=r/5,p=Math.pow(10,Math.floor(Math.log10(t))),m=t/p;return(m<1.5?1:m<3.5?2:m<7.5?5:10)*p;}
+function axes(g,v,xl,yl){g.save();g.font='11px "IBM Plex Mono",monospace';g.lineWidth=1;
+  const sx=nice(v.x1-v.x0),sy=nice(v.y1-v.y0);g.fillStyle=css('--muted');
+  for(let x=Math.ceil(v.x0/sx)*sx;x<=v.x1+1e-9;x+=sx){const X=v.X(x);g.strokeStyle=css('--grid');g.beginPath();g.moveTo(X,v.T);g.lineTo(X,v.B);g.stroke();g.textAlign='center';g.fillText(+x.toFixed(6),X,v.B+13);}
+  for(let y=Math.ceil(v.y0/sy)*sy;y<=v.y1+1e-9;y+=sy){const Y=v.Y(y);g.strokeStyle=css('--grid');g.beginPath();g.moveTo(v.L,Y);g.lineTo(v.R,Y);g.stroke();g.textAlign='right';g.fillText(+y.toFixed(6),v.L-4,Y+4);}
+  g.strokeStyle=css('--rule');g.strokeRect(v.L,v.T,v.R-v.L,v.B-v.T);
+  g.textAlign='center';g.fillText(xl,(v.L+v.R)/2,v.B+28);
+  g.save();g.translate(11,(v.T+v.B)/2);g.rotate(-Math.PI/2);g.fillText(yl,0,0);g.restore();g.restore();}
+function clip(g,v){g.save();g.beginPath();g.rect(v.L,v.T,v.R-v.L,v.B-v.T);g.clip();}
+function line(g,x1,y1,x2,y2,col,w=1.5,dash){g.strokeStyle=col;g.lineWidth=w;g.setLineDash(dash||[]);g.beginPath();g.moveTo(x1,y1);g.lineTo(x2,y2);g.stroke();g.setLineDash([]);}
+function dot(g,x,y,col,r=4,hollow){g.beginPath();g.arc(x,y,r,0,7);if(hollow){g.strokeStyle=col;g.lineWidth=1.5;g.stroke();}else{g.fillStyle=col;g.fill();}}
+function arrow(g,x1,y1,x2,y2,col,w=2,dash){line(g,x1,y1,x2,y2,col,w,dash);if(Math.hypot(x2-x1,y2-y1)<3)return;const a=Math.atan2(y2-y1,x2-x1),h=8;g.fillStyle=col;g.beginPath();g.moveTo(x2,y2);g.lineTo(x2-h*Math.cos(a-.4),y2-h*Math.sin(a-.4));g.lineTo(x2-h*Math.cos(a+.4),y2-h*Math.sin(a+.4));g.closePath();g.fill();}
+function label(g,x,y,t,col){g.save();g.font='12px "IBM Plex Mono",monospace';g.fillStyle=col;g.fillText(t,x,y);g.restore();}
+function dl(el,rows){el.innerHTML=rows.map(([k,v])=>`<dt>${k}</dt><dd>${v}</dd>`).join('');}
+function press(sel,attr,val){document.querySelectorAll(sel).forEach(b=>b.setAttribute('aria-pressed',b.getAttribute(attr)===val?'true':'false'));}
+/* full-length line through point p along direction u */
+function axisLine(g,v,p,u,col,w=1.5,dash){const L=40;line(g,v.X(p[0]-L*u[0]),v.Y(p[1]-L*u[1]),v.X(p[0]+L*u[0]),v.Y(p[1]+L*u[1]),col,w,dash);}
+
+/* ---------- data and maths ---------- */
+const DATA=[[0,2],[3,5],[5,6],[8,9],[10,11]];   // B4 sl.3-4, 22
+const N=DATA.length;
+const mean=P=>[P.reduce((s,p)=>s+p[0],0)/P.length,P.reduce((s,p)=>s+p[1],0)/P.length];
+function cov(P){const m=mean(P);let a=0,b=0,d=0;for(const p of P){const u=p[0]-m[0],v=p[1]-m[1];a+=u*u;b+=u*v;d+=v*v;}const n=P.length-1;return[[a/n,b/n],[b/n,d/n]];}
+/* symmetric 2x2 eigen: lambda1 >= lambda2, PC1 angle */
+function eig2(S){const a=S[0][0],b=S[0][1],d=S[1][1],m=(a+d)/2,r=Math.hypot((a-d)/2,b);
+  const th=0.5*Math.atan2(2*b,a-d);return{l1:m+r,l2:m-r,th,u1:[Math.cos(th),Math.sin(th)],u2:[-Math.sin(th),Math.cos(th)]};}
+const rot=t=>[[Math.cos(t),Math.sin(t)],[-Math.sin(t),Math.cos(t)]];
+const apply=(A,p)=>[A[0][0]*p[0]+A[0][1]*p[1],A[1][0]*p[0]+A[1][1]*p[1]];
+const mm=(A,B)=>[[A[0][0]*B[0][0]+A[0][1]*B[1][0],A[0][0]*B[0][1]+A[0][1]*B[1][1]],[A[1][0]*B[0][0]+A[1][1]*B[1][0],A[1][0]*B[0][1]+A[1][1]*B[1][1]]];
+const tr=A=>[[A[0][0],A[1][0]],[A[0][1],A[1][1]]];
+/* MATLAB pca sign rule: the largest-magnitude entry of each coeff column is positive */
+const fixSign=u=>{const k=Math.abs(u[0])>=Math.abs(u[1])?0:1;return u[k]<0?[-u[0],-u[1]]:u;};
+
+function mat(rows,{d=4,cls=null,label=''}={}){const c=rows[0].length;
+  const cells=rows.map((r,i)=>r.map((v,j)=>{const k=cls?cls(i,j):'';return `<span class="${k}">${f(v,d)}</span>`}).join('')).join('');
+  return `${label?`<span>${label}</span>`:''}<span class="mat" style="grid-template-columns:repeat(${c},auto)">${cells}</span>`;}
+const offd=(i,j)=>i!==j?'csig':'';
+
+/* ---------- drawing a scatter with ellipse and PC lines ---------- */
+function scatter(cv,P,S,opt={}){const {g,w,h}=prep(cv);
+  const m=mean(P),E=eig2(S);let xs=P.map(p=>p[0]).concat([0]),ys=P.map(p=>p[1]).concat([0]);
+  // include the ellipse in the bounds
+  for(let t=0;t<6.3;t+=0.2){const e=[m[0]+2*(Math.sqrt(Math.max(E.l1,0))*Math.cos(t)*E.u1[0]+Math.sqrt(Math.max(E.l2,0))*Math.sin(t)*E.u2[0]),m[1]+2*(Math.sqrt(Math.max(E.l1,0))*Math.cos(t)*E.u1[1]+Math.sqrt(Math.max(E.l2,0))*Math.sin(t)*E.u2[1])];xs.push(e[0]);ys.push(e[1]);}
+  let x0=Math.min(...xs),x1=Math.max(...xs),y0=Math.min(...ys),y1=Math.max(...ys);const pad=0.12*Math.max(x1-x0,y1-y0,1e-6);
+  const v=view(w,h,x0-pad,x1+pad,y0-pad,y1+pad,true);axes(g,v,opt.xl||'x',opt.yl||'y');clip(g,v);
+  // origin cross
+  line(g,v.X(0),v.T,v.X(0),v.B,css('--rule'),1);line(g,v.L,v.Y(0),v.R,v.Y(0),css('--rule'),1);
+  // ellipse
+  g.strokeStyle=css('--sig');g.lineWidth=1.5;g.beginPath();
+  for(let i=0;i<=120;i++){const t=i/120*2*Math.PI,a=2*Math.sqrt(Math.max(E.l1,0))*Math.cos(t),b=2*Math.sqrt(Math.max(E.l2,0))*Math.sin(t);
+    const X=v.X(m[0]+a*E.u1[0]+b*E.u2[0]),Y=v.Y(m[1]+a*E.u1[1]+b*E.u2[1]);i?g.lineTo(X,Y):g.moveTo(X,Y);}g.stroke();
+  // PC lines through the mean
+  const L1=2.4*Math.sqrt(Math.max(E.l1,0)),L2=Math.max(2.4*Math.sqrt(Math.max(E.l2,0)),0.15*L1);
+  line(g,v.X(m[0]-L1*E.u1[0]),v.Y(m[1]-L1*E.u1[1]),v.X(m[0]+L1*E.u1[0]),v.Y(m[1]+L1*E.u1[1]),css('--in'),2);
+  line(g,v.X(m[0]-L2*E.u2[0]),v.Y(m[1]-L2*E.u2[1]),v.X(m[0]+L2*E.u2[0]),v.Y(m[1]+L2*E.u2[1]),css('--out'),2);
+  if(opt.extra)opt.extra(g,v);
+  P.forEach((p,i)=>{dot(g,v.X(p[0]),v.Y(p[1]),opt.sel===i?css('--sig'):css('--ink'),opt.sel===i?6:4);label(g,v.X(p[0])+6,v.Y(p[1])-6,String(i+1),css('--muted'));});
+  g.restore();return{v,E,m};}
+
+/* ================= PANEL 1: pipeline ================= */
+let st=1;
+const NAMES=['raw','centred','z-scored','rotated','whitened'];
+function stages(theta){const out=[];const zon=$('zon').checked;
+  out[0]=DATA.map(p=>p.slice());
+  const m=mean(DATA);out[1]=DATA.map(p=>[p[0]-m[0],p[1]-m[1]]);
+  const S1=cov(out[1]);const sd=[Math.sqrt(S1[0][0]),Math.sqrt(S1[1][1])];
+  out[2]=zon?out[1].map(p=>[p[0]/sd[0],p[1]/sd[1]]):out[1];
+  const A=rot(rad(theta));out[3]=out[2].map(p=>apply(A,p));
+  const S3=cov(out[3]);const s3=[Math.sqrt(S3[0][0]),Math.sqrt(S3[1][1])];
+  out[4]=out[3].map(p=>[p[0]/s3[0],p[1]/s3[1]]);
+  return{out,A,sd,s3,zon};}
+let thetaVal=null;
+function draw1(){if(thetaVal===null)thetaVal=+$('s1t').value;const theta=thetaVal;$('o1t').textContent=f(theta,1)+'°';
+  press('[data-st]','data-st',String(st));
+  const R=stages(theta),P=R.out[st],S=cov(P),E=eig2(S);
+  const Sx=cov(R.out[2]),Ex=eig2(Sx);let thPC=deg(Ex.th);if(thPC<0)thPC+=180;
+  const rotated=st>=3;
+  scatter($('c1'),P,S,{xl:rotated?`axis 1 (θ = ${f(theta,1)}°)`:(st===2&&R.zon?'z₁':'voltage 1'),yl:rotated?'axis 2':(st===2&&R.zon?'z₂':'voltage 2')});
+  const desc=[
+    'The slides\' data as measured. The means are not 0, so the cloud sits away from the origin.',
+    'Subtract the means (5.2, 6.6). S is unchanged (covariance is already measured about the mean), but now the PCs pass through the origin. This S is S_x.',
+    R.zon?'Divide each variable by its own σ (√15.7, √12.3). Both variances become 1, but the off-diagonal becomes ρ = 0.997: still correlated.':'Skipped (tick the box to do it). It\'s optional on sl.43.',
+    'Rotate by A (rows = the new axes at θ). S_y = A S_x Aᵀ. At θ = PC1 the off-diagonal is 0 and the diagonal is λ₁, λ₂.',
+    'Divide each rotated coordinate by its own σ. At θ = PC1 that\'s √λ₁, √λ₂, giving S = I.'][st];
+  $('what').innerHTML=`<b>Step ${st+1}: ${NAMES[st]}.</b> ${desc}`;
+  const c=S[0][1],isI=Math.abs(S[0][0]-1)<1e-6&&Math.abs(S[1][1]-1)<1e-6&&Math.abs(c)<1e-6;
+  let html=mat(S,{label:'S =',cls:offd});
+  if(st===3){html=mat(R.A,{label:'S_y = A S_x Aᵀ:&nbsp; A ='})+mat(Sx,{label:'S_x =',cls:offd})+mat(S,{label:'→ S_y =',cls:offd});}
+  $('mats1').innerHTML=html;
+  const rows=[
+    ['off-diagonal',`${f(c)} ${Math.abs(c)<1e-6?'<span class="pill on">cov = 0</span>':'<span class="pill bad">correlated</span>'} ${isI?'<span class="pill on">S = I</span>':''}`],
+    ['total variance',`trace = ${f(S[0][0])} + ${f(S[1][1])} = <b>${f(S[0][0]+S[1][1])}</b>`],
+    ['λ of this S',`${f(E.l1)}, ${f(E.l2)} &nbsp;(PC1 holds ${f(100*E.l1/(E.l1+E.l2),2)} %)`],
+    ['PC1 of S_x',`${f(thPC,2)}° &nbsp;(θ is ${f(theta,1)}°)`]];
+  if(st===4)rows.push(['divided by',`σ of axis 1 = ${f(R.s3[0])}, σ of axis 2 = ${f(R.s3[1])}${Math.abs(theta-thPC)<0.06?' &nbsp;(= √λ₁, √λ₂)':''}`]);
+  dl($('r1'),rows);}
+document.querySelectorAll('[data-st]').forEach(b=>b.onclick=()=>{st=+b.dataset.st;draw1();});
+$('s1t').oninput=()=>{thetaVal=+$('s1t').value;draw1();};$('zon').onchange=()=>{snap();};
+function snap(){const R=stages(0),Ex=eig2(cov(R.out[2]));let t=deg(Ex.th);if(t<0)t+=180;$('s1t').value=t.toFixed(1);thetaVal=t;draw1();}
+$('snap').onclick=snap;$('zero').onclick=()=>{$('s1t').value=0;thetaVal=0;draw1();};
+
+/* ================= PANEL 2: MATLAB outputs ================= */
+let sel=0;
+const m0=mean(DATA),C=DATA.map(p=>[p[0]-m0[0],p[1]-m0[1]]),Sx=cov(C),E0=eig2(Sx);
+const pc1=fixSign(E0.u1),pc2=fixSign(E0.u2);
+const coeff=[[pc1[0],pc2[0]],[pc1[1],pc2[1]]];
+const score=C.map(p=>[p[0]*pc1[0]+p[1]*pc1[1],p[0]*pc2[0]+p[1]*pc2[1]]);
+function draw2(){press('[data-pt]','data-pt',String(sel));
+  const p=C[sel],s=score[sel];
+  scatter($('c2'),C,Sx,{sel,xl:'voltage 1 − 5.2',yl:'voltage 2 − 6.6',extra:(g,v)=>{
+    const a=[s[0]*pc1[0],s[0]*pc1[1]],b=[s[1]*pc2[0],s[1]*pc2[1]];
+    line(g,v.X(p[0]),v.Y(p[1]),v.X(a[0]),v.Y(a[1]),css('--in'),1,[4,4]);line(g,v.X(p[0]),v.Y(p[1]),v.X(b[0]),v.Y(b[1]),css('--out'),1,[4,4]);
+    arrow(g,v.X(0),v.Y(0),v.X(a[0]),v.Y(a[1]),css('--in'),3);arrow(g,v.X(0),v.Y(0),v.X(b[0]),v.Y(b[1]),css('--out'),3);}});
+  const rowcls=(i)=>i===sel?'csig':'';
+  $('mats2').innerHTML=mat(C,{d:1,label:'data′ =',cls:(i)=>rowcls(i)})
+    +mat(coeff,{label:'coeff =',cls:(i,j)=>j===0?'cin':'cout'})
+    +mat(score,{label:'score =',cls:(i)=>rowcls(i)})
+    +mat([[E0.l1],[E0.l2]],{label:'latent ='});
+  dl($('r2'),[
+    ['point',`${sel+1}: centred (${f(p[0],1)}, ${f(p[1],1)})`],
+    ['<span class="cin">on PC1</span>',`${f(pc1[0],4)}·(${f(p[0],1)}) + ${f(pc1[1],4)}·(${f(p[1],1)}) = <b>${f(s[0],4)}</b>`],
+    ['<span class="cout">on PC2</span>',`${f(pc2[0],4)}·(${f(p[0],1)}) + ${f(pc2[1],4)}·(${f(p[1],1)}) = <b>${f(s[1],4)}</b>`],
+    ['variance of score cols',`${f(cov(score)[0][0],4)}, ${f(cov(score)[1][1],4)} = latent`],
+    ['latent sum',`${f(E0.l1)} + ${f(E0.l2)} = ${f(E0.l1+E0.l2)} = 15.7 + 12.3`]]);}
+document.querySelectorAll('[data-pt]').forEach(b=>b.onclick=()=>{sel=+b.dataset.pt;draw2();});
+/* eig route: V and D exactly as printed on sl.30 */
+const V=[[0.6626,-0.7489],[-0.7489,-0.6626]],Dm=[[0.0461,0],[0,27.9539]];
+$('mats3').innerHTML=mat(Sx,{label:'cov(x) =',cls:offd})+mat(V,{label:'V =',cls:(i,j)=>j===1?'cin':''})+mat(Dm,{label:'D =',cls:(i,j)=>i===1&&j===1?'cin':''});
+$('eignote').innerHTML='D is <b>ascending</b>, so PC1 (λ = 27.9539) is V\'s <span class="cin">column 2</span> = (−0.7489, −0.6626) = −1 × coeff\'s column 1. Column 1 of V = (0.6626, −0.7489) = −1 × coeff\'s column 2 (PC2).';
+$('eigbtn').onclick=()=>{const on=$('eigbox').hidden;$('eigbox').hidden=!on;$('eigbtn').setAttribute('aria-pressed',on?'true':'false');};
+
+function all(){draw1();draw2();}
+addEventListener('resize',all);
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change',all);
+if(document.fonts&&document.fonts.ready)document.fonts.ready.then(all);
+snap();draw2();
+})();
+</script>

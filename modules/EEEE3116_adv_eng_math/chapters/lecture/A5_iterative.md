@@ -4,7 +4,12 @@
 **Concepts and gaps** live in the [A5 iterative lab](https://claude.ai/artifact/8ANFiz2BFrzNQd6iMsey6v) (`A5_iterative_lab.html`, same folder).
 Progress: [`progress.md`](progress.md).
 
-Sources: Parts 1–5 use the practical session's problem (`drills/iterative_revolution`), kept exactly as given. The algorithms are A5 sl.25 (steepest descent), sl.27 (minimal residual), sl.29 (CG, with the typo fixed: see the card), and sl.33 (Jacobi). Gauss-Seidel is "search the web" on sl.33, so its form here is the standard one *(added)*. Part 6 runs sl.19–20's power method on the same A, from a start vector I picked *(added)*. Part 7 uses sl.9 and sl.11. Part 8 runs the sl.52–53 block-LU route on a small chain I made up *(added numbers)*. Every number was recomputed with exact fractions in Python (2026-11-22).
+<details>
+<summary>Note: sources</summary>
+
+Parts 1–5 use the practical session's problem (`drills/iterative_revolution`), kept exactly as given. The algorithms are A5 sl.25 (steepest descent), sl.27 (minimal residual), sl.29 (CG, with the typo fixed: see the card), and sl.33 (Jacobi). Gauss-Seidel is "search the web" on sl.33, so its form here is the standard one *(added)*. Part 6 runs sl.19–20's power method on the same A, from a start vector I picked *(added)*. Part 7 uses sl.9 and sl.11. Part 8 runs the sl.52–53 block-LU route on a small chain I made up *(added numbers)*. Every number was recomputed with exact fractions in Python (2026-11-22).
+
+</details>
 
 ---
 
@@ -21,7 +26,12 @@ Each iterative method repeats one loop: **residual → direction → step length
 | Gauss-Seidel *(added form)* | sl.33 | same split, rows in order | none | as Jacobi, but each row **uses the x values already updated in this sweep** |
 | Power method | sl.19–20 | — | — | $\mathbf x_{k} = \mathbf A\mathbf x_{k-1}$ (finds the dominant eigenvector, not a solve) |
 
+<details>
+<summary>Note: typo on sl.29</summary>
+
 **Typo on sl.29:** the slide prints $\mathbf x_{k+1} = \mathbf x_k + \alpha_k\mathbf r_k$ and $\mathbf p_{k+1} = \mathbf r_k + \beta_k\mathbf p_k$. Use $\alpha_k\mathbf{p}_k$ and $\mathbf r_{k+1}$, as in the card. With the slide's version CG doesn't finish in 2 steps.
+
+</details>
 
 **Convergence conditions (sl.25, 27, 30):** SD needs A symmetric and positive definite. MRA needs A positive definite only (sl.27 crosses out "symmetric"). CG on a symmetric positive definite A reaches the exact answer in at most N steps *in exact arithmetic*. In practice rounding stops that happening on real problems (sl.30).
 
@@ -164,10 +174,15 @@ $$\begin{aligned}
 
 $$\mathbf r_2 = \begin{bmatrix}\tfrac{1}{126} \\ \tfrac{1}{63}\end{bmatrix} = \frac{1}{126}\begin{bmatrix}1\\2\end{bmatrix},\qquad \|\mathbf r_2\| \approx 0.0177$$
 
+<details>
+<summary>Note: what to notice (added)</summary>
+
 **What to notice** *(added observations, checked)*:
 - $\mathbf r_1^T\mathbf r_0 = \left(-\tfrac{1}{9}\right)(1) + \left(\tfrac{1}{18}\right)(2) = 0$. Each new direction is at **90°** to the last one. That's the zig-zag.
 - $\mathbf r_2 = \tfrac{1}{126}\mathbf r_0$ points the same way as $\mathbf r_0$. So iteration 2 repeats iteration 0's direction, just 126× smaller. SD never lands exactly. It shrinks the error by the same factor every two steps.
 - Step lengths alternate $d = \tfrac{5}{18}, \tfrac57, \tfrac{5}{18}, \tfrac57, \dots$ (matches the practical's log).
+
+</details>
 
 ---
 
@@ -258,7 +273,12 @@ $$\begin{aligned}
 
 $$\mathbf r_2 = \begin{bmatrix}\tfrac{1}{325} \\ \tfrac{2}{325}\end{bmatrix},\qquad \|\mathbf r_2\| \approx 0.0069\quad(\text{SD had } 0.0177)$$
 
+<details>
+<summary>Note: MRA vs SD here</summary>
+
 MRA's steps are almost the same size as SD's here ($\tfrac{18}{65}$ vs $\tfrac{5}{18}$). The two only differ much when A is far from symmetric or badly stretched.
+
+</details>
 
 ---
 
@@ -357,6 +377,9 @@ $$\mathbf x_2 = \begin{bmatrix}\tfrac{1}{5} \\ \tfrac{3}{5}\end{bmatrix} = \math
 
 **Exact answer in N = 2 steps** for this 2×2 (sl.30).
 
+<details>
+<summary>Note: why CG lands in 2 steps (added check)</summary>
+
 **Why it lands** *(added check)*: the two directions are **A-conjugate**, meaning $\mathbf p_0^T\mathbf A\mathbf p_1 = 0$:
 
 $$\begin{aligned}
@@ -364,6 +387,8 @@ $$\begin{aligned}
 \end{aligned}$$
 
 Plain SD has $\mathbf r_1^T\mathbf r_0 = 0$ (perpendicular in ordinary space), and that isn't enough. "A-perpendicular" is the version that matches the bowl's stretch. A second step along an A-conjugate direction can't undo the first step's progress, so two directions finish a 2-D problem. Picture this in lab panel 5.
+
+</details>
 
 ---
 
@@ -444,7 +469,12 @@ $$\mathbf r^{(3)} = \begin{bmatrix}-\tfrac{1}{9} \\ -\tfrac{1}{12}\end{bmatrix},
 
 $$x_0^{(k+1)} = \frac{1 - x_1^{(k)}}{2},\qquad x_1^{(k+1)} = \frac{2 - x_0^{(\mathbf{k+1})}}{3}$$
 
+<details>
+<summary>Note: matrix form of Gauss-Seidel (added)</summary>
+
 Matrix form *(added)*: split $\mathbf A = \mathbf L_* + \mathbf D + \mathbf U_*$ (strictly lower, diagonal, strictly upper) and solve $(\mathbf D + \mathbf L_*)\mathbf x_{k+1} = \mathbf b - \mathbf U_*\mathbf x_k$. That's a lower-triangular solve, which is still easy (forward substitution, A2).
+
+</details>
 
 ### Sweep 1 (starts from $\mathbf x^{(0)} = \begin{bmatrix}0 \\ 0\end{bmatrix}$)
 
@@ -503,10 +533,15 @@ r_{1} &= 2 - 2 = 0
 
 $$\mathbf r^{(3)} = \begin{bmatrix}-\tfrac{1}{72} \\ 0\end{bmatrix},\qquad \|\mathbf r\| \approx 0.0139$$
 
+<details>
+<summary>Note: what to notice (added)</summary>
+
 **What to notice** *(added)*:
 - GS's $r_1$ is **0 after every sweep**. Row 1 was just solved exactly using the newest $x_0$.
 - Residual sizes: Jacobi 0.833 → 0.373 → 0.139. Gauss-Seidel 0.500 → 0.083 → 0.014, shrinking ×\tfrac{1}{6} every sweep.
 - Gauss-Seidel loses Jacobi's "all rows at once" parallelism: row 1 has to wait for row 0.
+
+</details>
 
 ### Scoreboard: iterations until $\|\mathbf r\|/\|\mathbf b\| < 10^{-6}$ (matches the practical's table)
 
@@ -581,9 +616,14 @@ $$\begin{aligned}
 | 7 | (2250, 3625) | 1.6111 | 3.6180 |
 | 8 | (8125, 13125) | 1.6154 | 3.6180 |
 
+<details>
+<summary>Note: what the table shows</summary>
+
 - The shape heads to **1.618**, the dominant eigenvector. The other part shrinks relative to it as $(k_1/k_0)^N = (0.382)^N$.
 - The growth heads to **3.618 = $k_0$**. That's sl.21's point: the size scales as $k_0^N$, so you can read off the eigenvalue too.
 - If $k_0 < 1$ the vector would **shrink** each step but still turn toward the same shape. The shape comes from the *ratio* of the k's, not from their size.
+
+</details>
 
 ---
 
@@ -602,7 +642,12 @@ The slide stores three lists, read row by row:
 | 2 | 2 | 0, 1 | $B_{20}, B_{21}$ |
 | 3 | 1 | 3 | $B_{33}$ |
 
+<details>
+<summary>Note: textbook CSR (added)</summary>
+
 (Textbook CSR stores running totals of the counts, 0, 1, 2, 4, 5, instead of the counts themselves. It's the same information *(added)*.)
+
+</details>
 
 ### 7b. Write the CSR of a 1D chain (tridiagonal, like sl.37) and multiply with it *(added numbers)*
 
@@ -634,7 +679,12 @@ N = 10⁸ unknowns, each connected to ~7 (so ~7N non-zeros). The slide's sizes: 
 
 - **Dense:** $N^2 = 10^{16}$ values × 16 B $= 1.6\times10^{17}$ B $= 160$ PB
 - **CSR:** counts $10^8 × 4$ B $= 0.4$ GB, plus positions $7\times10^8 × 4$ B $= 2.8$ GB, plus values $7\times10^8 × 16$ B $= 11.2$ GB. Total $= 14.4\times10^9$ B $= 13.4$ GiB ✓ (the slide's 13.4 is in GiB)
+<details>
+<summary>Note: a real double is 8 B</summary>
+
 - Slide note: a real double is **8 B**. With 8 B: dense 80 PB, CSR $8.8\times10^9$ B $= 8.2$ GiB. The conclusion is the same: dense is impossible and sparse fits in a workstation.
+
+</details>
 
 ---
 
@@ -718,7 +768,12 @@ S &= \tilde{\mathbf D} - \left(\tfrac{4}{3}\right) = 2 - \left(\tfrac{4}{3}\righ
 
 **Dense solve** $S\,x_i = y_i$: $\;x_2 = x_i = \dfrac{3}{\tfrac{2}{3}} = \tfrac{9}{2}$
 
+<details>
+<summary>Note: size of S in general</summary>
+
 Here S is 1×1 because there's 1 interface node. On sl.50's grid S is (number of interface nodes)², which is dense but **much smaller than N×N**.
+
+</details>
 
 ### 8d. Back half (sl.53 bottom box), parallel again
 
@@ -745,7 +800,12 @@ x^c_0 &= \frac{\tfrac{11}{2} - \left(-1\right)\left(\tfrac{5}{2}\right)}{2} = \f
 
 **Check row 2:** $-x_1 + 2x_2 - x_3 = -4 + 9 - 4 = 1$ ✓
 
+<details>
+<summary>Note: where the parallelism is</summary>
+
 **Where the parallelism is:** every triangular solve ran on one block only (CPU a or CPU c). Only two things needed both CPUs: the interface sums ($y_i$ and S) and the one small dense solve. Ordinary LU (sl.48) builds row k from rows above it, so its rows can't be handed out to different CPUs.
+
+</details>
 
 
 ---

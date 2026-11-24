@@ -1,0 +1,409 @@
+<title>B2–B3 Basis Lab</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=Space+Grotesk:wght@500;600&display=swap">
+<style>
+/* Same graph-paper bench as the A- and B1-labs */
+:root{
+  --bg:#f3f6f7; --panel:#ffffff; --ink:#18222b; --muted:#5b6872; --rule:#d9e1e5; --grid:#e8eef1;
+  --in:#0f8a7e;      /* x′ axis, main direction, model line */
+  --out:#d0661b;     /* y′ axis, residuals, what gets dropped */
+  --sig:#6b4fc8;     /* covariance, accent */
+  --ok:#1d8a3a; --warn:#b42318;
+  --pos:rgba(29,138,58,.16); --neg:rgba(180,35,24,.16);
+  --f-display:"Space Grotesk",system-ui,sans-serif;
+  --f-body:"IBM Plex Sans",system-ui,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#11171c; --panel:#182027; --ink:#e4ecf0; --muted:#93a3ad; --rule:#2a353e; --grid:#1f2930;
+  --in:#3cc7b8; --out:#f39a52; --sig:#a993f5; --ok:#4cc46c; --warn:#ff7b6b;
+  --pos:rgba(76,196,108,.18); --neg:rgba(255,123,107,.18); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#11171c; --panel:#182027; --ink:#e4ecf0; --muted:#93a3ad; --rule:#2a353e; --grid:#1f2930;
+  --in:#3cc7b8; --out:#f39a52; --sig:#a993f5; --ok:#4cc46c; --warn:#ff7b6b;
+  --pos:rgba(76,196,108,.18); --neg:rgba(255,123,107,.18); color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.5;margin:0;
+  padding:24px max(16px,env(safe-area-inset-right,0px)) 48px max(16px,env(safe-area-inset-left,0px))}
+.wrap{max-width:1100px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+h1{font-family:var(--f-display);font-weight:600;font-size:1.7rem;margin:0;text-wrap:balance}
+h2{font-family:var(--f-display);font-weight:600;font-size:1.2rem;margin:0 0 4px;text-wrap:balance}
+h3{font-family:var(--f-display);font-weight:600;font-size:.98rem;margin:0}
+.lede{color:var(--muted);max-width:75ch;margin:4px 0 0}
+.src{font-family:var(--f-mono);font-size:.75rem;color:var(--muted);letter-spacing:.02em;margin:4px 0 0}
+.bar,.panel{background:var(--panel);border:1px solid var(--rule);border-radius:8px;padding:16px}
+.strip{display:flex;flex-direction:column;gap:6px}
+.eqline{font-family:var(--f-mono);font-size:.88rem;overflow-wrap:anywhere}
+.panel{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:20px}
+.panel>header{grid-column:1/-1}
+@media (max-width:820px){.panel{grid-template-columns:minmax(0,1fr)}}
+.plot{position:relative;width:100%;aspect-ratio:4/3}
+.plot.sq{aspect-ratio:1}
+canvas{width:100%;height:100%;display:block;border-radius:6px;background:var(--bg)}
+.side{display:flex;flex-direction:column;gap:12px;min-width:0}
+.sliders{display:grid;grid-template-columns:auto minmax(100px,1fr) 8ch;gap:4px 10px;align-items:center;font-family:var(--f-mono);font-size:.85rem}
+.sliders output{text-align:right;font-variant-numeric:tabular-nums}
+input[type=range]{width:100%;accent-color:var(--sig)}
+.row{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+button{font:inherit;font-size:.82rem;padding:5px 10px;border-radius:5px;border:1px solid var(--rule);background:var(--bg);color:var(--ink);cursor:pointer}
+button:hover{border-color:var(--muted)}
+button[aria-pressed="true"]{background:var(--sig);color:#fff;border-color:var(--sig)}
+button:focus-visible,input:focus-visible{outline:2px solid var(--sig);outline-offset:2px}
+label.chk{display:flex;gap:6px;align-items:center;font-size:.85rem}
+.read{font-family:var(--f-mono);font-size:.84rem;font-variant-numeric:tabular-nums;display:grid;grid-template-columns:auto minmax(0,1fr);gap:3px 14px;margin:0}
+.read dt{color:var(--muted)} .read dd{margin:0;overflow-wrap:anywhere}
+.pill{display:inline-block;font-family:var(--f-mono);font-size:.78rem;padding:2px 9px;border-radius:99px;border:1px solid currentColor}
+.pill.on{color:var(--ok)} .pill.off{color:var(--muted)} .pill.bad{color:var(--warn)}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:.8rem;color:var(--muted)}
+.sw{display:inline-block;width:14px;height:3px;border-radius:2px;vertical-align:middle;margin-right:5px}
+.note{font-size:.88rem;color:var(--muted);max-width:70ch;margin:0}
+.note b{color:var(--ink);font-weight:600}
+.predict{border-left:3px solid var(--sig);padding:6px 10px;font-size:.9rem;background:var(--bg);border-radius:0 6px 6px 0}
+.predict summary{cursor:pointer;color:var(--sig);font-size:.85rem;margin-top:4px}
+.tag{font-family:var(--f-mono);font-size:.7rem;color:var(--muted);border:1px dashed var(--rule);padding:1px 6px;border-radius:4px;white-space:nowrap}
+.grid2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;grid-column:1/-1}
+.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;grid-column:1/-1}
+@media (max-width:820px){.grid2,.grid3{grid-template-columns:minmax(0,1fr)}}
+.cell{display:flex;flex-direction:column;gap:8px;min-width:0}
+.cap{font-size:.8rem;color:var(--muted);margin:0}
+.full{grid-column:1/-1}
+.mat{display:inline-grid;grid-template-columns:auto auto;gap:0 12px;padding:1px 7px;border-left:2px solid var(--ink);border-right:2px solid var(--ink);text-align:right;font-family:var(--f-mono);font-size:.84rem;font-variant-numeric:tabular-nums;vertical-align:middle}
+.mats{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;font-family:var(--f-mono);font-size:.84rem}
+.cin{color:var(--in);font-weight:500} .cout{color:var(--out);font-weight:500} .csig{color:var(--sig);font-weight:500}
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>B2–B3 basis vectors and Gram–Schmidt lab</h1>
+    <p class="lede">One idea runs through every panel: <b>a coefficient is a shadow</b>. Dotting x with a unit axis tells you how much of x lies along that axis. That only adds back up to x when the axes are perpendicular. Gram–Schmidt is how you make them perpendicular.</p>
+    <p class="src">Source: EEEE3116 B2 “Data, vectors and transformations” sl.4–24, B3 “Gram–Schmidt” sl.6–21, and the Section B practical Q1. Anything not from the slides is tagged <span class="tag">added</span>.</p>
+  </header>
+
+  <section class="bar strip" aria-label="Key equations">
+    <div class="eqline"><b>Coefficient</b>: Xᵢ = Bᵢ · x = |x| cos(angle) &nbsp;(rows of B are the basis vectors), &nbsp;X = B x <span class="tag">B2 sl.20–22</span></div>
+    <div class="eqline"><b>Rebuild</b>: x = Bᵀ X = Σ Xᵢ Bᵢ, &nbsp;only because BBᵀ = I (orthonormal) <span class="tag">B2 sl.10–14</span></div>
+    <div class="eqline"><b>Compress</b>: keep the big Xᵢ, set the rest to 0, rebuild. &nbsp;Loss = Σ (dropped Xᵢ)² <span class="tag">B2 sl.23–24</span></div>
+    <div class="eqline"><b>Gram–Schmidt</b>: u₂ = v₂ − α u₁, &nbsp;α = (u₁·v₂)/(u₁·u₁) = the shadow of v₂ on u₁ <span class="tag">B3 sl.6–13</span></div>
+    <details><summary class="cap" style="cursor:pointer">Words: slide term → what it means</summary>
+      <dl class="read" style="margin-top:6px">
+        <dt>basis vector / function</dt><dd>one axis direction, length 1. A <b>row</b> of B (A3's eigenvectors were the <b>columns</b> of X)</dd>
+        <dt>transform coefficient</dt><dd>Xᵢ, how much of x lies along axis i. Same as A3's dᵢ</dd>
+        <dt>dot / scalar / inner product</dt><dd>Σ Bᵢ(k) x(k), the shadow length</dd>
+        <dt>“correlation” (B2 sl.21)</dt><dd>the <b>same</b> dot product. Big = x looks like Bᵢ, 0 = none of Bᵢ in x. (B1's ρ is this after z-scoring and ÷N <span class="tag">added</span>)</dd>
+        <dt>orthogonal / orthonormal</dt><dd>dot = 0 / dot = 0 and length 1, which gives B⁻¹ = Bᵀ</dd>
+        <dt>projection</dt><dd>the shadow as a vector: Xᵢ × Bᵢ</dd>
+      </dl></details>
+  </section>
+
+  <!-- ============ PANEL 1 ============ -->
+  <section class="panel" aria-labelledby="h1p">
+    <header>
+      <h2 id="h1p">1 · A coefficient is a shadow</h2>
+      <p class="note">Rotate the two axes. The dashed drops land on each axis: that's <span class="cin">X₁</span> and <span class="cout">X₂</span>. The dotted path adds X₁B₁ + X₂B₂ back up.</p>
+    </header>
+    <div class="cell">
+      <div class="plot sq"><canvas id="c1" aria-label="Point, rotated axes and shadows"></canvas></div>
+      <div class="legend"><span><span class="sw" style="background:var(--in)"></span>axis 1, B₁</span><span><span class="sw" style="background:var(--out)"></span>axis 2, B₂</span><span><span class="sw" style="background:var(--sig)"></span>rebuilt X₁B₁ + X₂B₂</span></div>
+    </div>
+    <div class="side">
+      <div class="row" role="group" aria-label="Presets"><span class="cap">preset:</span>
+        <button data-p1="sl7">(3,5) at 45° (sl.7)</button><button data-p1="sl9">(4,4) at 45° (sl.9)</button><button data-p1="std">θ = 0</button></div>
+      <div class="sliders">
+        <label for="s1x">x</label><input id="s1x" type="range" min="-6" max="8" step="0.5" value="3"><output id="o1x"></output>
+        <label for="s1y">y</label><input id="s1y" type="range" min="-6" max="8" step="0.5" value="5"><output id="o1y"></output>
+        <label for="s1t">θ</label><input id="s1t" type="range" min="0" max="180" step="1" value="45"><output id="o1t"></output>
+        <label for="s1g">gap <span class="tag">added</span></label><input id="s1g" type="range" min="30" max="150" step="1" value="90"><output id="o1g"></output>
+      </div>
+      <dl class="read" id="r1"></dl>
+      <div class="predict">Load <b>(4,4) at 45°</b>. Predict X₂ first.
+        <details><summary>check</summary><p class="note">0. (4,4) points at 45° and B₂ points at 135°: 90° apart, so no shadow. The point has <b>none</b> of axis 2 in it. That's what “correlation = 0” means on sl.21.</p></details></div>
+      <div class="predict">Set the <b>gap</b> to 60° (the axes are no longer perpendicular). Does the dotted path still land on x?
+        <details><summary>check</summary><p class="note">No. Each shadow now also contains part of the <i>other</i> axis, so adding them double-counts. That's why B must be orthogonal for x = BᵀX, and it's exactly the CDMA leak in panel 5. Gram–Schmidt (panel 3) is the fix.</p></details></div>
+    </div>
+  </section>
+
+  <!-- ============ PANEL 2 ============ -->
+  <section class="panel" aria-labelledby="h2p">
+    <header>
+      <h2 id="h2p">2 · Compression: rotate (free), then drop (costs)</h2>
+      <p class="note">sl.6's five points. Keep only X₁ for each point. The hollow dots are what you rebuild, and the <span class="cout">orange sticks</span> are the dropped X₂. <span class="tag">added: sl.23–24 applied to sl.6</span></p>
+    </header>
+    <div class="cell">
+      <div class="plot sq"><canvas id="c2" aria-label="Data, axis 1 and rebuilt points"></canvas></div>
+      <div class="legend"><span><span class="sw" style="background:var(--in)"></span>axis 1 (kept)</span><span><span class="sw" style="background:var(--out)"></span>dropped X₂</span><span><span class="sw" style="background:var(--ink)"></span>data</span></div>
+    </div>
+    <div class="side">
+      <div class="sliders"><label for="s2t">θ</label><input id="s2t" type="range" min="0" max="180" step="0.5" value="45"><output id="o2t"></output></div>
+      <div class="row"><button id="b2best">best θ</button><button id="b2c" aria-pressed="false">centre first (as B1)</button></div>
+      <div style="height:48px"><canvas id="c2b" aria-label="Energy split bar"></canvas></div>
+      <dl class="read" id="r2"></dl>
+      <div class="predict">Sweep θ all the way. Does the <b>total</b> energy ever change?
+        <details><summary>check</summary><p class="note">Never: 465 at every angle. Rotating only moves energy between the axes. The only loss is what you drop, so the best θ is the one that leaves the least on axis 2. That's the top eigenvector of DDᵀ (49.3° raw), or of B1's S (41.5° centred).</p></details></div>
+    </div>
+  </section>
+
+  <!-- ============ PANEL 3 ============ -->
+  <section class="panel" aria-labelledby="h3p">
+    <header>
+      <h2 id="h3p">3 · Gram–Schmidt: subtract the shadow</h2>
+      <p class="note">Step through it. Step 2 is panel 1's shadow again, this time of v₂ on u₁. Default is B3 sl.10: v₁ = (5, 2), v₂ = (1, 7).</p>
+    </header>
+    <div class="cell">
+      <div class="plot sq"><canvas id="c3" aria-label="Gram-Schmidt construction"></canvas></div>
+      <div class="legend"><span><span class="sw" style="background:var(--in)"></span>u₁ = v₁</span><span><span class="sw" style="background:var(--muted)"></span>v₂</span><span><span class="sw" style="background:var(--out)"></span>shadow αu₁</span><span><span class="sw" style="background:var(--sig)"></span>u₂ = v₂ − αu₁</span></div>
+    </div>
+    <div class="side">
+      <div class="row" role="group" aria-label="Step"><span class="cap">step:</span>
+        <button data-s3="1">1 u₁ = v₁</button><button data-s3="2">2 shadow</button><button data-s3="3">3 subtract</button><button data-s3="4" aria-pressed="true">4 normalise</button></div>
+      <div class="sliders">
+        <label for="s3a">v₁ angle</label><input id="s3a" type="range" min="0" max="180" step="0.5" value="21.8"><output id="o3a"></output>
+        <label for="s3b">v₂ angle</label><input id="s3b" type="range" min="0" max="180" step="0.5" value="81.9"><output id="o3b"></output>
+      </div>
+      <div class="row"><button id="b3d">reset to sl.10</button></div>
+      <dl class="read" id="r3"></dl>
+      <div class="predict">Turn v₂ until it lies on v₁'s line. What happens to u₂?
+        <details><summary>check</summary><p class="note">u₂ shrinks to 0: v₂ is all shadow, nothing sticks out. The two vectors were never independent, so there's no second direction to find. In QR this shows up as a 0 on R's diagonal, the same “rank” failure as A2.</p></details></div>
+      <div class="predict">Make v₂ exactly perpendicular to v₁. What is α?
+        <details><summary>check</summary><p class="note">0. There's no shadow, so nothing to subtract, and u₂ = v₂.</p></details></div>
+    </div>
+  </section>
+
+  <!-- ============ PANEL 4: GS in 3D ============ -->
+  <section class="panel" aria-labelledby="h3dp">
+    <header>
+      <h2 id="h3dp">4 · Gram–Schmidt in 3D: v₁, v₂, v₃</h2>
+      <p class="note">Same move as panel 3, done once more. v₃ loses its shadow on <b>both</b> earlier axes, and what's left is u₃. Drag the plot to turn it. Each u is normalised as soon as it's made, as the slides do (B3 sl.14–16).</p>
+    </header>
+    <div class="cell">
+      <div class="plot sq"><canvas id="c3d" aria-label="3D Gram-Schmidt construction; drag to rotate" style="cursor:grab;touch-action:none"></canvas></div>
+      <div class="legend"><span><span class="sw" style="background:var(--muted)"></span>v's (given)</span><span><span class="sw" style="background:var(--out)"></span>shadows</span><span><span class="sw" style="background:var(--in)"></span>u₁</span><span><span class="sw" style="background:var(--sig)"></span>u₂</span><span><span class="sw" style="background:var(--ok)"></span>u₃</span></div>
+    </div>
+    <div class="side">
+      <div class="row" role="group" aria-label="Example"><span class="cap">example:</span>
+        <button data-e3="sl" aria-pressed="true">B3 sl.14 (= QR on sl.18)</button><button data-e3="gen" aria-pressed="false">tilted <span class="tag">added</span></button></div>
+      <div class="row" role="group" aria-label="Step"><span class="cap">step:</span>
+        <button data-k3="1">1 u₁ = v₁</button><button data-k3="2">2 clean v₂</button><button data-k3="3">3 clean v₃</button><button data-k3="4" aria-pressed="true">4 R</button></div>
+      <div class="sliders"><label for="s3dv">turn</label><input id="s3dv" type="range" min="-180" max="180" step="1" value="-35"><output id="o3dv"></output></div>
+      <dl class="read" id="r3d"></dl>
+      <div class="mats" id="m3d"></div>
+      <div class="predict">Before step 3: how many shadows does v₃ lose, and why not just one?
+        <details><summary>check</summary><p class="note">Two, one per earlier axis. Removing only the u₁ shadow would leave part of v₃ along u₂, so the result would not be ⟂ u₂. In general vⱼ loses j − 1 shadows (B3 sl.13).</p></details></div>
+      <div class="predict">On the sl.14 example, why do the u's come out as plain x, z, y axes?
+        <details><summary>check</summary><p class="note">The slide picked easy numbers. v₁ is already the x axis, and v₂ = (2, 0, 3) minus its x part leaves (0, 0, 3), the z axis. Switch to <b>tilted</b> to see the general case, where none of the u's are axis-aligned.</p></details></div>
+    </div>
+  </section>
+
+  <!-- ============ PANEL 5 ============ -->
+  <section class="panel" aria-labelledby="h4p">
+    <header>
+      <h2 id="h4p">5 · CDMA: why two users leak into each other (practical Q1)</h2>
+      <p class="note">Both nodes transmit at once: r = s₁c₁ + s₂c₂, where s = amplitude × bit. The receiver reads A's bit with a shadow, z₁ = (r·c₁)/|c₁|².</p>
+    </header>
+    <div class="cell">
+      <div class="plot" style="aspect-ratio:3/2"><canvas id="c4" aria-label="Chip values of c1, c2 and r"></canvas></div>
+      <div class="legend"><span><span class="sw" style="background:var(--in)"></span>s₁c₁ (A)</span><span><span class="sw" style="background:var(--out)"></span>s₂c₂ (B)</span><span><span class="sw" style="background:var(--sig)"></span>r = sum</span></div>
+    </div>
+    <div class="side">
+      <div class="row" role="group" aria-label="Codes"><span class="cap">codes:</span>
+        <button data-c4="prac" aria-pressed="true">practical: c₂ = [1 1 1 −1]</button><button data-c4="orth" aria-pressed="false">c₂ = [1 1 −1 −1] <span class="tag">added</span></button></div>
+      <div class="row" role="group" aria-label="Bits"><span class="cap">bit A:</span><button id="b4a">+1</button><span class="cap">bit B:</span><button id="b4b">−1</button></div>
+      <div class="sliders"><label for="s4m">B amplitude</label><input id="s4m" type="range" min="0" max="4" step="0.1" value="3"><output id="o4m"></output></div>
+      <dl class="read" id="r4"></dl>
+      <div class="predict">Practical codes, bit B = −1. Slide B's amplitude up from 0. At what amplitude does A's plain reading flip to the wrong sign?
+        <details><summary>check</summary><p class="note">Above 2. The leak is s₂ (c₁·c₂)/|c₁|² = −amp × 2/4, which beats A's +1 once amp &gt; 2. The practical uses 3 (a near, strong node), so A is misread. Switch to the perpendicular codes and the leak is 0 at any amplitude.</p></details></div>
+      <p class="note"><b>The fix (Q1.3–4):</b> Gram–Schmidt the codes into perpendicular q₁, q₂, so that C = QR. Then Qᵀr = Rs is a triangular system, and back-substitution gives s exactly. See md Part 6 for the numbers.</p>
+    </div>
+  </section>
+</div>
+
+<script>
+(()=>{
+const $=id=>document.getElementById(id);
+const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const f=(v,d=3)=>{if(!isFinite(v))return '∞';const s=Math.abs(v)<1e-12?0:v;return s.toFixed(d).replace(/^-(0\.0*)$/,'$1')};
+const rad=d=>d*Math.PI/180, deg=r=>r*180/Math.PI;
+const dotp=(a,b)=>a.reduce((s,v,i)=>s+v*b[i],0);
+
+/* ---------- drawing helpers (same as the B1 lab) ---------- */
+function prep(cv){const r=cv.getBoundingClientRect(),d=window.devicePixelRatio||1,w=Math.max(20,r.width),h=Math.max(20,r.height);
+  const W=Math.round(w*d),H=Math.round(h*d);if(cv.width!==W||cv.height!==H){cv.width=W;cv.height=H;}
+  const g=cv.getContext('2d');g.setTransform(d,0,0,d,0,0);g.clearRect(0,0,w,h);return{g,w,h};}
+function view(w,h,x0,x1,y0,y1,equal){const L=44,R=w-10,T=10,B=h-34;
+  if(equal){const s=Math.min((R-L)/(x1-x0),(B-T)/(y1-y0)),cx=(x0+x1)/2,cy=(y0+y1)/2;x0=cx-(R-L)/s/2;x1=cx+(R-L)/s/2;y0=cy-(B-T)/s/2;y1=cy+(B-T)/s/2;}
+  return{x0,x1,y0,y1,L,R,T,B,X:x=>L+(x-x0)/(x1-x0)*(R-L),Y:y=>B-(y-y0)/(y1-y0)*(B-T)};}
+function nice(r){const t=r/5,p=Math.pow(10,Math.floor(Math.log10(t))),m=t/p;return(m<1.5?1:m<3.5?2:m<7.5?5:10)*p;}
+function axes(g,v,xl,yl){g.save();g.font='11px "IBM Plex Mono",monospace';g.lineWidth=1;
+  const sx=nice(v.x1-v.x0),sy=nice(v.y1-v.y0);g.fillStyle=css('--muted');
+  for(let x=Math.ceil(v.x0/sx)*sx;x<=v.x1+1e-9;x+=sx){const X=v.X(x);g.strokeStyle=css('--grid');g.beginPath();g.moveTo(X,v.T);g.lineTo(X,v.B);g.stroke();g.textAlign='center';g.fillText(+x.toFixed(6),X,v.B+13);}
+  for(let y=Math.ceil(v.y0/sy)*sy;y<=v.y1+1e-9;y+=sy){const Y=v.Y(y);g.strokeStyle=css('--grid');g.beginPath();g.moveTo(v.L,Y);g.lineTo(v.R,Y);g.stroke();g.textAlign='right';g.fillText(+y.toFixed(6),v.L-4,Y+4);}
+  g.strokeStyle=css('--rule');g.strokeRect(v.L,v.T,v.R-v.L,v.B-v.T);
+  g.textAlign='center';g.fillText(xl,(v.L+v.R)/2,v.B+28);
+  g.save();g.translate(11,(v.T+v.B)/2);g.rotate(-Math.PI/2);g.fillText(yl,0,0);g.restore();g.restore();}
+function clip(g,v){g.save();g.beginPath();g.rect(v.L,v.T,v.R-v.L,v.B-v.T);g.clip();}
+function line(g,x1,y1,x2,y2,col,w=1.5,dash){g.strokeStyle=col;g.lineWidth=w;g.setLineDash(dash||[]);g.beginPath();g.moveTo(x1,y1);g.lineTo(x2,y2);g.stroke();g.setLineDash([]);}
+function dot(g,x,y,col,r=4,hollow){g.beginPath();g.arc(x,y,r,0,7);if(hollow){g.strokeStyle=col;g.lineWidth=1.5;g.stroke();}else{g.fillStyle=col;g.fill();}}
+function arrow(g,x1,y1,x2,y2,col,w=2,dash){line(g,x1,y1,x2,y2,col,w,dash);if(Math.hypot(x2-x1,y2-y1)<3)return;const a=Math.atan2(y2-y1,x2-x1),h=8;g.fillStyle=col;g.beginPath();g.moveTo(x2,y2);g.lineTo(x2-h*Math.cos(a-.4),y2-h*Math.sin(a-.4));g.lineTo(x2-h*Math.cos(a+.4),y2-h*Math.sin(a+.4));g.closePath();g.fill();}
+function label(g,x,y,t,col){g.save();g.font='12px "IBM Plex Mono",monospace';g.fillStyle=col;g.fillText(t,x,y);g.restore();}
+function dl(el,rows){el.innerHTML=rows.map(([k,v])=>`<dt>${k}</dt><dd>${v}</dd>`).join('');}
+function press(sel,attr,val){document.querySelectorAll(sel).forEach(b=>b.setAttribute('aria-pressed',b.getAttribute(attr)===val?'true':'false'));}
+/* full-length line through point p along direction u */
+function axisLine(g,v,p,u,col,w=1.5,dash){const L=40;line(g,v.X(p[0]-L*u[0]),v.Y(p[1]-L*u[1]),v.X(p[0]+L*u[0]),v.Y(p[1]+L*u[1]),col,w,dash);}
+
+/* ================= PANEL 1: shadows ================= */
+function draw1(){const x=+$('s1x').value,y=+$('s1y').value,t=+$('s1t').value,gap=+$('s1g').value;
+  $('o1x').textContent=f(x,1);$('o1y').textContent=f(y,1);$('o1t').textContent=t+'°';$('o1g').textContent=gap+'°';
+  const B1=[Math.cos(rad(t)),Math.sin(rad(t))],B2=[Math.cos(rad(t+gap)),Math.sin(rad(t+gap))],p=[x,y];
+  const X1=dotp(B1,p),X2=dotp(B2,p),rb=[X1*B1[0]+X2*B2[0],X1*B1[1]+X2*B2[1]];
+  const {g,w,h}=prep($('c1'));const v=view(w,h,-7,9,-7,9,true);axes(g,v,'x','y');clip(g,v);
+  const O=[0,0];axisLine(g,v,O,B1,css('--in'),1.5);axisLine(g,v,O,B2,css('--out'),1.5);
+  // perpendicular drops from x onto each axis
+  const P1=[X1*B1[0],X1*B1[1]],P2=[X2*B2[0],X2*B2[1]];
+  line(g,v.X(x),v.Y(y),v.X(P1[0]),v.Y(P1[1]),css('--in'),1,[4,4]);line(g,v.X(x),v.Y(y),v.X(P2[0]),v.Y(P2[1]),css('--out'),1,[4,4]);
+  arrow(g,v.X(0),v.Y(0),v.X(P1[0]),v.Y(P1[1]),css('--in'),3);arrow(g,v.X(0),v.Y(0),v.X(P2[0]),v.Y(P2[1]),css('--out'),3);
+  // rebuild path: X1B1 then + X2B2
+  arrow(g,v.X(P1[0]),v.Y(P1[1]),v.X(rb[0]),v.Y(rb[1]),css('--sig'),1.5,[2,3]);dot(g,v.X(rb[0]),v.Y(rb[1]),css('--sig'),6,true);
+  arrow(g,v.X(0),v.Y(0),v.X(x),v.Y(y),css('--ink'),2);dot(g,v.X(x),v.Y(y),css('--ink'),4);
+  label(g,v.X(x)+6,v.Y(y)-6,`x = (${f(x,1)}, ${f(y,1)})`,css('--ink'));
+  label(g,v.X(8*B1[0])+4,v.Y(8*B1[1])-4,'B₁',css('--in'));label(g,v.X(6*B2[0])+4,v.Y(6*B2[1])-4,'B₂',css('--out'));
+  g.restore();
+  const err=Math.hypot(rb[0]-x,rb[1]-y),ang=Math.hypot(x,y)<1e-9?NaN:deg(Math.acos(Math.max(-1,Math.min(1,X1/Math.hypot(x,y))))),dB=dotp(B1,B2);
+  dl($('r1'),[
+    ['B₁ (row 1)',`(${f(B1[0])}, ${f(B1[1])})`],['B₂ (row 2)',`(${f(B2[0])}, ${f(B2[1])})`],
+    ['<span class="cin">X₁ = B₁·x</span>',`${f(B1[0])}·${f(x,1)} + ${f(B1[1])}·${f(y,1)} = <b>${f(X1)}</b>`],
+    ['<span class="cout">X₂ = B₂·x</span>',`${f(B2[0])}·${f(x,1)} + ${f(B2[1])}·${f(y,1)} = <b>${f(X2)}</b>`],
+    ['angle x ↔ B₁',isNaN(ang)?'—':`${f(ang,1)}°, so X₁ = |x| cos = ${f(Math.hypot(x,y))} × ${f(Math.cos(rad(ang)))}`],
+    ['B₁·B₂',`${f(dB)} ${Math.abs(dB)<1e-9?'<span class="pill on">orthonormal</span>':'<span class="pill bad">not orthogonal</span>'}`],
+    ['<span class="csig">X₁B₁ + X₂B₂</span>',`(${f(rb[0])}, ${f(rb[1])}) ${err<1e-9?'<span class="pill on">= x</span>':`<span class="pill bad">misses x by ${f(err)}</span>`}`]]);}
+['s1x','s1y','s1t','s1g'].forEach(id=>$(id).oninput=draw1);
+document.querySelectorAll('[data-p1]').forEach(b=>b.onclick=()=>{const k=b.dataset.p1,P={sl7:[3,5,45],sl9:[4,4,45],std:[3,5,0]}[k];
+  $('s1x').value=P[0];$('s1y').value=P[1];$('s1t').value=P[2];$('s1g').value=90;draw1();});
+
+/* ================= PANEL 2: compression ================= */
+const DX=[0,3,5,8,10],DY=[2,5,6,9,11];let cen=false;
+function data2(){const mx=cen?DX.reduce((a,b)=>a+b)/5:0,my=cen?DY.reduce((a,b)=>a+b)/5:0;return{mx,my,xs:DX.map(v=>v-mx),ys:DY.map(v=>v-my)};}
+function bestTheta(){const {xs,ys}=data2();const a=dotp(xs,xs),b=dotp(xs,ys),c=dotp(ys,ys);
+  let t=deg(0.5*Math.atan2(2*b,a-c));if(t<0)t+=180;return t;}
+function draw2(){const t=+$('s2t').value;$('o2t').textContent=f(t,1)+'°';
+  const {mx,my,xs,ys}=data2(),B1=[Math.cos(rad(t)),Math.sin(rad(t))],B2=[-Math.sin(rad(t)),Math.cos(rad(t))];
+  const X1=xs.map((x,i)=>B1[0]*x+B1[1]*ys[i]),X2=xs.map((x,i)=>B2[0]*x+B2[1]*ys[i]);
+  const E1=dotp(X1,X1),E2=dotp(X2,X2),E=E1+E2;
+  const {g,w,h}=prep($('c2'));const v=view(w,h,-2,12,-2,12,true);axes(g,v,'current x (A)','voltage y (V)');clip(g,v);
+  axisLine(g,v,[mx,my],B1,css('--in'),2);
+  DX.forEach((x0,i)=>{const rx=mx+X1[i]*B1[0],ry=my+X1[i]*B1[1];line(g,v.X(x0),v.Y(DY[i]),v.X(rx),v.Y(ry),css('--out'),2);
+    dot(g,v.X(rx),v.Y(ry),css('--in'),5,true);dot(g,v.X(x0),v.Y(DY[i]),css('--ink'),4);});
+  if(cen)dot(g,v.X(mx),v.Y(my),css('--sig'),4);
+  g.restore();
+  // energy bar
+  const B=prep($('c2b'));const W=B.w-20,H=Math.min(26,B.h-18);const w1=W*E1/E;
+  B.g.fillStyle=css('--in');B.g.fillRect(10,4,w1,H);B.g.fillStyle=css('--out');B.g.fillRect(10+w1,4,W-w1,H);
+  B.g.font='11px "IBM Plex Mono",monospace';B.g.fillStyle=css('--muted');B.g.textAlign='left';B.g.fillText(`kept ${f(100*E1/E,2)}%`,10,H+16);B.g.textAlign='right';B.g.fillText(`dropped ${f(100*E2/E,2)}%`,10+W,H+16);
+  const best=bestTheta();
+  dl($('r2'),[['X₁ (kept)',X1.map(v=>f(v,2)).join(', ')],['X₂ (dropped)',X2.map(v=>f(v,2)).join(', ')],
+    ['ΣX₁² + ΣX₂²',`${f(E1,2)} + ${f(E2,2)} = <b>${f(E,2)}</b>`],['loss = ΣX₂²',`${f(E2,3)} (${f(100*E2/E,2)}%)`],
+    ['best θ',`${f(best,2)}° ${cen?'(top eigenvector of B1’s S)':'(top eigenvector of DDᵀ) <span class="tag">added</span>'}`]]);}
+$('s2t').oninput=draw2;$('b2best').onclick=()=>{$('s2t').value=bestTheta().toFixed(1);draw2();};
+$('b2c').onclick=()=>{cen=!cen;$('b2c').setAttribute('aria-pressed',cen);draw2();};
+
+/* ================= PANEL 3: Gram–Schmidt ================= */
+let step3=4;const L1=Math.hypot(5,2),L2=Math.hypot(1,7);
+function draw3(){const a=+$('s3a').value,b=+$('s3b').value;$('o3a').textContent=f(a,1)+'°';$('o3b').textContent=f(b,1)+'°';
+  const sl10=Math.abs(a-deg(Math.atan2(2,5)))<0.3&&Math.abs(b-deg(Math.atan2(7,1)))<0.3;
+  const v1=sl10?[5,2]:[L1*Math.cos(rad(a)),L1*Math.sin(rad(a))],v2=sl10?[1,7]:[L2*Math.cos(rad(b)),L2*Math.sin(rad(b))];
+  const uu=dotp(v1,v1),uv=dotp(v1,v2),al=uv/uu,sh=[al*v1[0],al*v1[1]],u2=[v2[0]-sh[0],v2[1]-sh[1]],n2=Math.hypot(...u2);
+  const {g,w,h}=prep($('c3'));const v=view(w,h,-7,8,-3,9,true);axes(g,v,'','');clip(g,v);
+  axisLine(g,v,[0,0],[v1[0]/L1,v1[1]/L1],css('--grid'),1);
+  arrow(g,v.X(0),v.Y(0),v.X(v1[0]),v.Y(v1[1]),css('--in'),2.5);label(g,v.X(v1[0])+5,v.Y(v1[1])+14,'u₁ = v₁',css('--in'));
+  arrow(g,v.X(0),v.Y(0),v.X(v2[0]),v.Y(v2[1]),css('--muted'),2);label(g,v.X(v2[0])+5,v.Y(v2[1]),'v₂',css('--muted'));
+  if(step3>=2){line(g,v.X(v2[0]),v.Y(v2[1]),v.X(sh[0]),v.Y(sh[1]),css('--out'),1,[4,4]);arrow(g,v.X(0),v.Y(0),v.X(sh[0]),v.Y(sh[1]),css('--out'),3);
+    label(g,v.X(sh[0])+5,v.Y(sh[1])+16,'αu₁',css('--out'));}
+  if(step3>=3){arrow(g,v.X(sh[0]),v.Y(sh[1]),v.X(v2[0]),v.Y(v2[1]),css('--sig'),1.5,[2,3]);arrow(g,v.X(0),v.Y(0),v.X(u2[0]),v.Y(u2[1]),css('--sig'),2.5);
+    label(g,v.X(u2[0])+6,v.Y(u2[1])-6,'u₂',css('--sig'));}
+  if(step3>=4&&n2>1e-9){g.save();g.strokeStyle=css('--rule');g.setLineDash([3,3]);g.beginPath();g.arc(v.X(0),v.Y(0),v.X(1)-v.X(0),0,7);g.stroke();g.restore();
+    dot(g,v.X(v1[0]/L1),v.Y(v1[1]/L1),css('--in'),4);dot(g,v.X(u2[0]/n2),v.Y(u2[1]/n2),css('--sig'),4);}
+  g.restore();
+  const rows=[['u₁ = v₁',`(${f(v1[0],3)}, ${f(v1[1],3)})`],['v₂',`(${f(v2[0],3)}, ${f(v2[1],3)})`]];
+  if(step3>=2)rows.push(['α = u₁·v₂ / u₁·u₁',`${f(uv,3)} / ${f(uu,3)} = <b>${f(al,4)}</b>`],['shadow αu₁',`(${f(sh[0],3)}, ${f(sh[1],3)})`]);
+  if(step3>=3)rows.push(['u₂ = v₂ − αu₁',`(${f(u2[0],3)}, ${f(u2[1],3)})`],['check u₁·u₂',`${f(dotp(v1,u2),6)} ${Math.abs(dotp(v1,u2))<1e-9?'<span class="pill on">⟂</span>':''}`]);
+  if(step3>=4)rows.push(['normalised',n2<1e-9?'<span class="pill bad">u₂ = 0: v₂ is all shadow</span>':`û₁ = (${f(v1[0]/L1)}, ${f(v1[1]/L1)}), û₂ = (${f(u2[0]/n2)}, ${f(u2[1]/n2)})`]);
+  dl($('r3'),rows);}
+['s3a','s3b'].forEach(id=>$(id).oninput=draw3);
+document.querySelectorAll('[data-s3]').forEach(b=>b.onclick=()=>{step3=+b.dataset.s3;press('[data-s3]','data-s3',b.dataset.s3);draw3();});
+$('b3d').onclick=()=>{$('s3a').value=deg(Math.atan2(2,5)).toFixed(1);$('s3b').value=deg(Math.atan2(7,1)).toFixed(1);draw3();};
+
+/* ================= PANEL 4: Gram–Schmidt in 3D ================= */
+const E3={sl:[[1,0,0],[2,0,3],[4,5,6]],gen:[[1,1,0],[1,0,1],[0,1,1]]};let e3='sl',k3=4,pitch=22;
+const sub=(a,b)=>a.map((v,i)=>v-b[i]),scl=(a,s)=>a.map(v=>v*s),nrm=a=>Math.hypot(...a);
+function gs3(V){const u1=scl(V[0],1/nrm(V[0])),a12=dotp(u1,V[1]),w2=sub(V[1],scl(u1,a12)),u2=scl(w2,1/nrm(w2));
+  const a13=dotp(u1,V[2]),a23=dotp(u2,V[2]),w3=sub(sub(V[2],scl(u1,a13)),scl(u2,a23)),u3=scl(w3,1/nrm(w3));
+  return{u1,u2,u3,w2,w3,a12,a13,a23,n1:nrm(V[0]),n2:nrm(w2),n3:nrm(w3)};}
+const fr=v=>{for(const d of [1,2,3,6]){const n=v*d;if(Math.abs(n-Math.round(n))<1e-9)return d===1?String(Math.round(n)):`${Math.round(n)}/${d}`;}
+  for(const q of [2,3,6]){const n=v*Math.sqrt(q);if(Math.abs(n-Math.round(n))<1e-9)return `${Math.round(n)}/√${q}`;}return f(v,3);};
+const len=n=>{const r=fr(n);if(!r.includes('√')&&!r.includes('.'))return r;const q=fr(n*n);return q.includes('/')?`√(${q})`:`√${q}`;};
+const vec=a=>`(${a.map(fr).join(', ')})`;
+function draw3d(){const V=E3[e3],G=gs3(V),yaw=rad(+$('s3dv').value),pt=rad(pitch);$('o3dv').textContent=$('s3dv').value+'°';
+  const {g,w,h}=prep($('c3d'));g.fillStyle=css('--bg');
+  const M=Math.max(...V.map(nrm))*1.05,S=Math.min(w,h)/2/M*0.92,cx=w/2,cy=h/2+M*S*0.08;
+  const P=p=>{const x1=p[0]*Math.cos(yaw)-p[1]*Math.sin(yaw),y1=p[0]*Math.sin(yaw)+p[1]*Math.cos(yaw),z2=y1*Math.sin(pt)+p[2]*Math.cos(pt);return[cx+x1*S,cy-z2*S];};
+  const A=(a,b,col,wd=2,dash)=>{const p=P(a),q=P(b);arrow(g,p[0],p[1],q[0],q[1],col,wd,dash);};
+  const Ln=(a,b,col,wd=1,dash)=>{const p=P(a),q=P(b);line(g,p[0],p[1],q[0],q[1],col,wd,dash);};
+  const T=(p,t,col)=>{const q=P(p);label(g,q[0]+5,q[1]-5,t,col);};
+  const O=[0,0,0];
+  [[[M,0,0],'x'],[[0,M,0],'y'],[[0,0,M],'z']].forEach(([e,t])=>{Ln(scl(e,-0.3),e,css('--rule'),1);T(e,t,css('--muted'));});
+  const mu=css('--muted'),sh=css('--out'),c1=css('--in'),c2=css('--sig'),c3=css('--ok');
+  // given vectors
+  V.forEach((v,i)=>{A(O,v,mu,1.5);T(v,'v'+(i+1),mu);});
+  const L1=G.n1; // draw unit u's scaled up so they are visible
+  const big=M*0.5;
+  if(k3>=1){A(O,scl(G.u1,big),c1,3);T(scl(G.u1,big),'u₁',c1);}
+  if(k3>=2){const s12=scl(G.u1,G.a12);Ln(V[1],s12,sh,1,[4,4]);A(O,s12,sh,2.5);A(s12,V[1],c2,1.5,[2,3]);
+    A(O,scl(G.u2,big),c2,3);T(scl(G.u2,big),'u₂',c2);}
+  if(k3>=3){const s13=scl(G.u1,G.a13),s23=scl(G.u2,G.a23),both=[s13[0]+s23[0],s13[1]+s23[1],s13[2]+s23[2]];
+    A(O,s13,sh,2.5);A(s13,both,sh,2.5);Ln(V[2],both,sh,1,[4,4]);A(both,V[2],c3,1.5,[2,3]);
+    A(O,scl(G.u3,big),c3,3);T(scl(G.u3,big),'u₃',c3);}
+  const rows=[['u₁ = v₁ / |v₁|',`${vec(V[0])} / ${len(G.n1)} = ${vec(G.u1)}`]];
+  if(k3>=2)rows.push(['α₁₂ = u₁·v₂',`<b>${fr(G.a12)}</b>`],['v₂ − α₁₂u₁',`${vec(G.w2)}, length ${len(G.n2)}`],['u₂',vec(G.u2)]);
+  if(k3>=3)rows.push(['α₁₃ = u₁·v₃',`<b>${fr(G.a13)}</b>`],['α₂₃ = u₂·v₃',`<b>${fr(G.a23)}</b>`],['v₃ − α₁₃u₁ − α₂₃u₂',`${vec(G.w3)}, length ${len(G.n3)}`],['u₃',vec(G.u3)],
+    ['checks',`u₁·u₂ = ${f(dotp(G.u1,G.u2),6)}, u₁·u₃ = ${f(dotp(G.u1,G.u3),6)}, u₂·u₃ = ${f(dotp(G.u2,G.u3),6)}`]);
+  dl($('r3d'),rows);
+  $('m3d').innerHTML=k3>=4?`R = QᵀA = <span class="mat" style="grid-template-columns:auto auto auto">${[G.n1,G.a12,G.a13,0,G.n2,G.a23,0,0,G.n3].map((v,i)=>[0,4,8].includes(i)?len(v):fr(v)).map((t,i)=>`<span class="${[0,4,8].includes(i)?'cin':[1,2,5].includes(i)?'cout':''}">${t}</span>`).join('')}</span><span class="cap">diagonal = <span class="cin">lengths before normalising</span>, above = <span class="cout">the α's</span></span>`:'';}
+document.querySelectorAll('[data-e3]').forEach(b=>b.onclick=()=>{e3=b.dataset.e3;press('[data-e3]','data-e3',e3);draw3d();});
+document.querySelectorAll('[data-k3]').forEach(b=>b.onclick=()=>{k3=+b.dataset.k3;press('[data-k3]','data-k3',b.dataset.k3);draw3d();});
+$('s3dv').oninput=draw3d;
+(()=>{const cv=$('c3d');let drag=null;
+  cv.addEventListener('pointerdown',e=>{drag={x:e.clientX,y:e.clientY,yaw:+$('s3dv').value,pitch};cv.setPointerCapture(e.pointerId);cv.style.cursor='grabbing';});
+  cv.addEventListener('pointermove',e=>{if(!drag)return;let yw=drag.yaw-(e.clientX-drag.x)*0.5;yw=((yw+540)%360)-180;$('s3dv').value=Math.round(yw);
+    pitch=Math.max(-80,Math.min(80,drag.pitch+(e.clientY-drag.y)*0.4));draw3d();});
+  const end=()=>{drag=null;cv.style.cursor='grab';};cv.addEventListener('pointerup',end);cv.addEventListener('pointercancel',end);})();
+
+/* ================= PANEL 5: CDMA ================= */
+let code4='prac',bA=1,bB=-1;const C1=[1,1,1,1],C2={prac:[1,1,1,-1],orth:[1,1,-1,-1]};
+function solveQR(c1,c2,r){// Gram–Schmidt on [c1 c2], then back-substitute Qᵀr = Rs
+  const n1=Math.hypot(...c1),q1=c1.map(v=>v/n1),r12=dotp(q1,c2),u2=c2.map((v,i)=>v-r12*q1[i]),n2=Math.hypot(...u2),q2=u2.map(v=>v/n2);
+  const y1=dotp(q1,r),y2=dotp(q2,r),s2=y2/n2,s1=(y1-r12*s2)/n1;return{s1,s2,R:[n1,r12,n2]};}
+function draw4(){const amp=+$('s4m').value;$('o4m').textContent=f(amp,1);
+  const c2=C2[code4],s1=1*bA,s2=amp*bB,a=C1.map(v=>s1*v),b=c2.map(v=>s2*v),r=a.map((v,i)=>v+b[i]);
+  const {g,w,h}=prep($('c4'));const v=view(w,h,0.4,4.6,-8,8);axes(g,v,'chip','value');clip(g,v);
+  line(g,v.L,v.Y(0),v.R,v.Y(0),css('--muted'),1);
+  const bw=(v.X(1)-v.X(0))*0.22;
+  for(let k=0;k<4;k++){const X=v.X(k+1);[[a[k],css('--in'),-1],[b[k],css('--out'),0],[r[k],css('--sig'),1]].forEach(([val,col,o])=>{g.fillStyle=col;const y0=v.Y(0),y1=v.Y(val);g.fillRect(X+o*bw-bw/2,Math.min(y0,y1),bw*0.9,Math.abs(y1-y0));});}
+  g.restore();
+  const cc=dotp(C1,c2),z1=dotp(r,C1)/4,z2=dotp(r,c2)/4,leak=s2*cc/4,q=solveQR(C1,c2,r);
+  const ok=(z,t)=>Math.sign(z)===Math.sign(t)&&z!==0?'<span class="pill on">right</span>':'<span class="pill bad">wrong</span>';
+  dl($('r4'),[['r',`[${r.map(v=>f(v,1)).join('  ')}]`],['c₁·c₂',`${cc} ${cc===0?'<span class="pill on">orthogonal</span>':'<span class="pill bad">not orthogonal</span>'}`],
+    ['z₁ = r·c₁ / 4',`own ${f(s1,2)} + leak ${f(leak,2)} = <b>${f(z1,2)}</b> → bit ${z1>=0?'+1':'−1'} ${ok(z1,bA)}`],
+    ['z₂ = r·c₂ / 4',`<b>${f(z2,2)}</b> → bit ${z2>=0?'+1':'−1'} ${amp>0?ok(z2,bB):'(B silent)'}`],
+    ['GS/QR: R',`[${f(q.R[0],3)} ${f(q.R[1],3)}; 0 ${f(q.R[2],3)}]`],
+    ['GS/QR decode s',`(${f(q.s1,3)}, ${f(q.s2,3)}) <span class="pill on">exact</span>`]]);}
+$('s4m').oninput=draw4;
+document.querySelectorAll('[data-c4]').forEach(b=>b.onclick=()=>{code4=b.dataset.c4;press('[data-c4]','data-c4',code4);draw4();});
+$('b4a').onclick=()=>{bA=-bA;$('b4a').textContent=bA>0?'+1':'−1';draw4();};
+$('b4b').onclick=()=>{bB=-bB;$('b4b').textContent=bB>0?'+1':'−1';draw4();};
+
+/* ---------- boot ---------- */
+function all(){draw1();draw2();draw3();draw3d();draw4();}
+let raf=0;const again=()=>{cancelAnimationFrame(raf);raf=requestAnimationFrame(all);};
+new ResizeObserver(again).observe(document.body);
+try{matchMedia('(prefers-color-scheme: dark)').addEventListener('change',again);}catch(e){}
+all();
+})();
+</script>

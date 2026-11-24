@@ -5,9 +5,14 @@
 Notation follows the A4 slides: $\mathbf A = \mathbf Q\boldsymbol\sigma\mathbf P^T$, singular values $\sigma_0 \ge \sigma_1 \ge \dots$, columns $\mathbf q_i$ of $\mathbf Q$ and $\mathbf p_i$ of $\mathbf P$ (counting from 0).
 Progress: [`progress.md`](progress.md).
 
+<details>
+<summary>Note: sources and scope</summary>
+
 Sources: Part B is the practical's problem (`../../drills/svd/`), kept exactly as given. Part C uses the slides' own examples (sl.26–28, 37, 38, 41), with numbers verbatim. Every number here was recomputed with numpy/sympy (2026-11-21). Tips I added that aren't on the slides are tagged *(added)*.
 
 **Scope (sl.35):** the lecture says it doesn't cover computing an SVD, and that the exam may give you an SVD and ask you to *use* it (Part C). The practical does have you compute one (Part B), so both are here.
+
+</details>
 
 ---
 
@@ -59,9 +64,14 @@ $$k = \frac{91 \pm \sqrt{91^2 - 4\cdot381}}{2} = \frac{91 \pm \sqrt{6757}}{2} = 
 
 $$k_0 = 86.600,\quad k_1 = 4.400 \qquad\Rightarrow\qquad \boxed{\sigma_0 = \sqrt{86.600} = 9.3059,\quad \sigma_1 = \sqrt{4.400} = 2.0975}$$
 
+<details>
+<summary>Note: quick checks (trace, det) and the third eigenvalue</summary>
+
 **Quick checks** (the A3 tricks): $k_0 + k_1 = 91 = $ trace $= 5 + 86$ ✓, and $k_0 k_1 = 381 = \det = 5\cdot86 - 7^2$ ✓.
 
 *(added)* The 3×3 $\mathbf A^T\mathbf A$ has eigenvalues 86.600, 4.400 and **0**. Its trace is $5+4+82 = 91$ ✓. The 0 belongs to $\mathbf p_2$, which has no partner σ.
+
+</details>
 
 ### B3. Find $\mathbf q_0$ and $\mathbf q_1$, the normalised eigenvectors of $\mathbf A\mathbf A^T$.
 
@@ -90,7 +100,12 @@ $$\mathbf p_0 = \frac{(-0.8254,\; 1.9927,\; 9.0525)}{9.3059} = (-0.0887,\; 0.214
 $$\mathbf A^T\mathbf q_1 = (2(0.9963) + 0.0855,\;\; 2(-0.0855),\;\; 0.9963 - 9(0.0855)) = (2.0782,\; -0.1709,\; 0.2271)$$
 $$\mathbf p_1 = \frac{(2.0782,\; -0.1709,\; 0.2271)}{2.0975} = (0.9908,\; -0.0815,\; 0.1083)$$
 
+<details>
+<summary>Note: why no normalising here, and rounding</summary>
+
 These come out at length 1 automatically (the practical notes this too), and their signs are already matched to $\mathbf q_0, \mathbf q_1$. *(The numbers above were carried at full precision. Working at 4 dp, your 4th decimal may differ by 1.)*
+
+</details>
 
 ### B5. Find $\mathbf p_2$. No σ pairs with it. Use $\mathbf A\mathbf p_2 = \mathbf 0$.
 
@@ -104,7 +119,12 @@ Set $x_0 = 1$: $(1,\; 9.5,\; -2)$, with length $\sqrt{1 + 90.25 + 4} = \sqrt{95.
 
 $$\mathbf p_2 = (0.1025,\; 0.9734,\; -0.2049)$$
 
+<details>
+<summary>Note: sign of p₂, and a cross-product shortcut (added)</summary>
+
 *(added)* The sign is free here (numpy gives the negative), since $\mathbf p_2$ has no $\mathbf q$ partner. A shortcut for 2×3: $\mathbf p_2$ is perpendicular to both rows, so (row 0) × (row 1) $= (-2, -19, 4)$ gives the same direction.
+
+</details>
 
 **Check:** $\mathbf p_0\cdot\mathbf p_2 = -0.0887(0.1025) + 0.2141(0.9734) + 0.9728(-0.2049) = -0.0091 + 0.2084 - 0.1993 = 0.0000$ ✓
 
@@ -145,9 +165,14 @@ $$\boldsymbol\sigma^{-1}\mathbf Q^T\mathbf b = \begin{bmatrix} 0.43/2 \\ -7.61/0
 **Move 3: P(…).** $\mathbf P$ is the transpose of the given $\mathbf P^T$:
 $$\mathbf x = \begin{bmatrix} 0.643 & -0.766 \\ 0.766 & 0.643 \end{bmatrix}\begin{bmatrix} 0.21 \\ -76.1 \end{bmatrix} = \begin{bmatrix} 0.135 + 58.29 \\ 0.161 - 48.93 \end{bmatrix} = \begin{bmatrix} 58.4 \\ -48.8 \end{bmatrix}$$
 
+<details>
+<summary>Note: rounding on the slide, and why small σ amplifies</summary>
+
 That matches the slide. *(Carrying more digits gives $x_1 = -48.7$. The slide's $-48.8$ comes from rounding the middle step.)*
 
 **Note:** a small σ₁ = 0.1 turned b's −7.61 into −76.1, a 10× amplification. That's the sensitivity sl.38 calls "borderline".
+
+</details>
 
 ### C2. (sl.38) For $\mathbf A = \begin{bmatrix}1&2&4\\2&3&5\\3&5&9\end{bmatrix}$, a computer gives $\sigma = 13.2,\; 0.49,\; 1.16\times10^{-16}$, and $\mathbf P^T$ has rows $(-0.28, -0.47, -0.83)$, $(-0.80, -0.37, 0.48)$ and $(-0.53, 0.80, -0.27)$. (a) What do the σ values tell you? (b) *(added)* Which direction can you add to any solution x without changing Ax? Check it.
 
@@ -172,7 +197,12 @@ All are ≈ 0 (the leftovers come from 2-dp rounding) ✓. This is B7's situatio
 $$461.3 \times (-0.66) \times (-0.45) = 137.0 \quad\text{(true value 150)}$$
 It's a rough version of the image: the "big picture" that sl.41 starts from before adding detail back.
 
+<details>
+<summary>Note: slide typo on sl.41</summary>
+
 *(Slide typo, flagged:* sl.41's $\mathbf P^T$ shows "23" in row 1. numpy gives 0.38 there. It doesn't affect this question.)
+
+</details>
 
 ### C4. (sl.26–28) The delivery driver's 4 destinations give $\sigma_0 = 20.3$. Using sl.26, what is the RMS distance travelled along $\mathbf q_0$?
 

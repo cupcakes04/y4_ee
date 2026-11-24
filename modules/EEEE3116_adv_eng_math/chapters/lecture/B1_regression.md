@@ -4,12 +4,16 @@
 **Concepts and gaps** live in the B1 lab (`B1_regression_lab.html`, same folder).
 Progress: [`progress.md`](progress.md).
 
-Sources:
+<details>
+<summary>Note: sources</summary>
+
 - Parts 1–4 and 6 use B1's own example (the 5 current–voltage points, sl.8) and its exercise (sl.23), with the numbers exactly as given.
 - Parts 5 and 7 are the Section B practical's Q3 (covariance) and Q2 (rotation), with the numbers exactly as given (`drills/data_vec_tf/q3.png`, `q2.png`).
 - The slides don't define the "reconstruction SNR" in Q2, so the definition used here is marked *(added)*.
 
 Every number was recomputed with exact fractions in Python (2026-11-23). Where a value doesn't terminate, it's shown to 4 dp.
+
+</details>
 
 ---
 
@@ -410,7 +414,12 @@ $$r^2 = 1 - \frac{SS_{res}}{SS_{tot}} = 1 - \frac{4}{142} = 0.9718$$
 
 **Traffic and wind together explain 97.2 % of the PM2.5 variation.** (SS_tot = P·P = 142 from AᵀA.)
 
-*Added:* because traffic and wind are uncorrelated, their shares just add: $\rho_{PT}^2 + \rho_{PW}^2 = 0.6338 + 0.3380 = 0.9718$. Traffic alone explains 63.4 %, and wind alone explains 33.8 %. That sum only works when the two inputs are uncorrelated.
+<details>
+<summary>Note: shares add when inputs are uncorrelated (added)</summary>
+
+because traffic and wind are uncorrelated, their shares just add: $\rho_{PT}^2 + \rho_{PW}^2 = 0.6338 + 0.3380 = 0.9718$. Traffic alone explains 63.4 %, and wind alone explains 33.8 %. That sum only works when the two inputs are uncorrelated.
+
+</details>
 
 ---
 
@@ -447,7 +456,12 @@ $$\mathbf S^R = \begin{bmatrix}22.36 & 0.03\\ 0.03 & 0.04\end{bmatrix}\quad\text
 - Trace: 22.3631 + 0.0369 = 22.4, the same as before ✓ (sl.67).
 - Share on x′: 22.3631/22.4 = 99.8 % (sl.68: 99.8 %).
 - The covariance dropped from 11.08 to about 0.033. (The two off-diagonal entries differ in the 4th dp only through rounding; Sᴿ is symmetric.) That's almost zero, but **not exactly**, because the regression angle isn't quite the best angle.
-- Side note *(added)*: $(\mathbf{RS})_{10} = 0$ exactly at the regression angle. Row 1 of RS is $-\sin\theta\,\sigma_x^2 + \cos\theta\,\text{cov} = \cos\theta(\text{cov} - m\sigma_x^2)$, and $m = \text{cov}/\sigma_x^2$.
+<details>
+<summary>Note: (RS)₁₀ = 0 at the regression angle (added)</summary>
+
+$(\mathbf{RS})_{10} = 0$ exactly at the regression angle. Row 1 of RS is $-\sin\theta\,\sigma_x^2 + \cos\theta\,\text{cov} = \cos\theta(\text{cov} - m\sigma_x^2)$, and $m = \text{cov}/\sigma_x^2$.
+
+</details>
 
 ### b. The best angle (sl.69)
 
@@ -467,7 +481,12 @@ $$\mathbf u = \frac{1}{\sqrt{1 + 0.8848^2}}\begin{bmatrix}1\\ 0.8848\end{bmatrix
 
 This matches (b) ✓, and the slide gives u = (0.749, 0.663) ✓. The variances on the new axes are the eigenvalues, 22.36 and 0.04 (sl.69). In these axes, Sᴿ is exactly diagonal.
 
+<details>
+<summary>Note: why 41.50° and not 41.42°</summary>
+
 **Why it's 41.50° and not 41.42°:** regression minimises the *vertical* residuals, and the eigenvector minimises the *perpendicular* ones (sl.69). The eigenvector slope is 0.8848, against the regression's m = 0.8822.
+
+</details>
 
 ---
 

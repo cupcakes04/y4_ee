@@ -2,7 +2,7 @@
 
 To continue in a new session, say: *"adv math, continue from progress.md"* (and name the section: A or B).
 
-**Now on:** Section B, B2 + B3 together (started 2026-11-23). Next step: answer the 8-question B2/B3 probe, then the lab and md get built, weighted by the answers. B1 still has its own to-dos: the lab (panel 4 first, then 3), explain it back, then work `B1_regression.md` by hand. Section A has open items: see *Section A → Next*.
+**Now on:** Section B, **B4 (PCA)**. The probe is answered and the lab and md are built (2026-11-24). Next: go through `B4_pca_lab.html` (panel 1: rotate and whiten; then panel 2) and explain it back. Then work `B4_pca.md` Parts 1–5 and E1 by hand. Still open from before: B2 + B3 together. The probe is done and the lab and md are built (2026-11-24). Next: work through `B23_basis_lab.html` (panels 1 and 5 first), explain it back, then work `B23_basis_gs.md` by hand. B1 still has its own to-dos: the lab (panel 4 first, then 3), explain it back, then work `B1_regression.md` by hand. Section A has open items: see *Section A → Next*.
 
 # Section A — matrices (A1–A5)
 
@@ -66,6 +66,8 @@ Every lecture has two files. Their weights differ by lecture, but both exist:
 3. The AI names the specific gaps, and the concept page gets a fix if a gap needs one.
 4. Worked-examples md for the steps, using the slides' and practicals' own numbers.
 
+Explanations in the md sit in collapsible **Note** blocks, so the working stays visible and stands apart (2026-11-24).
+
 How much goes into each file depends on the lecture. Abstract lectures (A3, A4) lean on the html. Procedural ones (A2) lean on the md. Every lecture still gets both.
 
 ### Next
@@ -89,6 +91,7 @@ That last step is where Section A comes back: the best rotation is the eigenvect
 | B1 | linear regression, covariance and correlation, axis rotation | XᵀX v = Xᵀy is a tall-system solve (A2 sl.57, QR); best θ = eigenvector of S (A3) |
 | B2 | data, vectors, transformations: rows of R (or B) = basis vectors, coefficient Xᵢ = Bᵢ·x, rebuild with Bᵀ, keep M of N for compression | A3's d = Xᵀb (with rows instead of columns), A1's RᵀR = I, A4's truncation |
 | B3 | Gram–Schmidt: u₂ = v₂ − αu₁, α = u₁·v₂ / u₁·u₁; QR via Gram–Schmidt (Q = the u's, R = QᵀA) | A2's QR, a third route after Givens and Householder |
+| B4 | PCA: rows of A = eigenvectors of S, Y = AX, S_y = A S_x Aᵀ = diag(λ); MATLAB `pca` / `cov` / `eig`; whitening; scree threshold | B1 Part 3 again (same 5 points, same 41.5°) + B2 compression; A3's X K Xᵀ |
 
 B2 and B3 are really one lecture (25 + 22 slides). B2 says *what* an orthonormal basis does for data, and B3 says *how to build one*.
 
@@ -99,14 +102,45 @@ B2 and B3 are really one lecture (25 + 22 slides). B2 says *what* an orthonormal
 | B1 | Part 1: regression (normal equations, XᵀX, gradient descent, r²) | probe 2026-11-23: ✓ why square; ½ XᵀX (said rank; it's tall + noisy); ½ μ (missed zig-zag); ½ r² (missed r² = 0) | [`B1_regression.md`](B1_regression.md) Parts 1–3, **to do** | `B1_regression_lab.html` panels 1–2, **to do** |
 | B1 | Part 2: covariance, S = (1/N)AᵀA, ρ, z-scores | ✓ cov sign, z-score; ✗ ρ (forgot); missed cov(x,x) = var | Parts 4–5 (5 = practical Q3), **to do** | panel 3, **to do** |
 | B1 | Part 3: axis rotation, Sᴿ = RSRᵀ, eigenvector of S | ✗ what rotation changes and why eigenvector → lab | Parts 6–7 (7 = practical Q2), **to do**. 6c now has "the link" (cov′ = v·Su → Su = λu) and "why only one row / only u" | panel 4, **to do** |
-| B2 | basis vectors, transform coefficients, rebuild, compression | probe 2026-11-23, **to do** | not built yet | not built yet |
-| B3 | Gram–Schmidt (2D and 3D), QR via Gram–Schmidt, practical Q1 (CDMA) | probe 2026-11-23, **to do** | not built yet | not built yet |
+| B2 | basis vectors, transform coefficients, rebuild, compression | probe 2026-11-24: ✓ coefficient = reading in the rotated frame; ✓ B ↔ A3's X, Bᵀ = B⁻¹ (gap: thought basis vectors must be eigenvectors); ½ merged rotate (free) with drop (lossy); ✗ meaning of Bᵢ·x ("correlation" = dot product, a terminology gap) | [`B23_basis_gs.md`](B23_basis_gs.md) Parts 1–3, **to do** | `B23_basis_lab.html` panels 1–2, **to do** |
+| B3 | Gram–Schmidt (2D and 3D), QR via Gram–Schmidt, practical Q1 (CDMA) | ½ αu₁ = the shadow/perpendicular ✓, but thought ⟂ comes "like eigen" (it comes from the construction); ✗ CDMA leak | B23_basis_gs.md Parts 4–6, **to do** | lab panels 3–5 (4 = 3D GS, 5 = CDMA), **to do** |
+| B4 | PCA: cov (N−1), MATLAB outputs, S_y = A S_x Aᵀ, whitening, scree, 3D | probe 2026-11-24: ✓ 5/4 scales λ only, share unchanged; ✓ coeff = axes; ½ score (per point, not per PC); ✗ latent (= λ); ½ eig column (right column; reason: ascending order + sign flip); ✗ S_x vs S_y (thought S_x was diagonal); ✗ whitening step 4 (÷√λ), merged z-score with decorrelation; ✓ keep PC2 (99.5 %) | [`B4_pca.md`](B4_pca.md) Parts 1–7 + E1–E4 (invented), **to do** | `B4_pca_lab.html` panels 1–2, **to do** |
+
+### What clicked for B2/B3 (2026-11-24)
+- B's rows are the new axes (B₁, B₂). X₁ and X₂ are x's **coordinates** along them: the shadows, like A3's d. They are **not** eigenvalues.
+- Rotating keeps the total energy the same. Compression drops X₂, and the loss is Σ X₂².
+- **Best angle = an eigen problem, as in B1.** It's **S** (the data's matrix) that gets split as S = X K Xᵀ, not B. The columns of X are S's eigenvectors, and K holds the eigenvalues (the variance on each axis). Then B = Xᵀ.
+  - Steps: det(S − λI) = 0 gives λ. Then (S − λI)u = 0 gives u. Subtracting λI flattens that axis on purpose.
+  - The condition behind it: cov′ = v·Su = 0 ⇒ Su = λu.
+- A rotation matrix is **always** orthogonal (RRᵀ = I). Gram–Schmidt is for vectors you're **given** that aren't perpendicular (CDMA codes, the columns of A).
+  - Keep the first one as the reference: u₁ = v₁.
+  - Each later v has its shadows on **all** the earlier u's removed. What's left is u₂ (then u₃, …).
+  - The leftover is perpendicular by construction: it's panel 1's x = X₁B₁ + X₂B₂ run backwards.
+- Eigen picks the **best** axes for the data. Gram–Schmidt makes **perpendicular** axes out of the directions you were handed. These are different jobs.
 
 ### B2/B3 facts checked (sympy, 2026-11-23)
 - B2 sl.7: (3, 5) rotated by 45° gives (8/√2, 2/√2) = (5.66, 1.41) ✓. sl.9: (4, 4) gives (5.66, 0) ✓.
 - B3 sl.10–12: α = 19/29 = 0.6552 and u₂ = (−2.276, 5.690), with u₁·u₂ = 0 ✓. sl.16–21: α₁₂ = 2, α₁₃ = 4, α₂₃ = 6, R = [1 2 4; 0 3 6; 0 0 5] ✓.
 - Practical Q1 (CDMA): c₁·c₂ = 2, so the codes are not orthogonal. With the plain correlator, z₁ = −1/2, which decodes A's +1 as **−1 (wrong)**, and z₂ = −5/2, which decodes B correctly as −1. Gram–Schmidt gives α = 1/2, u₂ = (½, ½, ½, −3/2) and |u₂|² = 3, so R = [2 1; 0 √3] and Qᵀr = (−1, −3√3). Back-substituting gives s = (1, −3), which is **both bits exactly**.
 - Rendered slides checked: no typos. One note: B3 sl.17 defines QR for a square m×m A with QQᵀ = I. In the practical, C is 4×2 (tall), so QᵀQ = I but QQᵀ ≠ I (the same economy form as A4).
+
+### B4 facts checked (numpy, 2026-11-24)
+- No practical for B4 exists in `drills/`. The slides mention PCA Tutorials #1 and #2 on Moodle, but they aren't in the repo.
+- Data: B1's 5 points, so the means are 5.2 and 6.6, and data′ matches sl.22 ✓.
+- `cov` = [15.7 13.85; 13.85 12.3] ✓. This is **÷(N−1) = ÷4**. B1 used ÷N, giving [12.56 11.08; 11.08 9.84]: the same matrix × 5/4.
+- eig = 27.9539 and 0.0461 ✓ (B1's 22.363 and 0.037, × 5/4). Total = 28 ✓. 99.84 % on PC1 ✓. PC1 = (0.7489, 0.6626), at 41.50° ✓, the same as B1.
+  So the normalisation changes the eigen**values** but not the eigen**vectors** or the %.
+- sl.25 score ✓. With the 4-dp R you get −6.9423; the slide's −6.9426 comes from full-precision R.
+- sl.30 `eig` returns the eigenvalues in **ascending** order, so PC1 is the **last** column of V, and it's −coeff(:,1). An eigenvector's sign is arbitrary.
+- sl.51 scree: average = 6.7 ✓, and 16/20.1 = 79.6 % ≈ 80 % ✓.
+- Whitening: divide each PC by √λ, which gives cov = I ✓ (checked numerically). The slide gives no formula for this step.
+
+**Slide issues (flag only; your call on each):**
+| Slide | Slide says | Note |
+|---|---|---|
+| sl.5 vs sl.6, 29 | formulas ÷N; numbers ÷(N−1) | The numbers come from MATLAB `cov`, which uses N−1. B1 used ÷N. |
+| sl.6, 33, 37 | "covariance = XXᵀ" | Only holds once X is **centred** and divided by N−1. Raw XXᵀ = [198 227; 227 267]. Centred XXᵀ = [62.8 55.4; 55.4 49.2] = 4·S. |
+| sl.18 | λ "proportional to" the variance | With the same normalisation it **equals** the variance (sl.28, 35). |
 
 ### B1 facts checked (numpy, 2026-11-23)
 All of the slides' numbers check out:

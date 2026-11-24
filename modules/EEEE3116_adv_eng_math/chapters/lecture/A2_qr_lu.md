@@ -4,7 +4,12 @@
 **Concepts and gaps** live in the [A2 QR lab](https://claude.ai/artifact/DvMjRDPedttK8nKWvHjXCa) (`A2_qr_lab.html`, same folder). It covers why multiplying by G keeps x, Givens as a rotation, zeroing order, Householder as a mirror, rank, and tall/wide problems.
 Progress: [`progress.md`](progress.md).
 
-Sources: Part 1 is the lecture's 2×2 (A2 sl.14, verbatim). Part 2 is the **Givens practical** and Part 3 the **Householder practical** (`../../drills/givens_rotation/`, `../../drills/householder_reflection/`), kept exactly as given. Part 4's L and U are *(added)*: the LU of Part 2's A. Every number was checked with numpy/sympy (2026-11-22).
+<details>
+<summary>Note: sources</summary>
+
+Part 1 is the lecture's 2×2 (A2 sl.14, verbatim). Part 2 is the **Givens practical** and Part 3 the **Householder practical** (`../../drills/givens_rotation/`, `../../drills/householder_reflection/`), kept exactly as given. Part 4's L and U are *(added)*: the LU of Part 2's A. Every number was checked with numpy/sympy (2026-11-22).
+
+</details>
 
 **Watch out:** the two practicals use different matrices. Row 1 is $(-1, 1, \mathbf 3)$ in Givens and $(-1, 1, \mathbf{-3})$ in Householder.
 
@@ -263,7 +268,12 @@ x_0 &= \frac{-8.0178 - (-1.8709)\cdot 0.0953 - (-6.4144)\cdot (-2.3338)}{-3.7417
 
 **Exact:** $\mathbf x = (\tfrac{128}{21},\ \tfrac{2}{21},\ -\tfrac{7}{3}) = (6.0952,\ 0.0952,\ -2.3333)$ ✓. That's the practical's answer. Ours is within 0.001, which is normal drift from rounding everything to 4 dp across two big steps.
 
+<details>
+<summary>Note: why R's diagonal is negative</summary>
+
 The diagonal of R is negative because of the sign choice in step 2. It's still a valid triangular R.
+
+</details>
 
 ## Part 4: LU (sl.48 method)
 
@@ -304,7 +314,12 @@ Same x as Part 2 ✓. It's the same problem solved with a different factorisatio
 ### 5a. Solve with a given QR (sl.37)
 If you're handed $\mathbf A = \mathbf{QR}$, there's no rotating to do:
 $$\mathbf{QRx} = \mathbf b \;\Rightarrow\; \mathbf{Rx} = \mathbf Q^T\mathbf b \;\Rightarrow\; \text{back-substitute}$$
+<details>
+<summary>Note: where Q comes from in Part 2</summary>
+
 From Part 2, Q is the steps' transposes in order: $\mathbf G_3\mathbf G_2\mathbf G_1\mathbf A = \mathbf R \Rightarrow \mathbf Q = \mathbf G_1^T\mathbf G_2^T\mathbf G_3^T$ (sl.40). In practice you never build Q. You apply each G to b as you go, which is exactly what Part 2 did.
+
+</details>
 
 ### 5b. Cost (sl.29)
 A matrix × matrix product with N = 500 takes 1 s. How long for N = 5000?
@@ -338,4 +353,9 @@ Is $\begin{bmatrix}3 & 9 & -1\\4 & 8 & 2\\8 & 16 & 4\end{bmatrix}$ full rank?
 $$\mathbf R = \begin{bmatrix}-9.434 & -19.822 & -3.922\\0 & 2.844 & -2.370\\0 & 0 & \mathbf 0\end{bmatrix}$$
 Back-substitution would have to divide by that 0, so there's no unique x.
 
-*Flag:* the Householder notebook's flop table ("Givens ≈ 4/3 n³, Householder ≈ 2/3 n³") isn't from the slides and looks wrong. 2/3 n³ is LU's usual count. Don't learn those numbers.
+<details>
+<summary>Note: flag on the Householder notebook's flop table</summary>
+
+the Householder notebook's flop table ("Givens ≈ 4/3 n³, Householder ≈ 2/3 n³") isn't from the slides and looks wrong. 2/3 n³ is LU's usual count. Don't learn those numbers.
+
+</details>
