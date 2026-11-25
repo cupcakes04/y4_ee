@@ -1,0 +1,409 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>T2 Frames Lab</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=Space+Grotesk:wght@500;600&display=swap">
+<style>
+:root{
+  --bg:#f3f6f7; --panel:#ffffff; --ink:#18222b; --muted:#5b6872; --rule:#d9e1e5; --grid:#e8eef1;
+  --bx:#c8372d; --by:#1d8a3a; --bz:#2563eb;   /* body axes: x nose, y right, z belly */
+  --fv:#7b8790; --f1:#0f8a7e; --f2:#d0661b; --fb:#2563eb;  /* frames: vehicle, v1, v2, body */
+  --sig:#6b4fc8; --ok:#1d8a3a; --warn:#b42318;
+  --f-display:"Space Grotesk",system-ui,sans-serif; --f-body:"IBM Plex Sans",system-ui,sans-serif; --f-mono:"IBM Plex Mono",ui-monospace,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#11171c; --panel:#182027; --ink:#e4ecf0; --muted:#93a3ad; --rule:#2a353e; --grid:#1f2930;
+  --bx:#ff7b6b; --by:#4cc46c; --bz:#6ea8ff; --fv:#93a3ad; --f1:#3cc7b8; --f2:#f39a52; --fb:#6ea8ff;
+  --sig:#a993f5; --ok:#4cc46c; --warn:#ff7b6b; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#11171c; --panel:#182027; --ink:#e4ecf0; --muted:#93a3ad; --rule:#2a353e; --grid:#1f2930;
+  --bx:#ff7b6b; --by:#4cc46c; --bz:#6ea8ff; --fv:#93a3ad; --f1:#3cc7b8; --f2:#f39a52; --fb:#6ea8ff;
+  --sig:#a993f5; --ok:#4cc46c; --warn:#ff7b6b; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.5;margin:0;padding:24px 16px 48px}
+.wrap{max-width:1100px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+h1{font-family:var(--f-display);font-weight:600;font-size:1.7rem;margin:0}
+h2{font-family:var(--f-display);font-weight:600;font-size:1.2rem;margin:0 0 4px}
+h3{font-family:var(--f-display);font-weight:600;font-size:.95rem;margin:0}
+.lede{color:var(--muted);max-width:78ch;margin:4px 0 0}
+.src{font-family:var(--f-mono);font-size:.75rem;color:var(--muted);margin:4px 0 0}
+.bar,.panel{background:var(--panel);border:1px solid var(--rule);border-radius:8px;padding:16px}
+.panel{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:20px}
+.panel>header,.full{grid-column:1/-1}
+@media (max-width:820px){.panel{grid-template-columns:minmax(0,1fr)}}
+.plot{position:relative;width:100%;aspect-ratio:1}
+canvas{width:100%;height:100%;display:block;border-radius:6px;background:var(--bg);touch-action:none}
+.side{display:flex;flex-direction:column;gap:12px;min-width:0}
+.sliders{display:grid;grid-template-columns:auto minmax(100px,1fr) 8ch;gap:4px 10px;align-items:center;font-family:var(--f-mono);font-size:.85rem}
+.sliders output{text-align:right;font-variant-numeric:tabular-nums}
+input[type=range]{width:100%;accent-color:var(--sig)}
+input[type=number]{font:inherit;font-family:var(--f-mono);font-size:.85rem;width:7ch;padding:2px 4px;border:1px solid var(--rule);border-radius:4px;background:var(--bg);color:var(--ink)}
+select{font:inherit;font-size:.85rem;padding:4px 6px;border:1px solid var(--rule);border-radius:5px;background:var(--bg);color:var(--ink)}
+.row{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+button{font:inherit;font-size:.82rem;padding:5px 10px;border-radius:5px;border:1px solid var(--rule);background:var(--bg);color:var(--ink);cursor:pointer}
+button:hover{border-color:var(--muted)}
+button[aria-pressed="true"]{background:var(--sig);color:#fff;border-color:var(--sig)}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--sig);outline-offset:2px}
+.read{font-family:var(--f-mono);font-size:.84rem;font-variant-numeric:tabular-nums;display:grid;grid-template-columns:auto minmax(0,1fr);gap:3px 14px;margin:0}
+.read dt{color:var(--muted)} .read dd{margin:0;overflow-wrap:anywhere}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:.8rem;color:var(--muted)}
+.sw{display:inline-block;width:14px;height:3px;border-radius:2px;vertical-align:middle;margin-right:5px}
+.note{font-size:.88rem;color:var(--muted);max-width:72ch;margin:0}
+.note b{color:var(--ink);font-weight:600}
+.cap{font-size:.8rem;color:var(--muted);margin:0}
+.tag{font-family:var(--f-mono);font-size:.7rem;color:var(--muted);border:1px dashed var(--rule);padding:1px 6px;border-radius:4px;white-space:nowrap}
+.work{font-family:var(--f-mono);font-size:.82rem;font-variant-numeric:tabular-nums;white-space:pre-wrap;overflow-wrap:anywhere;margin:0;background:var(--bg);padding:8px 10px;border-radius:6px}
+/* equation chain */
+.eqchain{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-family:var(--f-mono);font-size:.95rem}
+.eqchain button{font-family:var(--f-mono);font-size:.92rem;border-width:2px}
+.mats{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;font-family:var(--f-mono);font-size:.84rem}
+.mat{display:inline-grid;grid-template-columns:repeat(3,auto);gap:0 12px;padding:1px 7px;border-left:2px solid var(--ink);border-right:2px solid var(--ink);text-align:right;font-family:var(--f-mono);font-size:.82rem;font-variant-numeric:tabular-nums;vertical-align:middle}
+.mat.c4{grid-template-columns:repeat(4,auto)}
+/* clickable matrix with labels */
+.lm{display:grid;grid-template-columns:auto repeat(3,auto);gap:2px 4px;font-family:var(--f-mono);font-size:.84rem;font-variant-numeric:tabular-nums;align-items:center;justify-content:start}
+.lm .h{font-size:.78rem;text-align:center;font-weight:500}
+.lm .rl{color:var(--muted);font-size:.78rem;padding-right:4px}
+.lm button{font-family:var(--f-mono);padding:3px 8px;text-align:right;border-width:0 0 3px 0;border-radius:3px}
+.lm button[aria-pressed="true"]{background:var(--ink);color:var(--panel)}
+.answer{border-left:3px solid var(--ok);padding:8px 12px;background:var(--bg);border-radius:0 6px 6px 0;font-size:.88rem}
+.answer ol{margin:4px 0 0;padding-left:20px} .answer li{margin:2px 0}
+.answer code{font-family:var(--f-mono);font-size:.82rem}
+.predict{border-left:3px solid var(--sig);padding:6px 10px;font-size:.9rem;background:var(--bg);border-radius:0 6px 6px 0}
+.predict summary{cursor:pointer;color:var(--sig);font-size:.85rem;margin-top:4px}
+table.words{border-collapse:collapse;font-size:.84rem;width:100%}
+table.words td{border-top:1px solid var(--rule);padding:4px 8px;vertical-align:top}
+table.words td:nth-child(1){font-family:var(--f-mono);white-space:nowrap}
+table.words td:nth-child(4){font-family:var(--f-mono);color:var(--muted);font-size:.75rem;white-space:nowrap}
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px;vertical-align:middle}
+.good{color:var(--ok);font-weight:500} .bad{color:var(--warn);font-weight:500}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>T2 frames lab: from picture to equation</h1>
+    <p class="lede">Each panel puts a slide equation next to the 3D picture it describes, using the slide's own names (Fᵛ, i_v1, R_vᵇ, …). Click a factor or a matrix entry to see which arrows it's about. The green <b>answer shape</b> boxes show how to write it up. T1's thrust numbers are in the md.</p>
+    <p class="src">Source: EEEE4138 T2 Part 1 (frames, dot-product rotation, ZYX chain), T2 Part 2 (velocity, Euler-rate map, quaternions), Tutorial 1. Not from these: <span class="tag">added</span>. Drag any 3D view to orbit it.</p>
+  </header>
+
+  <section class="bar" aria-label="Terms">
+    <h3>Terms → what they are in the pictures</h3>
+    <table class="words">
+      <tr><td><i class="dot" style="background:var(--fv)"></i>Fᵛ  i_v j_v k_v</td><td>vehicle frame</td><td>N, E, D axes with the origin at the CoM. Never rotates. (Fⁱ: the same axes at the home point.)</td><td>T2 P1</td></tr>
+      <tr><td><i class="dot" style="background:var(--f1)"></i>Fᵛ¹ i_v1 j_v1 k_v1</td><td>vehicle-1</td><td>Fᵛ after yaw ψ about k_v. i_v1 is the nose direction, kept level.</td><td>T2 P1</td></tr>
+      <tr><td><i class="dot" style="background:var(--f2)"></i>Fᵛ² i_v2 j_v2 k_v2</td><td>vehicle-2</td><td>Fᵛ¹ after pitch θ about j_v1. Wings still level.</td><td>T2 P1</td></tr>
+      <tr><td><i class="dot" style="background:var(--fb)"></i>Fᵇ  i_b j_b k_b</td><td>body</td><td>Fᵛ² after roll φ about i_v2: nose, right wing, belly.</td><td>T2 P1</td></tr>
+      <tr><td>R_vᵇ</td><td>vehicle → body</td><td>Takes coordinates written in Fᵛ and gives them in Fᵇ. Subscript = from, superscript = to.</td><td>T2 P1</td></tr>
+      <tr><td>R_bᵛ = (R_vᵇ)ᵀ</td><td>body → vehicle</td><td>Its <b>columns</b> are the nose, right-wing and belly arrows written in N, E, D (panel 2).</td><td>T2 P1/P2</td></tr>
+      <tr><td>u v w</td><td>body velocity</td><td>The velocity's components along i_b, j_b, k_b.</td><td>T2 P2</td></tr>
+      <tr><td>p q r</td><td>body rates</td><td>Spin rates about i_b, j_b, k_b. <b>A gyro measures these.</b> They aren't φ̇, θ̇, ψ̇ (panel 3).</td><td>T2 P2</td></tr>
+      <tr><td>specific force</td><td>accelerometer</td><td>An acceleration-type reading along the body axes. Not distance or speed.</td><td>T1 P2 sl.30–31</td></tr>
+      <tr><td>H</td><td>homogeneous transform</td><td>[R D; 0 1]: a rotation and a shift in one matrix. Points get a 1 appended, directions a 0.</td><td>T2 P2</td></tr>
+    </table>
+  </section>
+
+  <!-- ============ PANEL 1 ============ -->
+  <section class="panel" aria-labelledby="h1">
+    <header>
+      <h2 id="h1">1 · The frame chain, one matrix per step</h2>
+      <p class="note">Click a factor. The picture shows the frame it converts <b>from</b> (dashed) and the frame it converts <b>to</b> (solid), the axis it turns about, and the angle arc. Its matrix appears below, in the slide's symbols and then in numbers. p_v enters on the right, so <b>the rightmost factor acts first</b>.</p>
+    </header>
+    <div>
+      <div class="plot"><canvas id="c1" aria-label="3D view of the vehicle, vehicle-1, vehicle-2 and body frames"></canvas></div>
+      <div class="legend"><span><i class="sw" style="background:var(--fv)"></i>Fᵛ</span><span><i class="sw" style="background:var(--f1)"></i>Fᵛ¹</span><span><i class="sw" style="background:var(--f2)"></i>Fᵛ²</span><span><i class="sw" style="background:var(--fb)"></i>Fᵇ</span><span><i class="sw" style="background:var(--sig)"></i>axis turned about + angle</span></div>
+    </div>
+    <div class="side">
+      <div class="sliders">
+        <label for="a_ps">yaw ψ</label><input id="a_ps" type="range" min="-180" max="180" step="1" value="40"><output id="ao_ps"></output>
+        <label for="a_th">pitch θ</label><input id="a_th" type="range" min="-89" max="89" step="1" value="25"><output id="ao_th"></output>
+        <label for="a_ph">roll φ</label><input id="a_ph" type="range" min="-180" max="180" step="1" value="20"><output id="ao_ph"></output>
+      </div>
+      <div class="eqchain" role="group" aria-label="factors of R_v^b">
+        <span>p_b =</span>
+        <button data-t="ph" style="border-color:var(--fb)">R_v2ᵇ(φ)</button>
+        <button data-t="th" style="border-color:var(--f2)">R_v1ᵛ²(θ)</button>
+        <button data-t="ps" style="border-color:var(--f1)">R_vᵛ¹(ψ)</button>
+        <span>p_v</span>
+        <button data-t="all" aria-pressed="true">whole R_vᵇ</button>
+      </div>
+      <dl class="read" id="r1"></dl>
+      <div class="mats" id="m1"></div>
+      <div class="answer"><b>Answer shape: "derive the vehicle-to-body rotation"</b> <span class="tag">added (layout)</span>
+        <ol>
+          <li>Name the sequence: yaw ψ about k_v → Fᵛ¹; pitch θ about j_v1 → Fᵛ²; roll φ about i_v2 → Fᵇ.</li>
+          <li>Write the three single-axis matrices. The 1 sits on the axis you turn about. <b>y is the odd one out</b>: its −s is above the diagonal, while for z and x it's below.</li>
+          <li>Multiply in the order R_vᵇ = R_v2ᵇ(φ) · R_v1ᵛ²(θ) · R_vᵛ¹(ψ). Rightmost first, because p_v enters on the right.</li>
+          <li>Check: set φ = θ = 0 and you must get back R_vᵛ¹(ψ). Row 1 should be [cθcψ, cθsψ, −sθ].</li>
+        </ol></div>
+      <div class="predict">Click R_vᵛ¹(ψ) and look at the entry in row 1, column 2: sψ. Which two arrows is it the cosine of the angle between? Why is it positive for a yaw to the right?
+        <details><summary>check</summary><p class="note">Entry (row i, col j) of R_vᵛ¹ = (row axis of Fᵛ¹) · (column axis of Fᵛ), so this one is i_v1 · j_v. That's how far the new nose points along East. Yaw right (ψ &gt; 0) swings the nose toward East, so it's +sin ψ. That's the slide's "Rotation using dot product" idea, and panel 2 lets you click it.</p></details></div>
+    </div>
+  </section>
+
+  <!-- ============ PANEL 2 ============ -->
+  <section class="panel" aria-labelledby="h2">
+    <header>
+      <h2 id="h2">2 · Body → NED: the columns of R_bᵛ are the drone's own arrows</h2>
+      <p class="note">Slide (T2 P2): <b>[ṗn ṗe ṗd]ᵀ = R_bᵛ [u v w]ᵀ</b>. Read by columns, that's <b>u·(nose arrow) + v·(right-wing arrow) + w·(belly arrow)</b>, each written in N, E, D. The picture draws exactly that sum, head to tail. Click any entry to see the dot product it is.</p>
+    </header>
+    <div>
+      <div class="plot"><canvas id="c2" aria-label="3D view of a body vector built from the columns of R_b^v"></canvas></div>
+      <div class="legend"><span><i class="sw" style="background:var(--bx)"></i>u · col 1 (nose i_b)</span><span><i class="sw" style="background:var(--by)"></i>v · col 2 (right j_b)</span><span><i class="sw" style="background:var(--bz)"></i>w · col 3 (belly k_b)</span><span><i class="sw" style="background:var(--sig)"></i>result in NED</span><span><i class="sw" style="background:var(--fv)"></i>N, E, D</span></div>
+    </div>
+    <div class="side">
+      <div class="sliders">
+        <label for="b_ps">yaw ψ</label><input id="b_ps" type="range" min="-180" max="180" step="1" value="30"><output id="bo_ps"></output>
+        <label for="b_th">pitch θ</label><input id="b_th" type="range" min="-89" max="89" step="1" value="0"><output id="bo_th"></output>
+        <label for="b_ph">roll φ</label><input id="b_ph" type="range" min="-180" max="180" step="1" value="0"><output id="bo_ph"></output>
+        <label for="b_u">u (along i_b)</label><input id="b_u" type="range" min="-5" max="5" step="0.05" value="4"><output id="bo_u"></output>
+        <label for="b_v">v (along j_b)</label><input id="b_v" type="range" min="-5" max="5" step="0.05" value="0"><output id="bo_v"></output>
+        <label for="b_w">w (along k_b)</label><input id="b_w" type="range" min="-5" max="5" step="0.05" value="0"><output id="bo_w"></output>
+      </div>
+      <div class="row"><button id="b2q5">T2 P2 exercise: velocity (ψ = 30°, [4,0,0], 5 s)</button><button id="b2q6">T2 P2 exercise: camera (faces east)</button></div>
+      <div class="row" id="row2pos"><span class="cap">UAV NED position (point mode)</span>
+        <input id="b_N" type="number" step="0.1" value="10" aria-label="north"><input id="b_E" type="number" step="0.1" value="20" aria-label="east"><input id="b_D" type="number" step="0.1" value="-5" aria-label="down">
+        <span class="cap">time t</span><input id="b_t" type="number" step="0.5" value="5" aria-label="time"></div>
+      <div class="row"><span class="cap">treat [u v w] as</span><button id="b2vel" aria-pressed="true">velocity (× t)</button><button id="b2pt" aria-pressed="false">offset of a point (+ position)</button></div>
+      <div>
+        <p class="cap">R_bᵛ: rows = N, E, D; columns = i_b, j_b, k_b. Click an entry.</p>
+        <div class="lm" id="lm2"></div>
+      </div>
+      <pre class="work" id="w2"></pre>
+      <div class="answer"><b>Answer shape: "find the NED velocity / the point's position"</b> <span class="tag">added (layout)</span>
+        <ol>
+          <li>Say which way you're converting: body → NED needs <code>R_bᵛ = (R_vᵇ)ᵀ</code>. The slides give R_vᵇ, so transpose it.</li>
+          <li>Substitute the angles. When level (φ = θ = 0), R_bᵛ = Rz(ψ)ᵀ = [cψ −sψ 0; sψ cψ 0; 0 0 1].</li>
+          <li>Multiply row × column, showing each line (as in the box above).</li>
+          <li>Finish off: a velocity × t gives a displacement; for a point, add the UAV position (or use H). Then state the sign: a bigger D means lower, and h = −p_d.</li>
+        </ol></div>
+    </div>
+  </section>
+
+  <!-- ============ PANEL 3 ============ -->
+  <section class="panel" aria-labelledby="h3">
+    <header>
+      <h2 id="h3">3 · Gimbal lock: three rings, and the equation that breaks</h2>
+      <p class="note">Each Euler angle turns the drone along its own ring: <b style="color:var(--sig)">ψ</b> about the vertical k_v, <b style="color:var(--f2)">θ</b> about j_v1, <b style="color:var(--bx)">φ</b> about the nose i_b. Press the <b>wiggle</b> buttons to see what each angle does to the nose and the right wingtip. Then set θ = 90° and wiggle ψ and φ again.</p>
+    </header>
+    <div>
+      <div class="plot"><canvas id="c3" aria-label="3D view of three gimbal rings around the drone"></canvas></div>
+      <div class="legend"><span><i class="sw" style="background:var(--sig)"></i>ψ ring / k_v</span><span><i class="sw" style="background:var(--f2)"></i>θ ring / j_v1</span><span><i class="sw" style="background:var(--bx)"></i>φ ring / i_b</span><span>dotted = wiggle trails (nose ●, right wingtip ○)</span></div>
+    </div>
+    <div class="side">
+      <div class="sliders">
+        <label for="c_ps">yaw ψ</label><input id="c_ps" type="range" min="-180" max="180" step="1" value="0"><output id="co_ps"></output>
+        <label for="c_th">pitch θ</label><input id="c_th" type="range" min="-90" max="90" step="1" value="30"><output id="co_th"></output>
+        <label for="c_ph">roll φ</label><input id="c_ph" type="range" min="-180" max="180" step="1" value="0"><output id="co_ph"></output>
+      </div>
+      <div class="row"><span class="cap">wiggle ±25°:</span><button data-w="ps" style="border-color:var(--sig)">ψ</button><button data-w="th" style="border-color:var(--f2)">θ</button><button data-w="ph" style="border-color:var(--bx)">φ</button>
+        <button id="c90">set θ = 90°</button><button id="cq6">Tutorial 1 Q6 (120°, 90°, −60°)</button><button id="cplus">+20° to φ and ψ</button></div>
+      <dl class="read" id="r3"></dl>
+      <div>
+        <p class="cap">Body rates from Euler rates (T2 P2; the slide's middle line). Each <b>column</b> is one ring's axis written in body coordinates:</p>
+        <div class="mats" id="m3a"></div>
+        <p class="cap" style="margin-top:6px">Inverting it gives the slide's Euler-rate map, which needs det ≠ 0:</p>
+        <div class="mats" id="m3b"></div>
+      </div>
+      <div class="predict">Move φ, then θ, then ψ. Which rings move each time?
+        <details><summary>check</summary><p class="note">φ: no ring moves, only the drone. θ: only the red φ ring tilts. ψ: the orange and red rings both swing round.
+        An angle never moves its own ring (spinning a ring about its own axis leaves it looking the same), and it carries every ring that comes <b>after</b> it in the chain ψ → θ → φ.
+        So ψ's axis k_v is fixed to the world, θ's axis j_v1 rides on the yaw, and φ's axis i_b rides on everything (it's the nose).
+        It's a physical gimbal: outer ring = yaw, middle = pitch, inner = roll (the slide's gimbal-lock video). Gimbal lock is the middle ring turning the inner ring flat onto the outer one.</p></details></div>
+      <div class="answer"><b>Answer shape: "explain gimbal lock"</b> <span class="tag">added (layout)</span>
+        <ol>
+          <li><b>Where:</b> for ZYX (ψ-θ-φ), at pitch θ = ±90°.</li>
+          <li><b>Picture:</b> the roll axis i_b swings onto the yaw axis k_v, so the φ ring and the ψ ring lie in the same plane. Two angles do one job, and one direction of rotation is lost.</li>
+          <li><b>Equation:</b> [p q r]ᵀ = M[φ̇ θ̇ ψ̇]ᵀ with det M = cos θ. At cos θ = 0, columns 1 and 3 are parallel, so M can't be inverted. The Euler-rate map has tan θ and 1/cos θ, which go to ∞.</li>
+          <li><b>Effect on R:</b> at θ = 90°, R depends only on φ − ψ (θ = −90°: on φ + ψ), so φ and ψ can't be recovered separately (Tutorial 1 Q5–Q6).</li>
+          <li><b>Fix:</b> quaternions (T2 P2) have no singularity. The cost is that they're less intuitive.</li>
+        </ol></div>
+      <div class="row"><span class="cap">quaternion: axis</span>
+        <select id="qax"><option value="0">x</option><option value="1">y</option><option value="2" selected>z</option></select>
+        <span class="cap">angle</span><input id="qang" type="range" min="-180" max="180" step="1" value="90" style="width:9rem" aria-label="angle"><output id="qo"></output></div>
+      <pre class="work" id="wq"></pre>
+    </div>
+  </section>
+</div>
+
+<script>
+(()=>{
+const D2R=Math.PI/180,R2D=180/Math.PI,$=id=>document.getElementById(id);
+const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const f=(x,d=3)=>{const v=Math.abs(x)<0.5*Math.pow(10,-d)?0:x;return v.toFixed(d)};
+// active rotations ("turn a vector"); frames as body->vehicle matrices whose columns are the frame's axes in NED
+const Ax=a=>{const c=Math.cos(a),s=Math.sin(a);return [[1,0,0],[0,c,-s],[0,s,c]]};
+const Ay=a=>{const c=Math.cos(a),s=Math.sin(a);return [[c,0,s],[0,1,0],[-s,0,c]]};
+const Az=a=>{const c=Math.cos(a),s=Math.sin(a);return [[c,-s,0],[s,c,0],[0,0,1]]};
+const I3=()=>[[1,0,0],[0,1,0],[0,0,1]];
+const mul=(A,B)=>A.map((r,i)=>B[0].map((_,j)=>r.reduce((s,_,k)=>s+A[i][k]*B[k][j],0)));
+const T=A=>A[0].map((_,j)=>A.map(r=>r[j]));
+const mv=(A,v)=>A.map(r=>r[0]*v[0]+r[1]*v[1]+r[2]*v[2]);
+const dot=(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2];
+const cross=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];
+const add=(a,b)=>a.map((x,i)=>x+b[i]),sc=(a,k)=>a.map(x=>x*k),norm=a=>Math.hypot(...a);
+const col=(R,j)=>[R[0][j],R[1][j],R[2][j]];
+const frames=(ps,th,ph)=>{const v=I3(),v1=Az(ps),v2=mul(v1,Ay(th)),b=mul(v2,Ax(ph));return {v,v1,v2,b}};
+const Rbv=(ph,th,ps)=>frames(ps,th,ph).b, Rvb=(ph,th,ps)=>T(Rbv(ph,th,ps));
+const matHTML=(R,d=3)=>`<span class="mat">${R.map(r=>r.map(x=>`<span>${typeof x==="string"?x:f(x,d)}</span>`).join("")).join("")}</span>`;
+const matCols=(R,cols,d=3)=>`<span class="mat">${R.map(r=>r.map((x,j)=>`<span style="color:${cols[j]};font-weight:500">${typeof x==="string"?x:f(x,d)}</span>`).join("")).join("")}</span>`;
+
+function setup(cv){const r=cv.getBoundingClientRect(),dpr=window.devicePixelRatio||1;
+  cv.width=Math.max(1,Math.round(r.width*dpr));cv.height=Math.max(1,Math.round(r.height*dpr));
+  const g=cv.getContext("2d");g.setTransform(dpr,0,0,dpr,0,0);return {g,w:r.width,h:r.height}}
+class View{
+  constructor(cv,draw,span=2.7){this.cv=cv;this.draw=draw;this.az=215*D2R;this.el=26*D2R;this.span=span;let d=null;
+    cv.addEventListener("pointerdown",e=>{d=[e.clientX,e.clientY];cv.setPointerCapture(e.pointerId)});
+    cv.addEventListener("pointermove",e=>{if(!d)return;this.az-=(e.clientX-d[0])*0.01;this.el=Math.max(-1.4,Math.min(1.4,this.el+(e.clientY-d[1])*0.01));d=[e.clientX,e.clientY];this.render()});
+    cv.addEventListener("pointerup",()=>d=null);}
+  render(){const {g,w,h}=setup(this.cv);Object.assign(this,{g,w,h});
+    const c=[Math.cos(this.el)*Math.cos(this.az),Math.cos(this.el)*Math.sin(this.az),-Math.sin(this.el)],fw=sc(c,-1);
+    let rt=cross(fw,[0,0,-1]);rt=sc(rt,1/norm(rt));this.rt=rt;this.up=cross(rt,fw);
+    this.s=Math.min(w,h)/(2*this.span);this.cx=w/2;this.cy=h/2;g.clearRect(0,0,w,h);this.draw(this)}
+  P(p){return [this.cx+this.s*dot(p,this.rt),this.cy-this.s*dot(p,this.up)]}
+  path(pts,color,lw=1.5,dash,alpha=1){const g=this.g;g.save();g.strokeStyle=color;g.lineWidth=lw;g.globalAlpha=alpha;if(dash)g.setLineDash(dash);
+    g.beginPath();pts.forEach((p,i)=>{const q=this.P(p);i?g.lineTo(...q):g.moveTo(...q)});g.stroke();g.restore()}
+  line(a,b,c,lw,dash,al){this.path([a,b],c,lw,dash,al)}
+  text(p,t,color,dx=5,dy=-5,size=12){const g=this.g,q=this.P(p);g.save();g.fillStyle=color;g.font=`500 ${size}px ${css("--f-mono")}`;g.fillText(t,q[0]+dx,q[1]+dy);g.restore()}
+  arrow(a,b,color,lw=2,label,dash,alpha=1){this.line(a,b,color,lw,dash,alpha);const g=this.g,A=this.P(a),B=this.P(b);
+    const an=Math.atan2(B[1]-A[1],B[0]-A[0]);if(Math.hypot(B[0]-A[0],B[1]-A[1])>6){g.save();g.globalAlpha=alpha;g.fillStyle=color;g.beginPath();g.moveTo(...B);
+      g.lineTo(B[0]-9*Math.cos(an-.4),B[1]-9*Math.sin(an-.4));g.lineTo(B[0]-9*Math.cos(an+.4),B[1]-9*Math.sin(an+.4));g.fill();g.restore()}
+    if(label)this.text(b,label,color)}
+  triad(F,color,names,o=[0,0,0],dash,L=1.9,lw=2.2,alpha=1){[0,1,2].forEach(j=>this.arrow(o,add(o,sc(col(F,j),L*(j===0?1:0.85))),color,lw,names?names[j]:null,dash,alpha))}
+  arc(a0,n,ang,r,color,label){const pts=[],b=cross(n,a0);for(let i=0;i<=30;i++){const t=ang*i/30;pts.push(add(sc(a0,r*Math.cos(t)),sc(b,r*Math.sin(t))))}
+    this.path(pts,color,2.2);if(label)this.text(pts[15],label,color,4,-4,13)}
+  circle(u,v,r,color,lw=2,o=[0,0,0],dash){const pts=[];for(let i=0;i<=48;i++){const t=i/48*2*Math.PI;pts.push(add(o,add(sc(u,r*Math.cos(t)),sc(v,r*Math.sin(t)))))}this.path(pts,color,lw,dash)}
+  ground(){const g=css("--grid");for(let i=-2;i<=2;i++){this.line([i,-2,1.7],[i,2,1.7],g,1);this.line([-2,i,1.7],[2,i,1.7],g,1)}}
+  drone(R,color,alpha=1){const d=0.62,B=v=>mv(R,v);[[d,-d],[d,d],[-d,d],[-d,-d]].forEach(([x,y])=>{this.line([0,0,0],B([x,y,0]),color,2,null,alpha);
+      const pts=[];for(let i=0;i<=20;i++){const a=i/20*2*Math.PI;pts.push(B([x+0.26*Math.cos(a),y+0.26*Math.sin(a),0]))}this.path(pts,color,1,null,alpha*0.7)})}
+}
+const bind=(ids,fn)=>ids.forEach(i=>$(i).addEventListener("input",fn));
+const out=(id,t)=>{$(id).textContent=t};
+
+// ================= PANEL 1 =================
+let t1="all";
+const SYM={ps:[["cψ","sψ","0"],["−sψ","cψ","0"],["0","0","1"]],th:[["cθ","0","−sθ"],["0","1","0"],["sθ","0","cθ"]],ph:[["1","0","0"],["0","cφ","sφ"],["0","−sφ","cφ"]],
+  all:[["cθcψ","cθsψ","−sθ"],["sφsθcψ−cφsψ","sφsθsψ+cφcψ","sφcθ"],["cφsθcψ+sφsψ","cφsθsψ−sφcψ","cφcθ"]]};
+const NAMES={v:["i_v (N)","j_v (E)","k_v (D)"],v1:["i_v1","j_v1","k_v1"],v2:["i_v2","j_v2","k_v2"],b:["i_b nose","j_b right","k_b belly"]};
+const ang1=()=>({ps:+$("a_ps").value*D2R,th:+$("a_th").value*D2R,ph:+$("a_ph").value*D2R});
+const v1=new View($("c1"),V=>{const A=ang1(),F=frames(A.ps,A.th,A.ph),C={v:css("--fv"),v1:css("--f1"),v2:css("--f2"),b:css("--fb")},sig=css("--sig");
+  V.ground();
+  const step={ps:["v","v1",2,0,"ψ"],th:["v1","v2",1,0,"θ"],ph:["v2","b",0,1,"φ"]}[t1];
+  if(step){const [fr,to,axj,arcj,sym]=step,n=col(F[fr],axj);
+    V.triad(F[fr],C[fr],NAMES[fr],[0,0,0],[5,4],1.9,1.4);
+    V.line(sc(n,-2.4),sc(n,2.4),sig,2.5,[2,3]);
+    if(to==="b")V.drone(F.b,css("--ink"),0.8);
+    V.triad(F[to],C[to],NAMES[to]);
+    V.arc(col(F[fr],arcj),n,A[t1],1.25,sig,sym);
+  }else{V.triad(F.v,C.v,NAMES.v,[0,0,0],[5,4],1.9,1.4);V.triad(F.v1,C.v1,null,[0,0,0],null,1.5,1,0.45);V.triad(F.v2,C.v2,null,[0,0,0],null,1.5,1,0.45);
+    V.drone(F.b,css("--ink"),0.8);V.triad(F.b,C.b,NAMES.b)}});
+function draw1(){["ps","th","ph"].forEach(k=>out("ao_"+k,$("a_"+k).value+"°"));
+  document.querySelectorAll("[data-t]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.t===t1));
+  const A=ang1(),F=frames(A.ps,A.th,A.ph);
+  const info={ps:["Fᵛ → Fᵛ¹","yaw ψ about k_v (vertical)","R_vᵛ¹(ψ)",T(F.v1)],th:["Fᵛ¹ → Fᵛ²","pitch θ about j_v1","R_v1ᵛ²(θ)",mul(T(F.v2),F.v1)],
+    ph:["Fᵛ² → Fᵇ","roll φ about i_v2 (= i_b)","R_v2ᵇ(φ)",mul(T(F.b),F.v2)],all:["Fᵛ → Fᵇ","all three: ψ first, then θ, then φ","R_vᵇ",T(F.b)]}[t1];
+  $("r1").innerHTML=`<dt>converts</dt><dd>${info[0]}</dd><dt>turn</dt><dd>${info[1]}</dd>`;
+  $("m1").innerHTML=`${info[2]} = ${matHTML(SYM[t1])} = ${matHTML(info[3],3)}`;
+  v1.render()}
+bind(["a_ps","a_th","a_ph"],draw1);
+document.querySelectorAll("[data-t]").forEach(b=>b.onclick=()=>{t1=b.dataset.t;draw1()});
+
+// ================= PANEL 2 =================
+let mode2="vel",sel2=null;
+const st2=()=>{const ph=+$("b_ph").value*D2R,th=+$("b_th").value*D2R,ps=+$("b_ps").value*D2R,R=Rbv(ph,th,ps),b=[+$("b_u").value,+$("b_v").value,+$("b_w").value];return {R,b,res:mv(R,b)}};
+const v2=new View($("c2"),V=>{const S=st2(),cb=[css("--bx"),css("--by"),css("--bz")],fv=css("--fv");V.ground();
+  V.triad(I3(),fv,["N","E","D"],[0,0,0],[5,4],2.1,1.3);V.drone(S.R,css("--ink"),0.55);
+  [0,1,2].forEach(j=>V.arrow([0,0,0],sc(col(S.R,j),0.9),cb[j],1.4,["i_b","j_b","k_b"][j],null,0.6));
+  const tot=Math.abs(S.b[0])+Math.abs(S.b[1])+Math.abs(S.b[2]),k=tot>1e-9?2.3/tot:0;let p=[0,0,0];
+  [0,1,2].forEach(j=>{if(Math.abs(S.b[j])<1e-9)return;const q=add(p,sc(col(S.R,j),S.b[j]*k));V.arrow(p,q,cb[j],3.2,null);p=q});
+  if(tot>1e-9)V.arrow([0,0,0],p,css("--sig"),2.4,"result",[6,3]);
+  if(sel2){const [i,j]=sel2,a=col(I3(),i),b=col(S.R,j);V.arrow([0,0,0],sc(a,2.3),css("--ink"),3,["N","E","D"][i]);V.arrow([0,0,0],sc(b,2.0),cb[j],3.4,["i_b","j_b","k_b"][j]);
+    const n=cross(a,b);if(norm(n)>1e-6){V.arc(a,sc(n,1/norm(n)),Math.acos(Math.max(-1,Math.min(1,dot(a,b)))),0.8,css("--sig"),"")}}});
+function draw2(){["ps","th","ph"].forEach(k=>out("bo_"+k,$("b_"+k).value+"°"));["u","v","w"].forEach(k=>out("bo_"+k,f(+$("b_"+k).value,2)));
+  $("b2vel").setAttribute("aria-pressed",mode2==="vel");$("b2pt").setAttribute("aria-pressed",mode2==="pt");
+  const S=st2(),cb=["var(--bx)","var(--by)","var(--bz)"],rn=["N","E","D"];
+  let h=`<span></span>${["i_b","j_b","k_b"].map((n,j)=>`<span class="h" style="color:${cb[j]}">${n}</span>`).join("")}`;
+  for(let i=0;i<3;i++){h+=`<span class="rl">${rn[i]}</span>`;for(let j=0;j<3;j++){const on=sel2&&sel2[0]===i&&sel2[1]===j;
+    h+=`<button data-ij="${i}${j}" aria-pressed="${on}" style="border-bottom-color:${cb[j]}">${f(S.R[i][j],3)}</button>`}}
+  $("lm2").innerHTML=h;
+  $("lm2").querySelectorAll("button").forEach(b=>b.onclick=()=>{const ij=[+b.dataset.ij[0],+b.dataset.ij[1]];sel2=(sel2&&sel2[0]===ij[0]&&sel2[1]===ij[1])?null:ij;draw2()});
+  const c=j=>`[${col(S.R,j).map(x=>f(x,3)).join(", ")}]`,b=S.b,r=S.res;
+  let w=`[ṗn ṗe ṗd]ᵀ = R_bᵛ [u v w]ᵀ
+  = u·(col 1) + v·(col 2) + w·(col 3)
+  = ${f(b[0],2)}·${c(0)}
+  + ${f(b[1],2)}·${c(1)}
+  + ${f(b[2],2)}·${c(2)}
+  = [${r.map(x=>f(x,3)).join(", ")}]`;
+  if(sel2){const [i,j]=sel2,ang=Math.acos(Math.max(-1,Math.min(1,S.R[i][j])))*R2D;
+    w=`entry (${rn[i]}, ${["i_b","j_b","k_b"][j]}) = ${rn[i]}-axis · ${["i_b","j_b","k_b"][j]} = cos(${f(ang,1)}°) = ${f(S.R[i][j],4)}\n  (how much of that body arrow points along ${rn[i]})\n\n`+w}
+  if(mode2==="vel"){const t=+$("b_t").value;w+=`  m/s\n× t = ${t} s → displacement [${r.map(x=>f(x*t,3)).join(", ")}] m`}
+  else{const p=[+$("b_N").value,+$("b_E").value,+$("b_D").value],q=add(p,r);
+    w+=`  (offset)\npoint = [${p.map(x=>f(x,2)).join(", ")}] + offset = [${q.map(x=>f(x,3)).join(", ")}]\n`+
+      `h = −p_d: UAV ${f(-p[2],2)} m, point ${f(-q[2],2)} m → ${Math.abs(r[2])<1e-9?"level with":(r[2]>0?"BELOW":"ABOVE")} the CoM`}
+  $("w2").textContent=w;v2.render()}
+bind(["b_ps","b_th","b_ph","b_u","b_v","b_w","b_N","b_E","b_D","b_t"],draw2);
+$("b2vel").onclick=()=>{mode2="vel";draw2()};$("b2pt").onclick=()=>{mode2="pt";draw2()};
+const set=o=>{for(const k in o)$(k).value=o[k]};
+$("b2q5").onclick=()=>{mode2="vel";sel2=null;set({b_ps:30,b_th:0,b_ph:0,b_u:4,b_v:0,b_w:0,b_t:5});draw2()};
+$("b2q6").onclick=()=>{mode2="pt";sel2=null;set({b_ps:90,b_th:0,b_ph:0,b_u:0.3,b_v:0,b_w:0.1,b_N:10,b_E:20,b_D:-5});draw2()};
+
+// ================= PANEL 3 =================
+let wig=null,trails=[];
+const ang3=()=>{const a={ps:+$("c_ps").value*D2R,th:+$("c_th").value*D2R,ph:+$("c_ph").value*D2R};
+  if(wig){const e=(performance.now()-wig.t0)/1600;a[wig.k]+=25*D2R*Math.sin(2*Math.PI*Math.min(1,e))}return a};
+const v3=new View($("c3"),V=>{const A=ang3(),F=frames(A.ps,A.th,A.ph),cs=css("--sig"),c2=css("--f2"),cx=css("--bx");V.ground();
+  V.triad(I3(),css("--fv"),["N","E","D"],[0,0,0],[5,4],2.3,1.1);
+  // rings: each perpendicular to its rotation axis
+  V.circle(col(F.v,0),col(F.v,1),2.15,cs,2.6);                // ψ ring ⟂ k_v
+  V.circle(col(F.v1,0),col(F.v1,2),1.85,c2,2.6);              // θ ring ⟂ j_v1
+  V.circle(col(F.b,1),col(F.b,2),1.55,cx,2.6);                // φ ring ⟂ i_b
+  V.line([0,0,-2.5],[0,0,2.5],cs,1.6,[2,3]);V.text([0,0,-2.5],"k_v",cs);
+  const j1=col(F.v1,1);V.line(sc(j1,-2.2),sc(j1,2.2),c2,1.6,[2,3]);V.text(sc(j1,2.2),"j_v1",c2);
+  const ib=col(F.b,0);V.line(sc(ib,-2.0),sc(ib,2.0),cx,1.6,[2,3]);V.text(sc(ib,-2.0),"i_b",cx);
+  V.drone(F.b,css("--ink"),0.85);V.arrow([0,0,0],sc(ib,1.2),cx,3,"nose");V.arrow([0,0,0],sc(col(F.b,1),0.9),css("--by"),2.2,"right");
+  trails.forEach((tr,i)=>{const al=i===trails.length-1?1:0.45;V.path(tr.nose,tr.c,2.4,[2,3],al);V.path(tr.wing,tr.c,1.6,[1,4],al)});
+  if(wig){const tr=trails[trails.length-1];tr.nose.push(sc(ib,1.2));tr.wing.push(sc(col(F.b,1),0.9))}});
+function draw3(){["ps","th","ph"].forEach(k=>out("co_"+k,$("c_"+k).value+"°"));
+  const ph=+$("c_ph").value*D2R,th=+$("c_th").value*D2R,ps=+$("c_ps").value*D2R,F=frames(ps,th,ph);
+  const ib=col(F.b,0),kv=[0,0,1],angRY=Math.acos(Math.min(1,Math.abs(dot(ib,kv))))*R2D,ct=Math.cos(th),lock=Math.abs(ct)<1e-9;
+  const M=[[1,0,-Math.sin(th)],[0,Math.cos(ph),Math.sin(ph)*ct],[0,-Math.sin(ph),Math.cos(ph)*ct]];
+  const C=[css("--bx"),css("--f2"),css("--sig")];
+  $("r3").innerHTML=`<dt>roll axis ↔ yaw axis</dt><dd>${f(angRY,1)}° apart ${angRY<0.05?'<span class="bad">same line → gimbal lock</span>':''}</dd>
+    <dt>det M = cos θ</dt><dd>${f(ct,4)} ${lock?'<span class="bad">= 0: no inverse</span>':''}</dd>
+    <dt>φ − ψ, φ + ψ</dt><dd>${f(((ph-ps)*R2D+540)%360-180,1)}°, ${f(((ph+ps)*R2D+540)%360-180,1)}°</dd>`;
+  $("m3a").innerHTML=`[p q r]ᵀ = ${matCols([["1","0","−sθ"],["0","cφ","sφcθ"],["0","−sφ","cφcθ"]],C)} [φ̇ θ̇ ψ̇]ᵀ = ${matCols(M,C)} [φ̇ θ̇ ψ̇]ᵀ`;
+  const Mi=lock?[["1","∞","∞"],["0",f(Math.cos(ph),3),f(-Math.sin(ph),3)],["0","∞","∞"]]:
+    [[1,Math.sin(ph)*Math.tan(th),Math.cos(ph)*Math.tan(th)],[0,Math.cos(ph),-Math.sin(ph)],[0,Math.sin(ph)/ct,Math.cos(ph)/ct]];
+  $("m3b").innerHTML=`[φ̇ θ̇ ψ̇]ᵀ = ${matHTML([["1","sφ tθ","cφ tθ"],["0","cφ","−sφ"],["0","sφ/cθ","cφ/cθ"]])} [p q r]ᵀ = ${matHTML(Mi,3)} [p q r]ᵀ`;
+  v3.render()}
+bind(["c_ps","c_th","c_ph"],()=>{trails=[];draw3()});
+document.querySelectorAll("[data-w]").forEach(b=>b.onclick=()=>{if(wig)return;const k=b.dataset.w;
+  trails.push({c:css({ps:"--sig",th:"--f2",ph:"--bx"}[k]),nose:[],wing:[]});if(trails.length>2)trails.shift();
+  wig={k,t0:performance.now()};const step=()=>{v3.render();if(performance.now()-wig.t0<1600)requestAnimationFrame(step);else{wig=null;v3.render()}};requestAnimationFrame(step)});
+$("c90").onclick=()=>{$("c_th").value=90;trails=[];draw3()};
+$("cq6").onclick=()=>{set({c_ph:120,c_th:90,c_ps:-60});trails=[];draw3()};
+$("cplus").onclick=()=>{const R0=Rvb(+$("c_ph").value*D2R,+$("c_th").value*D2R,+$("c_ps").value*D2R),wr=x=>((x+180)%360+360)%360-180;
+  $("c_ph").value=wr(+$("c_ph").value+20);$("c_ps").value=wr(+$("c_ps").value+20);trails=[];draw3();
+  const R=Rvb(+$("c_ph").value*D2R,+$("c_th").value*D2R,+$("c_ps").value*D2R),d=Math.max(...R.flat().map((x,i)=>Math.abs(x-R0.flat()[i])));
+  $("r3").insertAdjacentHTML("beforeend",`<dt>after +20° to both</dt><dd>R changed by ${f(d,4)} ${d<1e-9?'<span class="good">(unchanged: same attitude)</span>':'(different attitude)'}</dd>`)};
+function drawQ(){const ax=+$("qax").value,a=+$("qang").value;out("qo",a+"°");const h=a*D2R/2,v=[0,0,0];v[ax]=Math.sin(h);const q=[Math.cos(h),...v];
+  $("wq").textContent=`q = [cos(θ/2), a·sin(θ/2)]   a = ${["x","y","z"][ax]}-axis, θ/2 = ${f(a/2,1)}°\n  = [${q.map(x=>f(x,4)).join(", ")}]   squared sum = ${f(q.reduce((s,x)=>s+x*x,0),4)}\nOne axis, one angle: no ψ-θ-φ sequence, so no gimbal lock.`}
+bind(["qax","qang"],drawQ);
+
+const all=()=>{draw1();draw2();draw3();drawQ()};
+window.addEventListener("resize",all);all();
+
+if(location.hash==="#test"){const r={};
+  set({a_ps:30,a_th:0,a_ph:0});t1="ps";draw1();r.Rpsi=$("m1").textContent;
+  set({a_ps:40,a_th:25,a_ph:20});t1="all";draw1();r.Rall=$("m1").textContent;
+  $("b2q5").click();r.q5=$("w2").textContent;
+  $("b2q6").click();r.q6=$("w2").textContent.split("\n").slice(-2).join(" | ");
+  $("b2q5").click();sel2=[0,0];draw2();r.entry=$("w2").textContent.split("\n")[0];
+  $("cq6").click();r.lock=$("r3").textContent;$("cplus").click();r.plus=$("r3").textContent.match(/after \+20° to both(.*)$/)[1];
+  set({c_ph:20,c_th:25,c_ps:40});draw3();r.M=$("m3a").textContent;
+  const pre=document.createElement("pre");pre.id="testout";pre.textContent=JSON.stringify(r,null,1);document.body.appendChild(pre)}
+})();
+</script>
+</body>
+</html>

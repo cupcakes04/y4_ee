@@ -1,0 +1,389 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>T3 Dynamics Lab</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=Space+Grotesk:wght@500;600&display=swap">
+<style>
+:root{
+  --bg:#f3f6f7; --panel:#ffffff; --ink:#18222b; --muted:#5b6872; --rule:#d9e1e5; --grid:#e8eef1;
+  --bx:#c8372d; --by:#1d8a3a; --bz:#2563eb; --fv:#7b8790;
+  --kin:#0f8a7e; --dyn:#d0661b; --sig:#6b4fc8; --ok:#1d8a3a; --warn:#b42318;
+  --f-display:"Space Grotesk",system-ui,sans-serif; --f-body:"IBM Plex Sans",system-ui,sans-serif; --f-mono:"IBM Plex Mono",ui-monospace,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#11171c; --panel:#182027; --ink:#e4ecf0; --muted:#93a3ad; --rule:#2a353e; --grid:#1f2930;
+  --bx:#ff7b6b; --by:#4cc46c; --bz:#6ea8ff; --fv:#93a3ad; --kin:#3cc7b8; --dyn:#f39a52; --sig:#a993f5; --ok:#4cc46c; --warn:#ff7b6b; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#11171c; --panel:#182027; --ink:#e4ecf0; --muted:#93a3ad; --rule:#2a353e; --grid:#1f2930;
+  --bx:#ff7b6b; --by:#4cc46c; --bz:#6ea8ff; --fv:#93a3ad; --kin:#3cc7b8; --dyn:#f39a52; --sig:#a993f5; --ok:#4cc46c; --warn:#ff7b6b; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.5;margin:0;padding:24px 16px 48px}
+.wrap{max-width:1100px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+h1{font-family:var(--f-display);font-weight:600;font-size:1.7rem;margin:0}
+h2{font-family:var(--f-display);font-weight:600;font-size:1.2rem;margin:0 0 4px}
+h3{font-family:var(--f-display);font-weight:600;font-size:.95rem;margin:0 0 6px}
+.lede{color:var(--muted);max-width:78ch;margin:4px 0 0}
+.src{font-family:var(--f-mono);font-size:.75rem;color:var(--muted);margin:4px 0 0}
+.bar,.panel{background:var(--panel);border:1px solid var(--rule);border-radius:8px;padding:16px}
+.panel{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:20px}
+.panel>header,.full{grid-column:1/-1}
+@media (max-width:820px){.panel{grid-template-columns:minmax(0,1fr)}}
+.plot{position:relative;width:100%;aspect-ratio:1}
+canvas{width:100%;height:100%;display:block;border-radius:6px;background:var(--bg);touch-action:none}
+.side{display:flex;flex-direction:column;gap:12px;min-width:0}
+.sliders{display:grid;grid-template-columns:auto minmax(90px,1fr) 8ch;gap:4px 10px;align-items:center;font-family:var(--f-mono);font-size:.85rem}
+.sliders output{text-align:right;font-variant-numeric:tabular-nums}
+input[type=range]{width:100%;accent-color:var(--sig)}
+.row{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+button{font:inherit;font-size:.82rem;padding:5px 10px;border-radius:5px;border:1px solid var(--rule);background:var(--bg);color:var(--ink);cursor:pointer}
+button:hover{border-color:var(--muted)}
+button[aria-pressed="true"]{background:var(--sig);color:#fff;border-color:var(--sig)}
+button:focus-visible,input:focus-visible{outline:2px solid var(--sig);outline-offset:2px}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:.8rem;color:var(--muted)}
+.sw{display:inline-block;width:14px;height:3px;border-radius:2px;vertical-align:middle;margin-right:5px}
+.note{font-size:.88rem;color:var(--muted);max-width:74ch;margin:0}
+.note b{color:var(--ink);font-weight:600}
+.cap{font-size:.8rem;color:var(--muted);margin:0}
+.tag{font-family:var(--f-mono);font-size:.7rem;color:var(--muted);border:1px dashed var(--rule);padding:1px 6px;border-radius:4px;white-space:nowrap}
+.work{font-family:var(--f-mono);font-size:.82rem;font-variant-numeric:tabular-nums;white-space:pre-wrap;overflow-wrap:anywhere;margin:0;background:var(--bg);padding:8px 10px;border-radius:6px}
+.answer{border-left:3px solid var(--ok);padding:8px 12px;background:var(--bg);border-radius:0 6px 6px 0;font-size:.88rem}
+.answer ol{margin:4px 0 0;padding-left:20px} .answer li{margin:2px 0}
+.predict{border-left:3px solid var(--sig);padding:6px 10px;font-size:.9rem;background:var(--bg);border-radius:0 6px 6px 0}
+.predict summary{cursor:pointer;color:var(--sig);font-size:.85rem;margin-top:4px}
+/* symbol grid */
+table.sym{border-collapse:collapse;font-size:.88rem;width:100%}
+table.sym th,table.sym td{border-top:1px solid var(--rule);padding:5px 10px;text-align:left}
+table.sym td{font-family:var(--f-mono)}
+table.sym th{font-weight:500;color:var(--muted);font-size:.8rem}
+table.sym thead th{font-family:var(--f-mono);font-size:.9rem;color:var(--ink)}
+/* block map */
+.map{display:grid;grid-template-columns:minmax(0,1.5fr) auto minmax(0,1fr);gap:8px 10px;align-items:center}
+.blk{border:2px solid var(--rule);border-radius:8px;padding:8px 10px;background:var(--bg);cursor:pointer;text-align:left;font:inherit;color:var(--ink)}
+.blk[aria-pressed="true"]{outline:3px solid var(--sig);outline-offset:1px;background:var(--bg);color:var(--ink)}
+.blk.kin{border-color:var(--kin)} .blk.dyn{border-color:var(--dyn)}
+.blk .k{font-size:.72rem;font-family:var(--f-mono);text-transform:uppercase;letter-spacing:.04em}
+.blk.kin .k{color:var(--kin)} .blk.dyn .k{color:var(--dyn)}
+.blk .n{font-weight:600;font-family:var(--f-display);display:block}
+.blk .e{font-family:var(--f-mono);font-size:.82rem;display:block}
+.int{font-family:var(--f-mono);font-size:.85rem;color:var(--muted);text-align:center}
+.st{font-family:var(--f-mono);font-size:.85rem;padding:6px 8px;border-radius:6px;border:1px dashed var(--rule)}
+.st.hi{border-style:solid;border-color:var(--sig);background:var(--bg);font-weight:500}
+.detail{grid-column:1/-1;display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 14px;font-size:.88rem;background:var(--bg);border-radius:6px;padding:10px 12px}
+.detail dt{color:var(--muted);font-size:.8rem} .detail dd{margin:0;font-family:var(--f-mono);font-size:.84rem;overflow-wrap:anywhere}
+.bars{display:grid;grid-template-columns:auto minmax(0,1fr) 10ch;gap:4px 8px;align-items:center;font-family:var(--f-mono);font-size:.8rem}
+.track{position:relative;height:14px;background:var(--bg);border-radius:3px}
+.track i{position:absolute;top:0;height:100%;border-radius:3px}
+.track b{position:absolute;left:50%;top:-2px;bottom:-2px;width:1px;background:var(--muted)}
+.good{color:var(--ok);font-weight:500} .bad{color:var(--warn);font-weight:500}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>T3 lab: what's inside StateDerivative</h1>
+    <p class="lede">Topic 3 is the four lines of your Lab 2 <code>StateDerivative</code>. Two are T2 again. The new ideas are the two <b>cross-product terms</b>, ω × v and ω × (Jω), and both exist only because the body axes rotate.</p>
+    <p class="src">Source: EEEE4138 T3 (printed slide numbers), Tutorial 2 + solutions, Lab 2 guide StateDerivative. Not from these: <span class="tag">added</span>. T3 writes <b>n</b> for NED and <b>R_bⁿ</b> for what T2 called R_bᵛ: the same matrix.</p>
+  </header>
+
+  <section class="bar" aria-label="Symbols">
+    <h3>Which symbol is which: "along" an axis means moving, "about" an axis means spinning</h3>
+    <table class="sym">
+      <thead><tr><th></th><th style="color:var(--bx)">body x (nose)</th><th style="color:var(--by)">body y (right wing)</th><th style="color:var(--bz)">body z (belly)</th></tr></thead>
+      <tr><th>velocity <b>along</b> it</th><td>u</td><td>v</td><td>w</td></tr>
+      <tr><th>force <b>along</b> it</th><td>Fx</td><td>Fy</td><td>Fz</td></tr>
+      <tr><th>spin rate <b>about</b> it (gyro)</th><td>p  roll rate</td><td>q  pitch rate</td><td>r  yaw rate</td></tr>
+      <tr><th>moment <b>about</b> it</th><td>Mx</td><td>My</td><td>Mz</td></tr>
+      <tr><th>inertia <b>about</b> it</th><td>Jx</td><td>Jy</td><td>Jz</td></tr>
+      <tr><th>Euler angle (≈ about it)</th><td>φ roll</td><td>θ pitch</td><td>ψ yaw</td></tr>
+    </table>
+    <p class="cap" style="margin-top:6px">Yaw rate r spins the drone <b>about</b> z. It doesn't make w (motion along z) change. The cross product decides which component changes: r × (motion along x) → a change along y (panel 2).</p>
+  </section>
+
+  <!-- ============ PANEL 1 ============ -->
+  <section class="panel" aria-labelledby="h1">
+    <header>
+      <h2 id="h1">1 · The four blocks (Tutorial 2 Q4 = your StateDerivative)</h2>
+      <p class="note"><b style="color:var(--kin)">Kinematics</b> describes motion: pure geometry, turning one rate into another, with no m, J, F or M (sl.3). <b style="color:var(--dyn)">Dynamics</b> explains why motion changes: forces and moments, divided by m or J. Click a block.</p>
+    </header>
+    <div class="full">
+      <div class="map" id="map"></div>
+      <dl class="detail" id="det" style="margin-top:12px"></dl>
+    </div>
+    <div class="full answer"><b>Answer shape: "draw the block diagram / list the states" (Tutorial 2 Q4)</b> <span class="tag">added (layout); content from T2 Q4 solution</span>
+      <ol>
+        <li>12 states in 4 vectors: position [pN pE pD], body velocity [u v w], Euler angles [φ θ ψ], body rates [p q r].</li>
+        <li>Inputs: total body force F = [Fx Fy Fz] and moment M = [Mx My Mz]. Parameters: m, J.</li>
+        <li>Four blocks, each feeding an integrator 1/s, with the "needs" signals fed back from the states (state feedback inside the model, not a controller).</li>
+        <li>Every integrator needs an initial condition X(0) = X₀ (e.g. hover: position, zero velocity, level, zero rates).</li>
+      </ol></div>
+  </section>
+
+  <!-- ============ PANEL 2 ============ -->
+  <section class="panel" aria-labelledby="h2">
+    <header>
+      <h2 id="h2">2 · ω × v: why u and v change when the axes turn</h2>
+      <p class="note">Top-down view, N up and E right. The drone yaws at rate r. Newton works in NED: <b>no force ⇒ the NED velocity doesn't change</b> (straight path), even though the nose swings round. Body axes rotate under that fixed velocity, so u and v change. That bookkeeping is the −ω × v term (sl.8, 11–13).</p>
+    </header>
+    <div>
+      <div class="plot"><canvas id="c2" aria-label="top-down path of a yawing drone"></canvas></div>
+      <div class="legend"><span><i class="sw" style="background:var(--bx)"></i>nose (body x)</span><span><i class="sw" style="background:var(--by)"></i>right (body y)</span><span><i class="sw" style="background:var(--sig)"></i>velocity</span><span><i class="sw" style="background:var(--muted)"></i>path</span></div>
+    </div>
+    <div class="side">
+      <div class="sliders">
+        <label for="u0">start u</label><input id="u0" type="range" min="0" max="6" step="0.5" value="4"><output id="ou0"></output>
+        <label for="rr">yaw rate r</label><input id="rr" type="range" min="-1" max="1" step="0.05" value="0.5"><output id="orr"></output>
+        <label for="fx">Fx</label><input id="fx" type="range" min="-4" max="4" step="0.5" value="0"><output id="ofx"></output>
+        <label for="fy">Fy</label><input id="fy" type="range" min="-6" max="6" step="0.5" value="0"><output id="ofy"></output>
+      </div>
+      <p class="cap">m = 2.00 kg (sl.16). Level flight, so p = q = 0 and w = 0.</p>
+      <div class="row"><button id="play">▶ play</button><button id="reset">reset</button>
+        <button id="pQ1">no force (probe Q1)</button><button id="pS16">sl.16: F = [2,0,0]</button><button id="pTurn">turn: Fy = m·r·u</button></div>
+      <pre class="work" id="w2"></pre>
+      <div class="predict">Preset "no force". Before playing: does the path curve? What happens to u and v?
+        <details><summary>check</summary><p class="note">Straight line: the NED velocity stays [4, 0] m/s, because no force means nothing bends the path. The nose swings right, so the velocity ends up pointing more and more to the drone's <b>left</b>. At t = 0, v̇ = −r·u = −0.5 × 4 = −2 m/s², u̇ = r·v = 0, ẇ = 0. After a quarter-turn (π/(2·0.5) ≈ 3.1 s), u = 0 and v = −4: the drone is flying sideways to its left.</p></details></div>
+      <div class="predict">Preset "turn". What does the force do that yaw alone didn't?
+        <details><summary>check</summary><p class="note">Fy = m·r·u = 2 × 0.5 × 4 = 4 N to the right gives v̇ = Fy/m − r·u = 2 − 2 = 0, so v stays 0 and the nose stays on the path. The <b>force</b> bends the path (a centripetal force, here 4 N). Yaw just keeps the nose pointing along it. A quadrotor gets that sideways force by rolling (tilting the thrust): that's T5. <span class="tag">added</span></p></details></div>
+      <div class="answer"><b>Answer shape: "calculate u̇, v̇, ẇ" (sl.16, Tutorial 2 Q2)</b>
+        <ol>
+          <li>Write ω × v by components (sl.6): [q w − r v, r u − p w, p v − q u].</li>
+          <li>Use v̇_b = Fᵇ/m − ω × v_b, one line per component.</li>
+          <li>Explain the non-zero one: "the body axes rotate, so the components change even without a force in that direction".</li>
+        </ol></div>
+    </div>
+  </section>
+
+  <!-- ============ PANEL 3 ============ -->
+  <section class="panel" aria-labelledby="h3">
+    <header>
+      <h2 id="h3">3 · ω × (Jω): panel 2 again, but for spinning</h2>
+      <p class="note">Panel 2's rule was: with no force, the <b>velocity</b> stays fixed in NED, and the body-axis numbers u, v change only because the axes turn. Rotation has exactly the same rule with one swap: with no moment, the <b>angular momentum h = Jω</b> (the "amount of spin", like m·v is the amount of motion) stays fixed in NED, and the body-axis numbers p, q, r change because the axes turn.</p>
+      <table class="sym" style="margin-top:8px">
+        <thead><tr><th></th><th>panel 2: moving</th><th>panel 3: spinning</th></tr></thead>
+        <tr><th>amount of motion</th><td>m·v</td><td>h = J·ω</td></tr>
+        <tr><th>stays fixed in NED when…</th><td>no force F</td><td>no moment M</td></tr>
+        <tr><th>body-axes bookkeeping</th><td>− ω × v</td><td>− ω × (Jω)</td></tr>
+        <tr><th>equation (slide)</th><td>v̇ = F/m − ω × v (sl.12)</td><td>ω̇ = J⁻¹(M − ω × Jω) (sl.21)</td></tr>
+        <tr><th>bookkeeping is zero when</th><td>not rotating</td><td>h points along ω: all J equal, or spinning about one body axis only</td></tr>
+      </table>
+    </header>
+    <div>
+      <div class="plot"><canvas id="c3" aria-label="3D view of a tumbling drone with its angular momentum and spin axis"></canvas></div>
+      <div class="legend"><span><i class="sw" style="background:var(--dyn)"></i>h = Jω (fixed when M = 0)</span><span><i class="sw" style="background:var(--sig)"></i>ω (spin axis) + trail</span><span><i class="sw" style="background:var(--bx)"></i>nose</span><span><i class="sw" style="background:var(--fv)"></i>N, E, D</span></div>
+      <div class="plot" style="aspect-ratio:3/1;margin-top:8px"><canvas id="c3t" aria-label="p, q, r against time"></canvas></div>
+      <div class="legend"><span><i class="sw" style="background:var(--bx)"></i>p (roll rate)</span><span><i class="sw" style="background:var(--by)"></i>q (pitch rate)</span><span><i class="sw" style="background:var(--bz)"></i>r (yaw rate)</span><span>over 12 s</span></div>
+    </div>
+    <div class="side">
+      <div class="sliders">
+        <label for="jx">Jx</label><input id="jx" type="range" min="0.01" max="0.05" step="0.005" value="0.02"><output id="ojx"></output>
+        <label for="jy">Jy</label><input id="jy" type="range" min="0.01" max="0.05" step="0.005" value="0.03"><output id="ojy"></output>
+        <label for="jz">Jz</label><input id="jz" type="range" min="0.01" max="0.05" step="0.005" value="0.04"><output id="ojz"></output>
+        <label for="pp">p at start</label><input id="pp" type="range" min="-3" max="3" step="0.05" value="0"><output id="opp"></output>
+        <label for="qq">q at start</label><input id="qq" type="range" min="-3" max="3" step="0.05" value="1"><output id="oqq"></output>
+        <label for="r3">r at start</label><input id="r3" type="range" min="-3" max="3" step="0.05" value="2"><output id="or3"></output>
+        <label for="mx">Mx</label><input id="mx" type="range" min="-0.1" max="0.1" step="0.01" value="0"><output id="omx"></output>
+        <label for="my">My</label><input id="my" type="range" min="-0.1" max="0.1" step="0.01" value="0"><output id="omy"></output>
+        <label for="mz">Mz</label><input id="mz" type="range" min="-0.1" max="0.1" step="0.01" value="0"><output id="omz"></output>
+      </div>
+      <div class="row"><button id="play3">▶ play</button><button id="reset3">reset</button>
+        <button id="eqJ">equal J</button><button id="one">spin about z only</button><button id="free24">sl.24 rates, no moment</button><button id="flip">phone flip <span class="tag">added</span></button></div>
+      <pre class="work" id="w3s"></pre>
+      <div class="predict">"equal J", then play. Do p, q, r change? Does the purple spin axis move?
+        <details><summary>check</summary><p class="note">Nothing changes. With equal J, h = Jω points straight along ω, so ω × h = 0: there's no bookkeeping term, and the spin just carries on. "Spin about z only" is the same for unequal J, since h is along ω there too.</p></details></div>
+      <div class="predict">"sl.24 rates, no moment" (q = 1, r = 2, M = 0), then play. Watch the orange arrow and the "h in NED" line, then p, q, r.
+        <details><summary>check</summary><p class="note">h stays fixed in NED (the same three numbers the whole time), exactly like panel 2's NED velocity. But p, q, r keep changing: p starts at ṗ = (Jy − Jz)qr/Jx = (−0.010)(1)(2)/0.020 = −1 rad/s² with no moment at all. That's the coupling term: the body turns underneath a fixed h, so its body components move around.</p></details></div>
+      <div class="predict">"phone flip": a spin mostly about y (the middle inertia) with a tiny bit of p. What happens? <span class="tag">added</span>
+        <details><summary>check</summary><p class="note">The tiny p grows and the drone flips over again and again, with q reversing sign. That's the coupling term amplifying a small error (the "tennis racket" effect). Try it by tossing your phone spinning about its middle axis. Spin about x or z (the smallest or largest J) is steady instead. Not in the slides, but it's the same equation.</p></details></div>
+      <h3 style="margin-top:4px">At one instant (sl.23–25, Tutorial 2 Q3)</h3>
+      <div class="row"><button id="s23">sl.23: roll only</button><button id="s24">sl.24: coupling</button><button id="t3a">Tut 2 Q3(a)</button><button id="t3b">Tut 2 Q3(b)</button></div>
+      <pre class="work" id="w3"></pre>
+      <div class="bars" id="bars"></div>
+      <p class="cap">Bars: each rate's acceleration at the start, split into the part from the applied moment and the part from coupling.</p>
+      <div class="answer"><b>Answer shape: "calculate ṗ, q̇, ṙ" (sl.24, Tutorial 2 Q3)</b>
+        <ol>
+          <li>Write the three principal-axis equations (sl.22): ṗ = [Mx + (Jy − Jz)qr]/Jx, and the cyclic versions x→y→z.</li>
+          <li>Work out each coupling term first ((Jy − Jz)qr etc.) and give it in N m.</li>
+          <li>Add the applied moment and divide by that axis's J.</li>
+          <li>Explain: "existing rates about the other two axes add a coupling moment, because h = Jω isn't parallel to ω when the inertias differ".</li>
+        </ol></div>
+    </div>
+  </section>
+</div>
+
+<script>
+(()=>{
+const $=id=>document.getElementById(id),css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const f=(x,d=3)=>{const v=Math.abs(x)<0.5*Math.pow(10,-d)?0:x;return v.toFixed(d)};
+const dot=(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2],cross=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];
+const add=(a,b)=>a.map((x,i)=>x+b[i]),sc=(a,k)=>a.map(x=>x*k),norm=a=>Math.hypot(...a);
+const out=(id,t)=>{$(id).textContent=t},bind=(ids,fn)=>ids.forEach(i=>$(i).addEventListener("input",fn));
+function setup(cv){const r=cv.getBoundingClientRect(),dpr=window.devicePixelRatio||1;cv.width=Math.max(1,Math.round(r.width*dpr));cv.height=Math.max(1,Math.round(r.height*dpr));
+  const g=cv.getContext("2d");g.setTransform(dpr,0,0,dpr,0,0);return {g,w:r.width,h:r.height}}
+
+// ================= PANEL 1 =================
+const BL=[
+ {id:"pos",kind:"kin",name:"Position kinematics",eq:"[ṗN ṗE ṗD]ᵀ = R_bⁿ [u v w]ᵀ",code:"pos_dot = R * vb;",state:"pN, pE, pD",ic:"start position (e.g. [0, 0, 0])",
+  needs:["u v w","φ θ ψ"],slide:"T3 sl.27 (= T2 panel 2)",what:"Rotate the body velocity into NED. Integrating gives the position. Uses R_bⁿ (body → NED), so no transpose here."},
+ {id:"tra",kind:"dyn",name:"Translational dynamics",eq:"[u̇ v̇ ẇ]ᵀ = Fᵇ/m − ω × v_b",code:"vb_dot = (Fg + Fprop + Fdrag)/m - cross(omega, vb);",state:"u, v, w",ic:"initial body velocity (hover: 0)",
+  needs:["F (incl. gravity)","u v w","p q r","m"],slide:"T3 sl.12–13",what:"Newton in body axes. −ω × v is the rotating-axes term (panel 2). Gravity enters as Fg = (R_bⁿ)ᵀ[0, 0, mg]: known in NED, needed in body axes, so it's transposed."},
+ {id:"att",kind:"kin",name:"Attitude kinematics",eq:"[φ̇ θ̇ ψ̇]ᵀ = E(φ, θ) [p q r]ᵀ",code:"euler_dot = E * omega;",state:"φ, θ, ψ",ic:"initial attitude (level: 0, 0, ψ₀)",
+  needs:["p q r","φ θ"],slide:"T3 sl.28, 38 (= T2 panel 3)",what:"Turn the gyro-type body rates into Euler-angle rates. E has tan θ and 1/cos θ, so it's singular at θ = ±90°."},
+ {id:"rot",kind:"dyn",name:"Rotational dynamics",eq:"[ṗ q̇ ṙ]ᵀ = J⁻¹ (Mᵇ − ω × (Jω))",code:"omega_dot = J \\ (Mprop - cross(omega, J*omega));",state:"p, q, r",ic:"initial body rates (hover: 0)",
+  needs:["M","p q r","J"],slide:"T3 sl.21–22",what:"Euler's equation. ω × (Jω) is the coupling term (panel 3). J \\ x in MATLAB means J⁻¹x."}];
+let selB="tra";
+function drawMap(){let h="";BL.forEach(b=>{
+  h+=`<button class="blk ${b.kind}" data-b="${b.id}" aria-pressed="${b.id===selB}"><span class="k">${b.kind==="kin"?"kinematics":"dynamics"}</span><span class="n">${b.name}</span><span class="e">${b.eq}</span></button>
+      <span class="int">→ 1/s →</span><span class="st ${b.id===selB?"hi":""}">${b.state}</span>`});
+  $("map").innerHTML=h;$("map").querySelectorAll("[data-b]").forEach(x=>x.onclick=()=>{selB=x.dataset.b;drawMap()});
+  const b=BL.find(x=>x.id===selB);
+  $("det").innerHTML=`<dt>slide</dt><dd>${b.slide}</dd><dt>equation</dt><dd>${b.eq}</dd><dt>your lab line</dt><dd>${b.code}</dd>
+    <dt>needs</dt><dd>${b.needs.join(" · ")}</dd><dt>integrates to</dt><dd>${b.state}   (initial condition: ${b.ic})</dd><dt>meaning</dt><dd style="font-family:var(--f-body)">${b.what}</dd>
+    <dt>uses m or J?</dt><dd>${b.kind==="dyn"?"yes → dynamics":"no → kinematics"}</dd>`}
+drawMap();
+
+// ================= PANEL 2 =================
+const m=2;let S2,run=false,last=0;
+function reset2(){S2={t:0,N:0,E:0,psi:0,u:+$("u0").value,v:0,trail:[[0,0]]};run=false;$("play").textContent="▶ play";draw2()}
+function deriv(s){const r=+$("rr").value,Fx=+$("fx").value,Fy=+$("fy").value;
+  return {u:r*s.v+Fx/m, v:-r*s.u+Fy/m, psi:r, N:s.u*Math.cos(s.psi)-s.v*Math.sin(s.psi), E:s.u*Math.sin(s.psi)+s.v*Math.cos(s.psi)}}
+function step2(dt){const k=["u","v","psi","N","E"],s=S2,a=deriv(s),mid=o=>{const x={...s};k.forEach(q=>x[q]=s[q]+o.k[q]*o.h);return x};
+  const b=deriv(mid({k:a,h:dt/2})),c=deriv(mid({k:b,h:dt/2})),d=deriv(mid({k:c,h:dt}));
+  k.forEach(q=>s[q]+=dt/6*(a[q]+2*b[q]+2*c[q]+d[q]));s.t+=dt;s.trail.push([s.N,s.E])}
+function draw2(){out("ou0",f(+$("u0").value,1)+" m/s");out("orr",f(+$("rr").value,2)+" rad/s");out("ofx",f(+$("fx").value,1)+" N");out("ofy",f(+$("fy").value,1)+" N");
+  const s=S2,r=+$("rr").value,Fx=+$("fx").value,Fy=+$("fy").value,d=deriv(s);
+  $("w2").textContent=
+`t = ${f(s.t,2)} s     ψ = ${f(s.psi*180/Math.PI,1)}°
+body:  u = ${f(s.u,3)}   v = ${f(s.v,3)}   w = 0   m/s
+NED:   ṗN = ${f(d.N,3)}   ṗE = ${f(d.E,3)}   speed = ${f(Math.hypot(s.u,s.v),3)}
+ω × v = [q·w − r·v, r·u − p·w, p·v − q·u]
+      = [0 − ${f(r,2)}×${f(s.v,3)}, ${f(r,2)}×${f(s.u,3)} − 0, 0] = [${f(-r*s.v,3)}, ${f(r*s.u,3)}, 0]
+u̇ = Fx/m − (ω×v)x = ${f(Fx/m,3)} − (${f(-r*s.v,3)}) = ${f(d.u,3)}
+v̇ = Fy/m − (ω×v)y = ${f(Fy/m,3)} − (${f(r*s.u,3)}) = ${f(d.v,3)}
+ẇ = 0 − 0 = 0   (no motion along z, no p or q)`;
+  const {g,w,h}=setup($("c2"));g.clearRect(0,0,w,h);
+  let mnN=-10,mxN=10,mnE=-10,mxE=10;s.trail.forEach(([N,E])=>{mnN=Math.min(mnN,N);mxN=Math.max(mxN,N);mnE=Math.min(mnE,E);mxE=Math.max(mxE,E)});
+  const span=Math.max(mxN-mnN,mxE-mnE)*1.15,cN=(mnN+mxN)/2,cE=(mnE+mxE)/2,k=Math.min(w,h)/span,P=(N,E)=>[w/2+(E-cE)*k,h/2-(N-cN)*k];
+  // grid every 5 m
+  g.strokeStyle=css("--grid");g.lineWidth=1;const st=span>60?10:5;
+  for(let x=Math.floor((cE-span/2)/st)*st;x<=cE+span/2;x+=st){const a=P(cN-span,x),b=P(cN+span,x);g.beginPath();g.moveTo(...a);g.lineTo(...b);g.stroke()}
+  for(let y=Math.floor((cN-span/2)/st)*st;y<=cN+span/2;y+=st){const a=P(y,cE-span),b=P(y,cE+span);g.beginPath();g.moveTo(...a);g.lineTo(...b);g.stroke()}
+  g.fillStyle=css("--muted");g.font=`11px ${css("--f-mono")}`;g.fillText(`N ↑   E →   grid ${st} m`,8,16);
+  g.strokeStyle=css("--muted");g.lineWidth=2;g.beginPath();s.trail.forEach(([N,E],i)=>{const q=P(N,E);i?g.lineTo(...q):g.moveTo(...q)});g.stroke();
+  const o=P(s.N,s.E),L=Math.min(w,h)*0.12,arrow=(dx,dy,c,lab,lw=2.6)=>{const e=[o[0]+dx,o[1]+dy];g.save();g.strokeStyle=c;g.fillStyle=c;g.lineWidth=lw;g.beginPath();g.moveTo(...o);g.lineTo(...e);g.stroke();
+    const an=Math.atan2(dy,dx);if(Math.hypot(dx,dy)>6){g.beginPath();g.moveTo(...e);g.lineTo(e[0]-9*Math.cos(an-.4),e[1]-9*Math.sin(an-.4));g.lineTo(e[0]-9*Math.cos(an+.4),e[1]-9*Math.sin(an+.4));g.fill()}
+    if(lab){g.font=`500 12px ${css("--f-mono")}`;g.fillText(lab,e[0]+5,e[1]-4)}g.restore()};
+  const cp=Math.cos(s.psi),sp=Math.sin(s.psi);
+  // drone body (X frame) rotated by psi; screen: E right, N up
+  g.save();g.translate(...o);g.rotate(s.psi);g.strokeStyle=css("--ink");g.lineWidth=2;const a=L*0.35;
+  [[1,1],[1,-1]].forEach(([x,y])=>{g.beginPath();g.moveTo(-a*x,a*y);g.lineTo(a*x,-a*y);g.stroke()});
+  [[a,-a],[a,a],[-a,a],[-a,-a]].forEach(([x,y])=>{g.beginPath();g.arc(x,y,a*0.4,0,2*Math.PI);g.stroke()});g.restore();
+  arrow(L*sp,-L*cp,css("--bx"),"x nose");arrow(L*0.8*cp,L*0.8*sp,css("--by"),"y right");
+  const sv=Math.hypot(d.N,d.E);if(sv>1e-6)arrow(d.E/sv*L*1.3,-d.N/sv*L*1.3,css("--sig"),"velocity",2);
+}
+function loop(ts){if(!run)return;const dt=Math.min(0.05,(ts-last)/1000||0.016);last=ts;for(let i=0;i<4;i++)step2(dt/4);draw2();
+  if(S2.t>14){run=false;$("play").textContent="▶ play";return}requestAnimationFrame(loop)}
+$("play").onclick=()=>{run=!run;$("play").textContent=run?"❚❚ pause":"▶ play";if(run){last=performance.now();requestAnimationFrame(loop)}};
+$("reset").onclick=reset2;bind(["u0"],reset2);bind(["rr","fx","fy"],draw2);
+const set=o=>{for(const k in o)$(k).value=o[k]};
+$("pQ1").onclick=()=>{set({u0:4,rr:0.5,fx:0,fy:0});reset2()};
+$("pS16").onclick=()=>{set({u0:4,rr:0.5,fx:2,fy:0});reset2()};
+$("pTurn").onclick=()=>{set({u0:4,rr:0.5,fx:0,fy:4});reset2()};
+reset2();
+
+// ================= PANEL 3 =================
+class View{constructor(cv,draw,span=2.5){this.cv=cv;this.draw=draw;this.az=215*Math.PI/180;this.el=24*Math.PI/180;this.span=span;let d=null;
+    cv.addEventListener("pointerdown",e=>{d=[e.clientX,e.clientY];cv.setPointerCapture(e.pointerId)});
+    cv.addEventListener("pointermove",e=>{if(!d)return;this.az-=(e.clientX-d[0])*0.01;this.el=Math.max(-1.4,Math.min(1.4,this.el+(e.clientY-d[1])*0.01));d=[e.clientX,e.clientY];this.render()});
+    cv.addEventListener("pointerup",()=>d=null)}
+  render(){const {g,w,h}=setup(this.cv);Object.assign(this,{g,w,h});const c=[Math.cos(this.el)*Math.cos(this.az),Math.cos(this.el)*Math.sin(this.az),-Math.sin(this.el)],fw=sc(c,-1);
+    let rt=cross(fw,[0,0,-1]);rt=sc(rt,1/norm(rt));this.rt=rt;this.up=cross(rt,fw);this.s=Math.min(w,h)/(2*this.span);this.cx=w/2;this.cy=h/2;g.clearRect(0,0,w,h);this.draw(this)}
+  P(p){return [this.cx+this.s*dot(p,this.rt),this.cy-this.s*dot(p,this.up)]}
+  path(pts,color,lw=1.5,dash,alpha=1){const g=this.g;g.save();g.strokeStyle=color;g.lineWidth=lw;g.globalAlpha=alpha;if(dash)g.setLineDash(dash);g.beginPath();pts.forEach((p,i)=>{const q=this.P(p);i?g.lineTo(...q):g.moveTo(...q)});g.stroke();g.restore()}
+  arrow(a,b,color,lw=2,label,dash){const g=this.g,A=this.P(a),B=this.P(b);g.save();g.strokeStyle=color;g.fillStyle=color;g.lineWidth=lw;if(dash)g.setLineDash(dash);
+    g.beginPath();g.moveTo(...A);g.lineTo(...B);g.stroke();g.setLineDash([]);const an=Math.atan2(B[1]-A[1],B[0]-A[0]);
+    if(Math.hypot(B[0]-A[0],B[1]-A[1])>6){g.beginPath();g.moveTo(...B);g.lineTo(B[0]-9*Math.cos(an-.4),B[1]-9*Math.sin(an-.4));g.lineTo(B[0]-9*Math.cos(an+.4),B[1]-9*Math.sin(an+.4));g.fill()}
+    if(label){g.font=`500 12px ${css("--f-mono")}`;g.fillText(label,B[0]+5,B[1]-5)}g.restore()}}
+const mv=(A,v)=>A.map(r=>r[0]*v[0]+r[1]*v[1]+r[2]*v[2]);
+const mm=(A,B)=>A.map((r,i)=>B[0].map((_,j)=>r.reduce((s,_,k)=>s+A[i][k]*B[k][j],0)));
+const rotAxis=(a,ang)=>{const [x,y,z]=a,c=Math.cos(ang),s=Math.sin(ang),C=1-c;return [[c+x*x*C,x*y*C-z*s,x*z*C+y*s],[y*x*C+z*s,c+y*y*C,y*z*C-x*s],[z*x*C-y*s,z*y*C+x*s,c+z*z*C]]};
+const getJ=()=>[+$("jx").value,+$("jy").value,+$("jz").value],getM=()=>[+$("mx").value,+$("my").value,+$("mz").value];
+const wdot=(w,J,M)=>{const h=w.map((x,i)=>J[i]*x),c=cross(w,h);return M.map((x,i)=>(x-c[i])/J[i])};
+let S3,run3=false,last3=0;
+function reset3(){const w=[+$("pp").value,+$("qq").value,+$("r3").value],J=getJ();
+  S3={t:0,w,R:[[1,0,0],[0,1,0],[0,0,1]],hist:[[0,...w]],trail:[],h0:norm(w.map((x,i)=>J[i]*x))||1,w0:norm(w)||1};run3=false;$("play3").textContent="▶ play";S3.trail.push(sc(w,1/S3.w0));drawSim()}
+function step3(dt){const J=getJ(),M=getM(),s=S3,f=w=>wdot(w,J,M);
+  const k1=f(s.w),k2=f(add(s.w,sc(k1,dt/2))),k3=f(add(s.w,sc(k2,dt/2))),k4=f(add(s.w,sc(k3,dt)));
+  const wm=add(s.w,sc(k1,dt/2)),n=norm(wm);if(n>1e-12)s.R=mm(s.R,rotAxis(sc(wm,1/n),n*dt));
+  s.w=add(s.w,sc(add(add(k1,sc(k2,2)),add(sc(k3,2),k4)),dt/6));s.t+=dt}
+const v3=new View($("c3"),V=>{if(!S3)return;const s=S3,J=getJ(),z=[0,0,0],fv=css("--fv");
+  V.arrow(z,[2,0,0],fv,1,"N",[4,3]);V.arrow(z,[0,2,0],fv,1,"E",[4,3]);V.arrow(z,[0,0,2],fv,1,"D",[4,3]);
+  const B=v=>mv(s.R,v),d=0.6;[[d,-d],[d,d],[-d,d],[-d,-d]].forEach(([x,y])=>{V.path([z,B([x,y,0])],css("--ink"),2);
+    const pts=[];for(let i=0;i<=20;i++){const a=i/20*2*Math.PI;pts.push(B([x+0.25*Math.cos(a),y+0.25*Math.sin(a),0]))}V.path(pts,css("--ink"),1,null,0.7)});
+  V.arrow(z,B([1.3,0,0]),css("--bx"),2.6,"nose");V.arrow(z,B([0,0.9,0]),css("--by"),1.6,null);V.arrow(z,B([0,0,0.9]),css("--bz"),1.6,null);
+  const hN=mv(s.R,s.w.map((x,i)=>J[i]*x)),wN=mv(s.R,s.w);
+  if(s.trail.length>1)V.path(s.trail.map(p=>sc(p,1.9)),css("--sig"),1.2,[2,3],0.7);
+  V.arrow(z,sc(hN,2.1/s.h0),css("--dyn"),3.4,"h");V.arrow(z,sc(wN,1.9/s.w0),css("--sig"),2.4,"ω")});
+function drawStrip(){const {g,w,h}=setup($("c3t"));g.clearRect(0,0,w,h);const pad=22,T=12,ys=Math.max(1,...S3.hist.flatMap(r=>r.slice(1).map(Math.abs)))*1.1;
+  const X=t=>pad+(w-pad-6)*t/T,Y=v=>h/2-(h/2-6)*v/ys;g.strokeStyle=css("--rule");g.beginPath();g.moveTo(pad,Y(0));g.lineTo(w-6,Y(0));g.moveTo(pad,4);g.lineTo(pad,h-4);g.stroke();
+  g.fillStyle=css("--muted");g.font=`10px ${css("--f-mono")}`;g.fillText(f(ys,1),2,12);g.fillText("rad/s",2,h-4);
+  ["--bx","--by","--bz"].forEach((c,k)=>{g.strokeStyle=css(c);g.lineWidth=1.8;g.beginPath();S3.hist.forEach((r,i)=>{const q=[X(r[0]),Y(r[k+1])];i?g.lineTo(...q):g.moveTo(...q)});g.stroke()})}
+function drawSim(){const s=S3,J=getJ(),hB=s.w.map((x,i)=>J[i]*x),hN=mv(s.R,hB),M=getM();
+  $("w3s").textContent=
+`t = ${f(s.t,2)} s
+body rates  p q r = [${s.w.map(x=>f(x,3)).join(", ")}] rad/s
+h in body   J·ω   = [${hB.map(x=>f(x,4)).join(", ")}]   ← changes
+h in NED    R·Jω  = [${hN.map(x=>f(x,4)).join(", ")}]   ← ${norm(M)<1e-12?"fixed (no moment)":"changes (moment applied)"}`;
+  v3.render();drawStrip()}
+function loop3(ts){if(!run3)return;const dt=Math.min(0.05,(ts-last3)/1000||0.016);last3=ts;for(let i=0;i<8;i++)step3(dt/8);
+  S3.hist.push([S3.t,...S3.w]);S3.trail.push(sc(mv(S3.R,S3.w),1/S3.w0));if(S3.trail.length>600)S3.trail.shift();drawSim();
+  if(S3.t>=12){run3=false;$("play3").textContent="▶ play";return}requestAnimationFrame(loop3)}
+$("play3").onclick=()=>{if(S3.t>=12)reset3();run3=!run3;$("play3").textContent=run3?"❚❚ pause":"▶ play";if(run3){last3=performance.now();requestAnimationFrame(loop3)}};
+$("reset3").onclick=reset3;
+function draw3(){[["jx",3],["jy",3],["jz",3],["pp",2],["qq",2],["r3",2],["mx",2],["my",2],["mz",2]].forEach(([k,d])=>out("o"+k,f(+$(k).value,d)));
+  const J=getJ(),[Jx,Jy,Jz]=J,w=[+$("pp").value,+$("qq").value,+$("r3").value],[p,q,r]=w,M=getM(),[Mx,My,Mz]=M,wd=wdot(w,J,M);
+  const hh=w.map((x,i)=>J[i]*x),ang=norm(w)>1e-9&&norm(hh)>1e-9?Math.acos(Math.max(-1,Math.min(1,dot(w,hh)/norm(w)/norm(hh))))*180/Math.PI:0;
+  const cpl=[(Jy-Jz)*q*r,(Jz-Jx)*p*r,(Jx-Jy)*p*q];
+  $("w3").textContent=
+`h = Jω = [${f(Jx,3)}×${f(p,2)}, ${f(Jy,3)}×${f(q,2)}, ${f(Jz,3)}×${f(r,2)}] = [${hh.map(x=>f(x,4)).join(", ")}] kg m²/s
+angle between ω and h = ${f(ang,1)}°  ${ang<0.05?'(parallel → no coupling)':''}
+coupling terms (sl.22):
+  (Jy−Jz)qr = (${f(Jy,3)}−${f(Jz,3)})(${f(q,2)})(${f(r,2)}) = ${f(cpl[0],4)} N m
+  (Jz−Jx)pr = (${f(Jz,3)}−${f(Jx,3)})(${f(p,2)})(${f(r,2)}) = ${f(cpl[1],4)} N m
+  (Jx−Jy)pq = (${f(Jx,3)}−${f(Jy,3)})(${f(p,2)})(${f(q,2)}) = ${f(cpl[2],4)} N m
+ṗ = (${f(Mx,3)} + (${f(cpl[0],4)})) / ${f(Jx,3)} = ${f(wd[0],3)} rad/s²
+q̇ = (${f(My,3)} + (${f(cpl[1],4)})) / ${f(Jy,3)} = ${f(wd[1],3)} rad/s²
+ṙ = (${f(Mz,3)} + (${f(cpl[2],4)})) / ${f(Jz,3)} = ${f(wd[2],3)} rad/s²`;
+  const mx=Math.max(4,...wd.map(Math.abs),...M.map((x,i)=>Math.abs(x/J[i])));
+  const bar=(x,c)=>{const wpc=Math.abs(x)/mx*50;return `<i style="background:${c};width:${wpc}%;left:${x>=0?50:50-wpc}%"></i>`};
+  $("bars").innerHTML=["ṗ","q̇","ṙ"].map((n,i)=>{const a=M[i]/J[i],c=cpl[i]/J[i];
+    return `<span>${n} applied</span><span class="track"><b></b>${bar(a,"var(--kin)")}</span><span>${f(a,3)}</span><span>${n} coupling</span><span class="track"><b></b>${bar(c,"var(--warn)")}</span><span>${f(c,3)}</span>`}).join("");
+  reset3()}
+bind(["jx","jy","jz","pp","qq","r3","mx","my","mz"],draw3);
+$("s23").onclick=()=>{set({jx:0.02,jy:0.03,jz:0.04,pp:0,qq:0,r3:0,mx:0.06,my:0,mz:0});draw3()};
+$("s24").onclick=()=>{set({jx:0.02,jy:0.03,jz:0.04,pp:0,qq:1,r3:2,mx:0.06,my:0,mz:0});draw3()};
+$("t3a").onclick=()=>{set({jx:0.025,jy:0.035,jz:0.045,pp:0,qq:0,r3:0,mx:0.08,my:0,mz:0});draw3()};
+$("t3b").onclick=()=>{set({jx:0.025,jy:0.035,jz:0.045,pp:0,qq:1.5,r3:2,mx:0.08,my:0,mz:0});draw3()};
+$("eqJ").onclick=()=>{set({jx:0.03,jy:0.03,jz:0.03,pp:0.5,qq:1,r3:2,mx:0,my:0,mz:0});draw3()};
+$("one").onclick=()=>{set({jx:0.02,jy:0.03,jz:0.04,pp:0,qq:0,r3:2,mx:0,my:0,mz:0});draw3()};
+$("free24").onclick=()=>{set({jx:0.02,jy:0.03,jz:0.04,pp:0,qq:1,r3:2,mx:0,my:0,mz:0});draw3()};
+$("flip").onclick=()=>{set({jx:0.02,jy:0.03,jz:0.04,pp:0.05,qq:3,r3:0,mx:0,my:0,mz:0});draw3()};
+draw3();
+window.addEventListener("resize",()=>{draw2();drawSim()});
+
+if(location.hash==="#test"){const R={};
+  $("pQ1").click();R.q1=$("w2").textContent.split("\n").slice(5,7).join(" | ");
+  for(let i=0;i<Math.round((Math.PI/2/0.5)/0.001);i++)step2(0.001);draw2();R.quarter=$("w2").textContent.split("\n").slice(0,3).join(" | ");
+  $("pS16").click();R.s16=$("w2").textContent.split("\n").slice(5,7).join(" | ");
+  $("pTurn").click();R.turn=$("w2").textContent.split("\n")[6];
+  $("s24").click();R.s24=$("w3").textContent.split("\n").slice(3,7).join(" | ");
+  $("t3a").click();R.t3a=$("w3").textContent.split("\n")[6];
+  $("t3b").click();R.t3b=$("w3").textContent.split("\n").slice(3,9).join(" | ");
+  $("s24").click();$("eqJ").click();R.eq=$("w3").textContent.split("\n").slice(1,2).join("")+" || "+$("w3").textContent.split("\n")[6];
+  $("free24").click();const h0=$("w3s").textContent.split("\n")[3];for(let i=0;i<4000;i++)step3(0.0025);drawSim();R.hcons=h0+" || "+$("w3s").textContent.split("\n")[3];
+  $("flip").click();for(let i=0;i<2400;i++)step3(0.0025);drawSim();R.flip=$("w3s").textContent.split("\n").slice(0,2).join(" | ");
+  const pre=document.createElement("pre");pre.id="testout";pre.textContent=JSON.stringify(R,null,1);document.body.appendChild(pre)}
+})();
+</script>
+</body>
+</html>
