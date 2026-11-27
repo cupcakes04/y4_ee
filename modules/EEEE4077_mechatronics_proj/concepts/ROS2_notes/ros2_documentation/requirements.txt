@@ -1,0 +1,17 @@
+codespell
+doc8
+docutils
+matplotlib
+pip
+pytest
+sphinx
+sphinx-autobuild
+sphinx-copybutton
+sphinx-lint
+sphinx-multiversion
+sphinx-rtd-theme
+sphinx-tabs
+sphinx-tamer
+sphinxcontrib-googleanalytics
+sphinxcontrib-mermaid
+sphinxext-opengraph

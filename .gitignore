@@ -1,3 +1,8 @@
-modules/EEEE4077_mechatronics_proj/concepts/ROS2_notes/ros2_ws/
+# ROS2 notes: colcon build output (src/ and launch/ stay tracked)
+modules/EEEE4077_mechatronics_proj/concepts/ROS2_notes/ros2_ws/build/
+modules/EEEE4077_mechatronics_proj/concepts/ROS2_notes/ros2_ws/install/
+modules/EEEE4077_mechatronics_proj/concepts/ROS2_notes/ros2_ws/log/
+__pycache__/
 
-.ini
+# Drive/Windows folder metadata
+desktop.ini
