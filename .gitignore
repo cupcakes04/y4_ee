@@ -4,5 +4,10 @@ modules/EEEE4077_mechatronics_proj/concepts/ROS2_notes/ros2_ws/install/
 modules/EEEE4077_mechatronics_proj/concepts/ROS2_notes/ros2_ws/log/
 __pycache__/
 
+# FYP workspace: colcon build output (src/ and experiments/ stay tracked)
+modules/EEEE4077_mechatronics_proj/ws/build/
+modules/EEEE4077_mechatronics_proj/ws/install/
+modules/EEEE4077_mechatronics_proj/ws/log/
+
 # Drive/Windows folder metadata
 desktop.ini

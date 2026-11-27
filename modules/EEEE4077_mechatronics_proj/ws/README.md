@@ -5,13 +5,31 @@ Tutorial drills stay in `concepts/ROS2_notes/ros2_ws`; this workspace holds proj
 
 ## Learn ↔ build loop
 
-For each step of a milestone in [plan.md](../chapters/research/plan.md):
+You build, the agent reviews (why: [brief §4](../chapters/notes/brief.md); who types what: `.agents/fyp/AGENTS.md` §4). For each step of a milestone in [plan.md](../chapters/notes/plan.md):
 
-1. **Concept**: the minimum idea needed, in your own words (your notes in `concepts/`, or `chapters/research/notes/` for project-specific concepts). You can put 'what i should know' and user (I) will try to answer and discover myself, which you correct me as a teacher (back and forth) 
-2. **Build**: the smallest runnable piece. The agent may write it; you must be able to explain every file.
-3. **Run & check**: you run it and look at it (RViz, a plot, `ros2 topic echo`). If it matters, log a number in `results.md`.
-4. **Check understanding (situational)**: when a step's concept is load-bearing for later steps (sim time, TF, MPPI params, KF tuning…), the agent writes 3–5 short questions into `chapters/scratch/answer.md`. Each question is anchored to a real error message, decision or number the student will meet in the next steps (and says when); if it can't be, it's cut. Purpose: find bugs in the mental model before they become bugs in the system. Graded bluntly; gaps go back into the concept note. Pass criteria = the *"What known means"* column in [stack.md](../chapters/research/stack.md). Skipped for routine steps.
-5. **Log** one line below: what you learned, what broke.
+```mermaid
+flowchart TD
+  T["1 · Task card (agent)<br/>goal · done-when · sources · traps"] --> C["2 · Concept (explain-back)<br/>you read, explain it back, get corrected"]
+  C --> SP["2b · Spec first (you)<br/>your plan in plain words · agent pushes back before you write"]
+  SP --> B["3 · Build (you)"]
+  B -->|stuck ~20–30 min| H["Ask with the exact error:<br/>hint or explanation, not the file"]
+  H --> B
+  B --> R["4 · Check + review<br/>you run the done-when checks · agent reviews the code"]
+  R --> L["5 · Log one line below<br/>+ What clicked in stack.md"]
+```
+
+1. **Task card**: the agent writes it into the milestone file (`chapters/notes/milestones/`). Only the current step gets a full card.
+2. **Concept**: you read the sources and explain the idea back (chat or `chapters/notes/milestones/answer.md`); the agent corrects until your concept map is right. Your own notes go in `concepts/`.
+   - **Spec first**: before writing, say your plan in plain words (what, and why: frames, topics, parameters). The agent pushes back on anything wrong now, when it's cheap.
+3. **Build**: you write it, starting from the official example and adapting it to your spec. Ask for syntax freely: the agent gives the *pattern* (the shape of the tag or call), and you place and wire it. It never dictates code blocks to type in. Pure boilerplate (package.xml, CMake, launch skeleton) it can hand over whole.
+4. **Check + review**: you run the done-when checks; the agent reviews your code like a senior engineer (bugs, conventions, what it would do differently). A number that matters comes from an experiment (code in `experiments/<q#>_<name>/`); its logs, media and write-up go in [`chapters/research/`](../chapters/research/README.md).
+5. **Log**: one line below (learned, broke). Anything that clicked: one line in [stack.md](../chapters/notes/stack.md) *What clicked*. The agent does this bookkeeping at session end (AGENTS.md §0).
+
+## Less friction when running
+
+- `--symlink-install` links Python, launch, URDF/xacro, YAML and world files instead of copying them: after editing one, just relaunch, **no rebuild** [E]. Rebuild only after adding a new file, or changing C++, `CMakeLists.txt` or `package.xml`.
+- One alias in `~/.bashrc` instead of sourcing by hand in every terminal (adjust the path):
+  `alias fyp='conda deactivate 2>/dev/null; source /opt/ros/jazzy/setup.bash; cd <path>/ws && source install/setup.bash'`
 
 ## Packages (planned — created when their milestone starts)
 
@@ -28,4 +46,4 @@ For each step of a milestone in [plan.md](../chapters/research/plan.md):
 
 | Date | Step | Learned / broke |
 |---|---|---|
-| 2026-11-19 | M1 step 1: Gazebo Harmonic + ros_gz_bridge + sim time; Q3 test | Learned: Gazebo uses gz-transport not DDS, bridge per topic, sim vs wall time, RTF; TF needed between any two frames RViz must relate. Q3 = actors visible to gpu_lidar [M2]; RTF ≈ 1.0 with 2 lidars [M3]. Broke: conda Python 3.11 shadowing ROS Python 3.12 (`conda deactivate`); RViz dropped `/scan_high` with no TF to the fixed frame |
+| 2026-11-19 | M1 step 1: Gazebo Harmonic + ros_gz_bridge + sim time; Q3 test | Learned: Gazebo uses gz-transport not DDS, bridge per topic, sim vs wall time, RTF; TF needed between any two frames RViz must relate. Q3 = actors visible to gpu_lidar; RTF ≈ 1.0 with 2 lidars [M:q3_lidar_actor]. Broke: conda Python 3.11 shadowing ROS Python 3.12 (`conda deactivate`); RViz dropped `/scan_high` with no TF to the fixed frame |

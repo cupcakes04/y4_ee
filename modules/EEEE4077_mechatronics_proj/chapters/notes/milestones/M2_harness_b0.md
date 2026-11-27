@@ -13,7 +13,7 @@ Same learn ↔ build loop as M1.
 |---|---|---|---|---|
 | 6 | ⬜ | Driving Nav2 from Python (`nav2_simple_commander`); headless Gazebo | `fyp_harness` runner: scenario YAML → spawn actor → send goal → wait → stop | One scripted run end-to-end without touching the GUI |
 | 7 | ⬜ | What to log (GT poses, robot odom, cmd_vel) | Logger → CSV per run; metrics script (success, collision, min separation, time, freeze time) | Metrics for one run make sense vs what you watched |
-| 8 | ⬜ | MPPI tuning basics (README tuning guide [L1]) | Batch runner with seeds; scenarios A + B; tune B0 | **Q1, Q4**: B0 distributions + runs/hour on laptop → `results.md` |
+| 8 | ⬜ | MPPI tuning basics (README tuning guide [L1]) | Batch runner with seeds; scenarios A + B; tune B0 | **Q1, Q4**: B0 distributions + runs/hour on laptop → write-ups in `chapters/research/` (criteria written before the batch) |
 | 9 | ⬜ | — | Plot script (matplotlib from CSV) + 4–5 midterm slides | Slides uploaded after meeting |
 
 ## Notes / findings

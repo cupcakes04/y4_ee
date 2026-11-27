@@ -34,7 +34,7 @@ Claims we want to make but can't yet source. Pay before anything goes into a del
 
 | # | Claim | Needed for | Plan |
 |---|---|---|---|
-| D1 | Stock costmap layers leave stale marks behind moving people | Problem statement | Measure in B0 runs (becomes `[M#]`) instead of citing |
+| D1 | Stock costmap layers leave stale marks behind moving people | Problem statement | Measure in B0 runs (becomes `[M:<write-up>]`) instead of citing |
 | D2 | L3's exact wording/section on MPPI and dynamic obstacles | Q1 framing | Agent reads arXiv PDF |
 | D3 | L4 method + whether code is public | Positioning | Agent reads arXiv PDF |
 | D4 | Stereo depth error growth with range; 2D vs 3D LiDAR cost gap | Sensor-choice justification (design.md) | Sensor datasheets (user or agent) — only if the thesis shows a number |

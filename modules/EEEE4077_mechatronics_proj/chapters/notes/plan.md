@@ -1,9 +1,9 @@
 # Plan
 
 **Updated 2026-11-27 (wk 13).** Rewritten at the end of every session (AGENTS.md §0).
-- **Now:** M1 step 1 done, promoted and checked (Q3 = yes; gaps → [notes/M1_01 §A6](notes/M1_01_gazebo_and_sim_time.md)). Active scratch: [`M1_sim_nav2.md`](../scratch/M1_sim_nav2.md); M2 queued in [`M2_harness_b0.md`](../scratch/M2_harness_b0.md).
-- **Next:** M1 step 2, `fyp_description` (decide lidar noise there).
-- **Waiting on you:** commit the FYP folder and `.agents/fyp/` (register restore, parked debt, audit setup).
+- **Now:** working mode reset (2026-11-27): you build, the agent reviews ([brief §4](brief.md), AGENTS.md §4, [loop](../../ws/README.md)). M1 step 1 done; explain-backs on tf2, odometry, map vs odom, Nav2's shape ([What clicked](stack.md)). Active milestone file: [`M1_sim_nav2.md`](milestones/M1_sim_nav2.md); M2 queued in [`M2_harness_b0.md`](milestones/M2_harness_b0.md). Layout reshaped 2026-11-27/28: `chapters/` holds notes, research (write-ups + logs + media), audits, library, deliverables; see [chapters/README](../README.md).
+- **Next:** M1 step 2: its task card is in the milestone file. Open with your frame-tree plan (spec first), then build.
+- **Waiting on you:** commit the FYP module (the 2026-11-27 layout change moves most files; stage with `git add -A` on the module so git sees renames), plus `.agents/fyp/` and `.gitignore`. Optional: a WSL Ubuntu 24.04 distro with ROS 2 Jazzy on the PC, so FYP work isn't laptop-only. Open explain-back: why the local costmap lives in `odom` (smooth vs correct).
 
 Rule: each milestone ends in something that **runs and produces a number**. Learn only what the next milestone needs (learn↔build, see [ws/README.md](../../ws/README.md)).
 Order is risk-first: harness and baseline before perception; critic on ground truth before fusion; C++ early because it's the biggest skill gap.
@@ -27,11 +27,10 @@ Outside audit after M2 and M4: [AGENTS.md §5](../../../../.agents/fyp/AGENTS.md
 
 ## Parked debt
 
-Engineering shortcuts that are fine until their trigger fires. Read at each milestone start; a fired trigger becomes work in that milestone's scratch file. Debt the current milestone will hit anyway isn't parked: it stays in the scratch file as *to fix* and is closed before the milestone closes. Source/claim debt lives in the register's [Data debt](../library/register.md#data-debt) (D#).
+Engineering shortcuts that are fine until their trigger fires. Read at each milestone start; a fired trigger becomes work in that milestone's file. Debt the current milestone will hit anyway isn't parked: it stays in the milestone file as *to fix* and is closed before the milestone closes. Source/claim debt lives in the register's [Data debt](../library/register.md#data-debt) (D#).
 
 | Shortcut | Trigger: do it when | Cost / how | From |
 |---|---|---|---|
 | `q3_check.py` counts scans from node start, slightly before `t0` (289 scans in "28 s" at 10 Hz) | The script, or its counting logic, is reused for a metric | Start the window at sim time `t0` | M1 step 1 |
 | The Q3 lane check counts "any hit in the lane", not the person's shape (leg vs torso) | M4 scan masking needs per-person clusters or shape | Add a cluster/shape check on the actor's returns | M1 step 1 |
-| RTF [M3] is single instantaneous `/stats` samples, not an average | Q4 (runs per hour, M2 step 8) | Average RTF over each run, logged per run | M1 step 1 |
-| `results.md` rows are one line each; no per-experiment write-up | M2's first B0 batch | Each `ws/experiments/<q>/README.md` gets question → runs (logs/ids) → table/plot → verdict; the `results.md` row links to it | Borrowed from Rin |
+| RTF [M:q3_lidar_actor] is single instantaneous `/stats` samples, not an average | Q4 (runs per hour, M2 step 8) | Average RTF over each run, logged per run | M1 step 1 |

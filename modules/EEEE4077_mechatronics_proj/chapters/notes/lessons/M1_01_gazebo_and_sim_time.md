@@ -171,7 +171,7 @@ Just confirm the file exists. We read it together at step 5 (Q2).
 
 ---
 
-## Part C — Bring back (paste into chat or the scratch file)
+## Part C — Bring back (paste into chat or the milestone file)
 
 1. `gz sim --version` output
 2. `glxinfo -B` renderer line

@@ -1,6 +1,6 @@
 # Open questions & risks
 
-Each question has the cheapest test that settles it. Close it by writing the answer + `[M#]`/`[L#]`, then move it to *Closed*.
+Each question has the cheapest test that settles it. An experiment gets a write-up in [`research/`](../research/README.md) (question and what counts as an answer, before the first run). Close it by writing the answer + `[M:<write-up>]`/`[L#]`, then move it to *Closed*.
 Ordered by how much damage a wrong answer does.
 
 ## Open
@@ -22,4 +22,4 @@ Ordered by how much damage a wrong answer does.
 
 | Q | Answer |
 |---|---|
-| Q3 | **Yes.** `gpu_lidar` hits Gazebo actors at 0.3 m and 1.0 m in every scan, GUI and headless [M2]. Use actors directly. Actors still have no collision → collision metric from GT distance |
+| Q3 | **Yes.** `gpu_lidar` hits Gazebo actors at 0.3 m and 1.0 m in every scan, GUI and headless [[M:q3_lidar_actor](../research/q3_lidar_actor/README.md)]. Use actors directly. Actors still have no collision → collision metric from GT distance |

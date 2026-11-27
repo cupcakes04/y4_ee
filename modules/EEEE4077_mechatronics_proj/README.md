@@ -5,12 +5,8 @@ Agent rules: [`/.agents/fyp/AGENTS.md`](../../.agents/fyp/AGENTS.md).
 
 | Path | Purpose |
 |---|---|
-| [chapters/scratch/](chapters/scratch/) | Work in progress (agent + you); promoted when done |
-| [chapters/research/](chapters/research/) | Engineering truth: design, open questions, plan, results |
-| [chapters/library/](chapters/library/) | Sources and the data-debt list |
-| [ws/](ws/) | Colcon workspace + learn↔build log |
-| [chapters/deliverables/](chapters/deliverables/) | Future outward outputs (midterm, thesis, poster) |
-| [chapters/meetings/](chapters/meetings/) | Meeting records (user's) |
+| [chapters/](chapters/README.md) | Everything written: `notes/` (brief, plan, design, questions, stack, `milestones/` work in progress, `lessons/`), `research/` (write-ups + logs + media), `audits/`, `library/` (sources, data debt), `deliverables/` (`defense/`, `thesis/`, `meetings/`) |
+| [ws/](ws/) | Colcon workspace, `experiments/` (runnable code per question), learn↔build log |
 | [concepts/](concepts/) | Personal learning notes, ROS 2 drills (user's) |
 | [raw/](raw/) | University requirements, rubrics, project spec |
 | [archive/2026-11_proposal/](archive/2026-11_proposal/) | Submitted proposal + defense phase. Context only, not trusted |

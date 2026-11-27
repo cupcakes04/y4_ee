@@ -1,7 +1,7 @@
 # Q3 — does gpu_lidar see Gazebo actors?
 
 Throwaway experiment (not a colcon package; colcon ignores folders without `package.xml`).
-Settles **Q3**; also gives the first RTF number with real sensors (**Q4**).
+Settles **Q3**; also gives the first RTF number with real sensors (**Q4**). This folder is how to run it; the run logs, media and the answer are in the write-up: [`chapters/research/q3_lidar_actor`](../../../chapters/research/q3_lidar_actor/README.md).
 
 ## What's here
 
