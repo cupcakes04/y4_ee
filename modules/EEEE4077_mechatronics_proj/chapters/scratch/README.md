@@ -16,6 +16,7 @@ flowchart LR
   - settled design changes → `research/design.md`
   - answered questions → `research/questions.md` *Closed*
   - sources actually read → `library/register.md`
+  - shortcuts and caveats → `research/plan.md` *Parked debt* with a trigger (or *to fix* in the next scratch file if the next step will hit them)
   - one dated line → `ws/README.md` log (this becomes the **logbook**, required at final submission)
 - Then delete the scratch file. Git history keeps it if ever needed.
 

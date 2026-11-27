@@ -6,9 +6,9 @@ Proposal + defense are submitted (Nov 2026). Everything from that phase is in `a
 
 ## 0. Session protocol
 
-**Start:** read `chapters/research/brief.md` → `plan.md` (its **Now** line) → `stack.md` (what the student knows) → the `status: active` file(s) in `chapters/scratch/`. Pick up where the scratch file's last note left off.
-**During:** work and notes go in the scratch file. Sources read → register. Unsourced numbers → debt list.
-**End:** update plan.md's **Now** line and any learning-map status in stack.md. If a task is done and the user agrees, promote it (see `chapters/scratch/README.md`), add one dated line to the `ws/README.md` log, and update the brief's decision log if a decision changed. Leave the scratch file with a clear "next step" line if not done.
+**Start:** read `chapters/research/brief.md` → `plan.md` (its **Now / Next / Waiting** block) → `stack.md` (what the student knows) → the `status: active` file(s) in `chapters/scratch/`. Pick up where the scratch file's last note left off. If a report in `chapters/audits/` has no Triage section, triage it first (§5). At a milestone start, read plan.md's *Parked debt* triggers.
+**During:** work and notes go in the scratch file. Sources read → register. Unsourced numbers → data debt (register). Shortcuts → *to fix* in the scratch file, or plan.md *Parked debt* with a trigger.
+**End:** rewrite plan.md's **Now / Next / Waiting** block and any learning-map status in stack.md. If a task is done and the user agrees, promote it (see `chapters/scratch/README.md`), add one dated line to the `ws/README.md` log, and update the brief's decision log if a decision changed. Leave the scratch file with a clear "next step" line if not done.
 
 ## 1. Zones
 
@@ -22,6 +22,7 @@ Proposal + defense are submitted (Nov 2026). Everything from that phase is in `a
 | `raw/` | University requirements, rubrics, spec. Ground truth for *structure* only | Read-only |
 | `concepts/`, `chapters/meetings/` | User's own learning notes and meeting records | **Never edit.** Reading is fine |
 | `archive/2026-11_proposal/` | Old proposal-phase docs. Known inconsistencies, unsourced numbers | Read for context. **Never cite, never copy numbers from it as fact** |
+| `chapters/audits/` | Outside audit reports, one per audit (§5) | Append the Triage section only. Never write a report or run an audit |
 
 ## 2. Claim tags (applies to `chapters/research/` and anything derived from it)
 
@@ -55,3 +56,12 @@ Untagged numbers do not go in. If a number is needed but unsourced, tag `[E]` an
 - The user can verify things directly (open a PDF, screenshot a chart, run a sim). Ask them when that's cheaper than guessing.
 - Ask the user to fetch paywalled PDFs; fetch open-access ones (arXiv, docs, GitHub) yourself.
 - Be blunt about what works and what doesn't. Rubrics in `raw/` set structure, never scope.
+
+## 5. Audits
+
+An outside agent, on purpose **another model** (its blind spots differ), reads the whole module in a fresh session and writes one report to `chapters/audits/<YYYY-MM-DD>.md`. The user gives it [`audit.md`](audit.md). The agent never runs an audit itself.
+
+- **When:** after M2 (before the wk-16 midterm meeting) and after M4 (before the final runs). The user may call one anytime.
+- **The prompt never says what to look for**, only how to write a finding down (file and line). Steering the auditor makes it look where we would.
+- **The report is a perspective, not a to-do list.** Triage it at the next session start: check against the code and docs only the findings that would change the next milestone or a decision, give the user a short triage in chat, and append a `## Triage` section to the report: each finding *accepted*, *kept* or *rejected*, one line with a reason. The user decides what becomes work.
+- **Only the obligations move out.** Accepted findings become work like any other (scratch file, plan.md, brief decision log). Each kept finding becomes one *Parked debt* row in plan.md with its trigger and a link to the report section. A report is read once, at triage, never again by habit.
