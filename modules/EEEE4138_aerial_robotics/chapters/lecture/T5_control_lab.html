@@ -1,0 +1,454 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>T5 Control Lab</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=Space+Grotesk:wght@500;600&display=swap">
+<style>
+:root{
+  --bg:#f3f6f7; --panel:#ffffff; --ink:#18222b; --muted:#5b6872; --rule:#d9e1e5; --grid:#e8eef1;
+  --outer:#d0661b; --inner:#6b4fc8; --plant:#2563eb; --ref:#7b8790; --ok:#1d8a3a; --warn:#b42318; --sig:#6b4fc8;
+  --f-display:"Space Grotesk",system-ui,sans-serif; --f-body:"IBM Plex Sans",system-ui,sans-serif; --f-mono:"IBM Plex Mono",ui-monospace,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#11171c; --panel:#182027; --ink:#e4ecf0; --muted:#93a3ad; --rule:#2a353e; --grid:#1f2930;
+  --outer:#f39a52; --inner:#a993f5; --plant:#6ea8ff; --ref:#93a3ad; --ok:#4cc46c; --warn:#ff7b6b; --sig:#a993f5; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#11171c; --panel:#182027; --ink:#e4ecf0; --muted:#93a3ad; --rule:#2a353e; --grid:#1f2930;
+  --outer:#f39a52; --inner:#a993f5; --plant:#6ea8ff; --ref:#93a3ad; --ok:#4cc46c; --warn:#ff7b6b; --sig:#a993f5; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.5;margin:0;padding:24px 16px 48px}
+.wrap{max-width:1100px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+h1{font-family:var(--f-display);font-weight:600;font-size:1.7rem;margin:0}
+h2{font-family:var(--f-display);font-weight:600;font-size:1.2rem;margin:0 0 4px}
+h3{font-family:var(--f-display);font-weight:600;font-size:.95rem;margin:0 0 6px}
+.lede{color:var(--muted);max-width:80ch;margin:4px 0 0}
+.src{font-family:var(--f-mono);font-size:.75rem;color:var(--muted);margin:4px 0 0}
+.bar,.panel{background:var(--panel);border:1px solid var(--rule);border-radius:8px;padding:16px}
+.panel{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:20px}
+.panel>header,.full{grid-column:1/-1}
+@media (max-width:820px){.panel{grid-template-columns:minmax(0,1fr)}}
+.plot{position:relative;width:100%;aspect-ratio:2}
+.plot.sq{aspect-ratio:1.25}.plot.tall{aspect-ratio:1.1}
+canvas{width:100%;height:100%;display:block;border-radius:6px;background:var(--bg)}
+.side{display:flex;flex-direction:column;gap:12px;min-width:0}
+.col{display:flex;flex-direction:column;gap:8px;min-width:0}
+.sliders{display:grid;grid-template-columns:auto minmax(90px,1fr) 8ch;gap:4px 10px;align-items:center;font-family:var(--f-mono);font-size:.85rem}
+.sliders output{text-align:right;font-variant-numeric:tabular-nums}
+input[type=range]{width:100%;accent-color:var(--sig)}
+input[type=number]{font:inherit;font-family:var(--f-mono);font-size:.8rem;width:100%;padding:2px 4px;border:1px solid var(--rule);border-radius:4px;background:var(--bg);color:var(--ink)}
+.nums{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:4px 10px;font-family:var(--f-mono);font-size:.78rem}
+.nums label{display:flex;flex-direction:column;color:var(--muted)}
+.row{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+button{font:inherit;font-size:.82rem;padding:5px 10px;border-radius:5px;border:1px solid var(--rule);background:var(--bg);color:var(--ink);cursor:pointer}
+button:hover{border-color:var(--muted)}
+button[aria-pressed="true"]{background:var(--sig);color:#fff;border-color:var(--sig)}
+button:focus-visible,input:focus-visible{outline:2px solid var(--sig);outline-offset:2px}
+.lbl{font-size:.8rem;color:var(--muted);margin-right:4px}
+.chk{font-size:.85rem;display:flex;gap:6px;align-items:center}
+.note{font-size:.88rem;color:var(--muted);max-width:80ch;margin:0}
+.note b{color:var(--ink);font-weight:600}
+.cap{font-size:.8rem;color:var(--muted);margin:0}
+.tag{font-family:var(--f-mono);font-size:.7rem;color:var(--muted);border:1px dashed var(--rule);padding:1px 6px;border-radius:4px;white-space:nowrap}
+.work{font-family:var(--f-mono);font-size:.8rem;font-variant-numeric:tabular-nums;white-space:pre-wrap;overflow-wrap:anywhere;margin:0;background:var(--bg);padding:8px 10px;border-radius:6px}
+.answer{border-left:3px solid var(--ok);padding:8px 12px;background:var(--bg);border-radius:0 6px 6px 0;font-size:.88rem}
+.answer ol{margin:4px 0 0;padding-left:20px}.answer li{margin:2px 0}
+.predict{border-left:3px solid var(--sig);padding:6px 10px;font-size:.9rem;background:var(--bg);border-radius:0 6px 6px 0}
+.predict summary{cursor:pointer;color:var(--sig);font-size:.85rem;margin-top:4px}
+.words{font-size:.92rem;background:var(--bg);border-radius:6px;padding:8px 10px}
+.good{color:var(--ok);font-weight:500}.bad{color:var(--warn);font-weight:500}
+table.t{border-collapse:collapse;font-size:.85rem;width:100%}
+table.t th,table.t td{border-top:1px solid var(--rule);padding:4px 8px;text-align:left;vertical-align:top}
+table.t th{font-weight:500;color:var(--muted);font-size:.8rem}
+table.t td.m{font-family:var(--f-mono);white-space:nowrap}
+.pipe{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-family:var(--f-mono);font-size:.78rem}
+.pipe span{border:1px solid var(--rule);border-radius:5px;padding:3px 7px;background:var(--bg)}
+.pipe .o{border-color:var(--outer)}.pipe .i{border-color:var(--inner)}.pipe .p{border-color:var(--plant)}
+.pipe i{color:var(--muted);font-style:normal}
+.mat{display:inline-grid;gap:1px 12px;font-family:var(--f-mono);font-size:.8rem;border-left:2px solid var(--muted);border-right:2px solid var(--muted);padding:2px 8px;border-radius:4px;text-align:right;vertical-align:middle}
+.matrow{display:flex;gap:14px;flex-wrap:wrap;align-items:center;font-family:var(--f-mono);font-size:.82rem}
+.scroll{overflow-x:auto}
+code{font-family:var(--f-mono);font-size:.88em}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>T5 lab: asking for acceleration, then turning it into thrust and moments</h1>
+    <p class="lede">Panel 1 is T5-I (vertical PD, offset, integral, motor lag). Panel 2 is T5-II part 1, the cascade your Lab 3 <code>PositionPD</code> → <code>AttitudePD</code> blocks implement. Panel 3 is T5-II part 2 (state space, controllability, pole placement): CW Task 3.</p>
+    <p class="src">Source: EEEE4138 T5-I, T5-II (printed slide numbers), Tutorial 4 (= T5-I) and Tutorial 5 (= T5-II) solutions, Lab 3 guide. Not from these: <span class="tag">added</span>.</p>
+  </header>
+
+  <section class="bar" aria-label="The one idea">
+    <h3>The one idea: every controller here asks for an <u>acceleration</u>. A separate line turns that into the physical input.</h3>
+    <div class="pipe">
+      <span class="o">position error e = z_d − z</span><i>→ PD →</i><span class="o">u (m/s²)</span>
+      <i>→ vertical: T_cmd = m(g − u_z) (÷ cosφ cosθ when tilted) · horizontal: θ_d = −u_x/g →</i>
+      <span class="i">attitude PD → α (rad/s²)</span><i>→ M = J α →</i><span>allocation (T4)</span><i>→ Ωᵢ →</i><span class="p">aircraft (T3)</span>
+    </div>
+    <p class="cap" style="margin-top:6px">Because the request is an acceleration, the plant the PD sees is always the same <b>double integrator 1/s²</b>: z̈ = u_z (T5-I sl.14), ẍ ≈ −gθ (T5-II sl.9), θ̈ = M/J (T5-I sl.12). The same gain rule k_p = ωn², k_d = 2ζωn works for all three. Signs: z is <b>down</b>, so a climb has negative z and negative u_z. Positive pitch is nose-up, so forward needs <b>negative</b> θ.</p>
+  </section>
+
+  <section class="bar" aria-label="Terms">
+    <h3>Terms</h3>
+    <div class="scroll"><table class="t">
+      <thead><tr><th>Term</th><th>Symbol</th><th>What it is</th><th>Unit</th></tr></thead>
+      <tr><td>error, error rate</td><td class="m">e = z_d − z, ė = ż_d − ż</td><td>desired − actual. For a constant target, ė = −ż (sl.15)</td><td class="m">m, m/s</td></tr>
+      <tr><td>acceleration command</td><td class="m">u_z, u_x</td><td>what the controller <b>asks for</b>. Not a thrust (sl.3)</td><td class="m">m/s²</td></tr>
+      <tr><td>thrust command</td><td class="m">T_cmd = m(g − u_z)</td><td>hover feedforward mg plus the correction. u_z &lt; 0 (up) → T &gt; mg</td><td class="m">N</td></tr>
+      <tr><td>acceleration gains</td><td class="m">k_p = ωn², k_d = 2ζωn</td><td>from matching s² + k_d s + k_p to s² + 2ζωn s + ωn² (sl.18)</td><td class="m">s⁻², s⁻¹</td></tr>
+      <tr><td>torque gains</td><td class="m">K = J k, K_d = J k_d</td><td>the same law with J multiplied in, so the output is a moment (T5-II sl.13). Lab 3 <code>AttitudePD</code> does exactly this</td><td class="m">N m/rad, N m s/rad</td></tr>
+      <tr><td>integral state</td><td class="m">ξ = ∫e dt, k_i</td><td>memory of the error. Removes the constant offset e_ss = −d/k_p (sl.26–27)</td><td class="m">m s, s⁻³</td></tr>
+      <tr><td>motor time constant</td><td class="m">τ_m</td><td>thrust catches up with the command over ~3τ (95 %). Adds a pole (sl.38–40)</td><td class="m">s</td></tr>
+      <tr><td>deviation</td><td class="m">δz, δT</td><td>change from the hover operating point. δT = T − mg (T5-II sl.8)</td><td class="m">—</td></tr>
+      <tr><td>state-space input</td><td class="m">v_c = −δT/m</td><td>the acceleration-deviation input. Using δT instead changes only B (sl.33)</td><td class="m">m/s²</td></tr>
+      <tr><td>state feedback</td><td class="m">v_c = −K x, K = [k₁ k₂]</td><td>for x = [δz, w] this is PD with k_p = k₁, k_d = k₂ (sl.50, Tut 5 Q5)</td><td class="m">s⁻², s⁻¹</td></tr>
+    </table></div>
+  </section>
+
+  <!-- ============ PANEL 1 ============ -->
+  <section class="panel" aria-labelledby="h1">
+    <header>
+      <h2 id="h1">1 · Vertical PD on the double integrator (T5-I)</h2>
+      <p class="note">The simulation starts at hover (z = 0) and steps the target by Δz_d at t = 0.5 s. The z axis is drawn <b>up = up</b>, so the tick labels go negative as you climb. Move ωn and ζ, then add a disturbance d, integral action and motor lag one at a time.</p>
+    </header>
+    <div class="col">
+      <div class="plot"><canvas id="c1z" aria-label="z versus time"></canvas></div>
+      <div class="plot"><canvas id="c1T" aria-label="thrust versus time"></canvas></div>
+      <p class="cap"><span style="color:var(--plant)">blue</span> = z, <span style="color:var(--ref)">grey dashed</span> = z_d / mg. <span style="color:var(--outer)">orange</span> = T_cmd, <span style="color:var(--inner)">purple dashed</span> = actual thrust (lags when τ_m &gt; 0).</p>
+      <div class="plot sq" style="max-width:340px"><canvas id="c1s" aria-label="closed-loop poles in the s-plane"></canvas></div>
+    </div>
+    <div class="side">
+      <div class="sliders" id="sl1"></div>
+      <div class="row">
+        <label class="chk"><input type="checkbox" id="sat1"> thrust limit 0 ≤ T ≤ 2mg <span class="tag">added</span></label>
+        <label class="chk"><input type="checkbox" id="aw1" checked> anti-windup (stop integrating while saturated, sl.30)</label>
+      </div>
+      <div class="row"><span class="lbl">Presets:</span>
+        <button data-p1="sl19">sl.19 design (ωn 4, ζ 0.75)</button>
+        <button data-p1="t4q3">Tut 4 Q3 (ωn 3, ζ 0.8)</button>
+        <button data-p1="t4q4">Tut 4 Q4 offset d = 0.45</button>
+        <button data-p1="t4q4i">+ k_i = 10</button>
+        <button data-p1="t4q5a">Tut 4 Q5 τ = 0.020</button>
+        <button data-p1="t4q5c">τ = 0.050</button>
+        <button data-p1="sl41">sl.41 τ = 0.200</button>
+      </div>
+      <div class="words" id="words1"></div>
+      <pre class="work" id="work1"></pre>
+      <div>
+        <h3>This instant (sl.20 / Tut 4 Q3c style)</h3>
+        <div class="nums" id="in1"></div>
+        <pre class="work" id="inst1" style="margin-top:6px"></pre>
+      </div>
+    </div>
+    <div class="full predict"><b>Predict first:</b> on the sl.19 design, set d = +0.80 m/s² (an extra downward push). Does z settle above or below z_d, and by how much? Then add k_i: what happens to the offset, and what does ξ settle to?
+      <details><summary>check</summary>e_ss = −d/k_p = −0.80/16 = −0.050 m. e = z_d − z &lt; 0 means z &gt; z_d, i.e. 5 cm <b>below</b> (z is down, sl.26). With k_i &gt; 0 (and k_i &lt; k_d k_p = 96) e → 0 and ξ → −d/k_i: the integral term k_i ξ supplies the −d (sl.27).</details></div>
+    <div class="full answer"><b>Answer shape: "design PD gains / command a climb" (sl.18–21, Tut 4 Q3)</b>
+      <ol>
+        <li>Plant: T_cmd = m(g − u_z) with ideal thrust → z̈ = u_z (1/s²).</li>
+        <li>Constant target: ë = −z̈ = −u_z → <b>ë + k_d ė + k_p e = 0</b>.</li>
+        <li>Match s² + k_d s + k_p to s² + 2ζωn s + ωn²: <b>k_p = ωn² [s⁻²], k_d = 2ζωn [s⁻¹]</b>. Poles −ζωn ± jωn√(1−ζ²).</li>
+        <li>Instant: e = z_d − z, ė = −ż, u_z = k_p e + k_d ė, T_cmd = m(g − u_z).</li>
+        <li>Words: u_z &lt; 0 → accelerating <b>up</b>. Sign of ż = which way it is moving <b>now</b> (+ = down). Compare T_cmd with mg.</li>
+        <li>Extras: offset e_ss = −d/k_p · PID stable iff k_i &lt; k_d k_p · motor lag stable iff k_d &gt; τ_m k_p · stable ≠ good tracking (sl.42).</li>
+      </ol></div>
+  </section>
+
+  <!-- ============ PANEL 2 ============ -->
+  <section class="panel" aria-labelledby="h2">
+    <header>
+      <h2 id="h2">2 · Cascade: position → tilt → moment (T5-II, Lab 3)</h2>
+      <p class="note">Side view, <b>forward = right, z = down the screen</b>. The drone must move Δx_d forward. The outer (orange) loop turns position error into u_x, then θ_d = −u_x/g (clipped at ±20°, as <code>tiltMax</code> in Lab 3). The inner (purple) loop turns θ error into α, then M = Jα. Planar model of sl.7: ẍ = −(T/m) sin θ, z̈ = g − (T/m) cos θ, θ̈ = M/J (m = 1.50, J = 0.005).</p>
+      <div class="pipe" style="margin-top:6px"><span class="o">e_x = x_d − x</span><i>→</i><span class="o">u_x = ẍ_d + k_p e_x + k_d ė_x</span><i>→</i><span class="o">θ_d = −u_x/g</span><i>→</i><span class="i">e_θ = θ_d − θ</span><i>→</i><span class="i">α = k_θ e_θ − k_dθ q</span><i>→</i><span class="i">M_y = J α</span><i>→</i><span class="p">θ tilts → thrust tilts → ẍ</span></div>
+    </header>
+    <div class="col">
+      <div class="plot"><canvas id="c2v" aria-label="side view of the drone"></canvas></div>
+      <div class="plot tall"><canvas id="c2p" aria-label="x, pitch and z versus time"></canvas></div>
+      <div class="row"><button id="play2">▶ replay</button><span class="cap" id="t2"></span></div>
+    </div>
+    <div class="side">
+      <div class="sliders" id="sl2"></div>
+      <label class="chk"><input type="checkbox" id="tc2" checked> tilt compensation T = m(g − u_z)/cos θ (sl.20)</label>
+      <div class="row"><span class="lbl">Presets:</span>
+        <button data-p2="nom">slide speeds (pos 4, att 25 rad/s)</button>
+        <button data-p2="lab">Lab 3 (pos 0.7, att 6, ζ 1)</button>
+        <button data-p2="slow">inner too slow (att = pos)</button>
+      </div>
+      <div class="words" id="words2"></div>
+      <div>
+        <h3>This instant (sl.18–19 / Tut 5 Q2 style)</h3>
+        <div class="row" style="margin-bottom:6px"><button data-i2="sl18">sl.18–19</button><button data-i2="t5q2">Tut 5 Q2</button></div>
+        <div class="nums" id="in2"></div>
+        <pre class="work" id="inst2" style="margin-top:6px"></pre>
+      </div>
+    </div>
+    <div class="full predict"><b>Predict first:</b> press "inner too slow". Before you look: why should the attitude loop be several times faster than the position loop (Tut 5 Q1c)? Then untick tilt compensation: what happens to z while the drone is tilted?
+      <details><summary>check</summary>The outer loop designs its gains assuming θ = θ_d arrives almost at once (θ is its "actuator", sl.16). If θ lags, the outer loop is effectively driving a slower, extra-order plant, so it overshoots or rings. Without compensation the vertical thrust is T cos θ &lt; mg while tilted, so the drone <b>sinks</b> (z goes positive) until the vertical PD catches it. At 20° the needed thrust is 1.064 mg (sl.21).</details></div>
+    <div class="full answer"><b>Answer shape: "position error → pitch moment" (T5-II sl.18–19, Tut 5 Q2)</b>
+      <ol>
+        <li>u_x = ẍ_d + k_p e_x + k_d ė_x [m/s²].</li>
+        <li>θ_d = −u_x/g [rad] (then °). u_x &gt; 0 (forward) → θ_d &lt; 0 → <b>nose down</b>, which tilts thrust towards +x.</li>
+        <li>e_θ = θ_d − θ. For a constant θ_d near hover, ė_θ ≈ −q.</li>
+        <li>α_cmd = k_θ e_θ − k_dθ q [rad/s²], then M_y = J α_cmd [N m]. Or use torque gains K = J k_θ, K_d = J k_dθ directly.</li>
+        <li>Sign words: M_y &lt; 0 = nose-down moment. Inner faster than outer (e.g. 25 vs 4 rad/s, sl.16). Check the motor lag with k_d &gt; τ k_θ (sl.17).</li>
+      </ol></div>
+  </section>
+
+  <!-- ============ PANEL 3 ============ -->
+  <section class="panel" aria-labelledby="h3">
+    <header>
+      <h2 id="h3">3 · State space: the same vertical channel as matrices (T5-II sl.29–46)</h2>
+      <p class="note">States are the integrator outputs, <b>position first</b>: x = [δz, w]. Pick the input (acceleration v_c or thrust change δT) and see that <b>only B changes</b>. Drag the two poles: K comes from matching (s − p₁)(s − p₂) to det(sI − (A − BK)).</p>
+      <div class="pipe" style="margin-top:6px" id="chain3"></div>
+    </header>
+    <div class="col">
+      <div class="plot sq" style="max-width:340px"><canvas id="c3s" aria-label="chosen poles in the s-plane"></canvas></div>
+      <div class="plot"><canvas id="c3r" aria-label="delta z response to the reference"></canvas></div>
+      <p class="cap">Lower plot: δz(t) from the "this instant" values, holding the reference r (z drawn up = up).</p>
+    </div>
+    <div class="side">
+      <div class="row"><span class="lbl">Input:</span><button data-u3="vc" aria-pressed="true">v_c (m/s²)</button><button data-u3="dT">δT (N)</button>
+        <label class="chk" style="margin-left:8px"><input type="checkbox" id="lag3"> motor lag state a (sl.45)</label></div>
+      <div class="matrow" id="mats3"></div>
+      <pre class="work" id="rank3"></pre>
+      <div class="sliders" id="sl3"></div>
+      <pre class="work" id="pp3"></pre>
+      <div>
+        <h3>This instant</h3>
+        <div class="row" style="margin-bottom:6px"><button data-i3="sl39">sl.39–40</button><button data-i3="sl43">sl.43–44</button><button data-i3="t5q4">Tut 5 Q4</button></div>
+        <div class="nums" id="in3"></div>
+        <pre class="work" id="inst3" style="margin-top:6px"></pre>
+      </div>
+    </div>
+    <div class="full predict"><b>Predict first:</b> with the input δT, B = [0; −1/m] has a zero in the position row. Does that make position uncontrollable (Tut 5 Q3b)?
+      <details><summary>check</summary>No. Controllability is the rank of [B AB], not the entries of B. AB = [−1/m; 0] puts the input into position through velocity (one integration later), so [B AB] has rank 2.</details></div>
+    <div class="full answer"><b>Answer shape: "write A, B, C, D, test rank, place poles" (sl.30–44, Tut 5 Q3–Q4)</b>
+      <ol>
+        <li>State order x = [δz, w]. Write the equations as rows: δż = w, ẇ = (input). Read A, B off them. C = [1 0] for position output, D = 0.</li>
+        <li>B depends on the input <b>units</b>: v_c → [0; 1], δT → [0; −1/m]. A is unchanged.</li>
+        <li>Controllability [B AB], observability [C; CA]. Full rank (2) → reachable / inferable. Say it in words.</li>
+        <li>A − BK = [0 1; −k₁ −k₂] → s² + k₂ s + k₁. Desired (s − p₁)(s − p₂) → k₁ = p₁p₂, k₂ = −(p₁ + p₂). Units s⁻², s⁻¹.</li>
+        <li>Reference: v_c = k₁(r − δz) − k₂ w → δT = −m v_c → <b>T_cmd = mg + δT</b> (put the equilibrium thrust back, sl.40). Direction: v_c &lt; 0 = up.</li>
+        <li>Equivalence: for a constant target this is PD with k_p = k₁, k_d = k₂ (sl.50).</li>
+      </ol></div>
+  </section>
+
+  <section class="bar" aria-label="Full model">
+    <h3>Scaling up to 12 states (sl.48–49): four chained groups</h3>
+    <div class="pipe"><span class="i">moments δM</span><i>→ ÷J →</i><span class="i">body rates p q r</span><i>→ ∫ →</i><span class="i">attitude φ θ ψ</span><i>→ ×g (tilts thrust) →</i><span class="o">velocity</span><i>→ ∫ →</i><span class="o">position</span><span style="margin-left:10px">δT</span><i>→ −1/m → vertical velocity</i></div>
+    <p class="cap" style="margin-top:6px">Hover links from the slides: θ̈ = M_y/J_y (T5-I sl.12) and ẍ ≈ −gθ (T5-II sl.9). So the pitch channel is a chain of four integrators, x ← u ← θ ← q ← M_y. The cascade (panel 2) controls it as two double-integrator loops, and state feedback can control it as one (sl.50). Writing the full 12 × 12 A and 12 × 4 B, and the rank test with outputs [p_N, p_E, p_D, ψ], is <b>CW Task 3</b>, so it's yours to derive.</p>
+  </section>
+</div>
+
+<script>
+const $=id=>document.getElementById(id),css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const fx=(x,n)=>(Math.abs(x)<0.5*Math.pow(10,-n)?0:x).toFixed(n);
+const g0=9.81, D2R=Math.PI/180;
+function setup(cv){const r=cv.getBoundingClientRect(),dpr=window.devicePixelRatio||1;cv.width=Math.max(1,Math.round(r.width*dpr));cv.height=Math.max(1,Math.round(r.height*dpr));
+  const g=cv.getContext("2d");g.setTransform(dpr,0,0,dpr,0,0);return{g,w:r.width,h:r.height}}
+function sliders(host,defs,onchange){const S={};
+  defs.forEach(([id,label,min,max,step,val,fmt])=>{const l=document.createElement("label");l.textContent=label;l.htmlFor=id;
+    const i=document.createElement("input");Object.assign(i,{type:"range",id,min,max,step,value:val});
+    const o=document.createElement("output");const upd=()=>o.textContent=(fmt||(v=>v))(+i.value);upd();
+    i.addEventListener("input",()=>{upd();onchange()});host.append(l,i,o);S[id]={get v(){return +i.value},set v(x){i.value=x;upd()}}});
+  return S}
+function numbers(host,defs,onchange){const N={};
+  defs.forEach(([id,label,val])=>{const l=document.createElement("label");l.textContent=label;const i=document.createElement("input");
+    Object.assign(i,{type:"number",step:"any",value:val});i.addEventListener("input",onchange);l.append(i);host.append(l);
+    N[id]={get v(){return +i.value},set v(x){i.value=x}}});return N}
+function press(sel,btn){document.querySelectorAll(sel).forEach(b=>b.setAttribute("aria-pressed",b===btn?"true":"false"))}
+
+/* ---------- polynomial roots (Durand–Kerner), coeffs highest power first ---------- */
+function roots(c){c=c.slice();while(c.length>1&&Math.abs(c[0])<1e-14)c.shift();const n=c.length-1;if(n<1)return[];
+  const a=c.map(x=>x/c[0]);let z=Array.from({length:n},(_,k)=>{const r=1+Math.max(...a.slice(1).map(Math.abs)),t=2*Math.PI*k/n+0.4;return[r*Math.cos(t),r*Math.sin(t)]});
+  const mul=(p,q)=>[p[0]*q[0]-p[1]*q[1],p[0]*q[1]+p[1]*q[0]],div=(p,q)=>{const d=q[0]*q[0]+q[1]*q[1];return[(p[0]*q[0]+p[1]*q[1])/d,(p[1]*q[0]-p[0]*q[1])/d]};
+  for(let it=0;it<500;it++){let mv=0;z=z.map((zi,i)=>{let p=[1,0];for(let k=1;k<=n;k++)p=[p[0]*zi[0]-p[1]*zi[1]+a[k],p[0]*zi[1]+p[1]*zi[0]];
+      let q=[1,0];z.forEach((zj,j)=>{if(j!==i)q=mul(q,[zi[0]-zj[0],zi[1]-zj[1]])});const s=div(p,q);mv=Math.max(mv,Math.hypot(...s));return[zi[0]-s[0],zi[1]-s[1]]});if(mv<1e-13)break}
+  return z.map(([re,im])=>[re,Math.abs(im)<1e-7?0:im]).sort((p,q)=>q[0]-p[0]||q[1]-p[1])}
+const rstr=r=>r.map(([re,im])=>im===0?fx(re,2):fx(re,2)+(im>0?" + j":" − j")+fx(Math.abs(im),2)).join(",  ");
+
+/* ---------- generic time plot ---------- */
+function tplot(g,rect,o){const{x,y,w,h}=rect,mut=css("--muted"),rule=css("--rule"),grid=css("--grid");
+  let lo=o.ymin,hi=o.ymax;if(lo===undefined){lo=Infinity;hi=-Infinity;o.series.forEach(s=>s.y.forEach(v=>{if(isFinite(v)){lo=Math.min(lo,v);hi=Math.max(hi,v)}}));
+    (o.hl||[]).forEach(v=>{lo=Math.min(lo,v);hi=Math.max(hi,v)});const pad=Math.max((hi-lo)*0.12,o.minspan||0.05);lo-=pad;hi+=pad}
+  if(o.clamp){lo=Math.max(lo,o.clamp[0]);hi=Math.min(hi,o.clamp[1])}
+  const L=x+46,R=x+w-8,T=y+16,B=y+h-20,X=t=>L+(t/o.tmax)*(R-L),Y=v=>{const f=(v-lo)/(hi-lo);return o.invert?T+f*(B-T):B-f*(B-T)};
+  g.strokeStyle=grid;g.lineWidth=1;g.font="10px "+css("--f-mono");g.fillStyle=mut;g.textAlign="right";g.textBaseline="middle";
+  const step=niceStep((hi-lo)/4);for(let v=Math.ceil(lo/step)*step;v<=hi+1e-9;v+=step){g.beginPath();g.moveTo(L,Y(v));g.lineTo(R,Y(v));g.stroke();g.fillText(fx(v,Math.max(0,-Math.floor(Math.log10(step)+1e-9))),L-4,Y(v))}
+  g.textAlign="center";g.textBaseline="top";const ts=niceStep(o.tmax/6);for(let t=0;t<=o.tmax+1e-9;t+=ts)g.fillText(fx(t,ts<1?1:0),X(t),B+3);
+  g.strokeStyle=rule;g.strokeRect(L,T,R-L,B-T);g.textAlign="left";g.fillStyle=css("--ink");g.fillText(o.title,L+2,y+2);
+  (o.hl||[]).forEach(v=>{g.strokeStyle=css("--ref");g.setLineDash([4,3]);g.beginPath();g.moveTo(L,Y(v));g.lineTo(R,Y(v));g.stroke();g.setLineDash([])});
+  g.save();g.beginPath();g.rect(L,T,R-L,B-T);g.clip();
+  o.series.forEach(s=>{g.strokeStyle=s.c;g.lineWidth=s.lw||1.8;g.setLineDash(s.dash||[]);g.beginPath();let pen=false;
+    s.y.forEach((v,i)=>{const t=s.t?s.t[i]:o.t[i];if(!isFinite(v)){pen=false;return}const px=X(t),py=Y(v);pen?g.lineTo(px,py):g.moveTo(px,py);pen=true});g.stroke();g.setLineDash([])});
+  if(o.cursor!==undefined){g.strokeStyle=css("--ink");g.globalAlpha=.4;g.beginPath();g.moveTo(X(o.cursor),T);g.lineTo(X(o.cursor),B);g.stroke();g.globalAlpha=1}
+  g.restore()}
+function niceStep(r){if(!(r>0))return 1;const p=Math.pow(10,Math.floor(Math.log10(r))),m=r/p;return(m<1.5?1:m<3?2:m<7?5:10)*p}
+function splane(cv,rs,title){const{g,w,h}=setup(cv),mut=css("--muted"),grid=css("--grid");g.clearRect(0,0,w,h);
+  let m=1;rs.forEach(([re,im])=>m=Math.max(m,Math.abs(re),Math.abs(im)));m=Math.min(m*1.25,200);
+  const cx=w*0.7,cy=h/2,sc=Math.min(cx-10,h/2-14)/m;g.strokeStyle=grid;g.lineWidth=1;
+  g.fillStyle="color-mix(in srgb, "+css("--warn")+" 10%, transparent)";g.fillRect(cx,0,w-cx,h);
+  g.strokeStyle=mut;g.beginPath();g.moveTo(0,cy);g.lineTo(w,cy);g.moveTo(cx,0);g.lineTo(cx,h);g.stroke();
+  g.font="10px "+css("--f-mono");g.fillStyle=mut;g.textAlign="left";g.textBaseline="top";g.fillText(title,6,4);g.fillText("Re",w-20,cy+3);g.fillText("Im",cx+4,4);
+  g.textAlign="center";const st=niceStep(m/3);for(let v=st;v<=m;v+=st){g.fillText("−"+fx(v,st<1?1:0),cx-v*sc,cy+3)}
+  g.fillText("unstable",cx+(w-cx)/2,h-14);
+  rs.forEach(([re,im])=>{const px=cx+Math.max(-m,Math.min(m,re))*sc,py=cy-Math.max(-m,Math.min(m,im))*sc;g.strokeStyle=re<0?css("--ok"):css("--warn");g.lineWidth=2.2;
+    g.beginPath();g.moveTo(px-5,py-5);g.lineTo(px+5,py+5);g.moveTo(px+5,py-5);g.lineTo(px-5,py+5);g.stroke()})}
+
+/* ============ PANEL 1 ============ */
+const S1=sliders($("sl1"),[
+  ["wn","ωn (rad/s)",0.5,12,0.1,4,v=>v.toFixed(1)],["ze","ζ",0.1,2,0.05,0.75,v=>v.toFixed(2)],
+  ["ki","k_i (s⁻³)",0,100,1,0,v=>v.toFixed(0)],["d","d (m/s²)",-1.5,1.5,0.05,0,v=>v.toFixed(2)],
+  ["tau","τ_m (s)",0,0.25,0.005,0,v=>v.toFixed(3)],["dz","Δz_d (m)",-2,2,0.1,-1,v=>v.toFixed(1)]],()=>run1());
+const N1=numbers($("in1"),[["m","m (kg)",1.5],["zd","z_d (m)",-1],["z","z (m)",-0.8],["zdot","ż (m/s)",0.1]],()=>inst1());
+$("sat1").onchange=$("aw1").onchange=()=>run1();
+const P1={sl19:{wn:4,ze:.75,ki:0,d:0,tau:0,m:1.5,zd:-1,z:-0.8,zdot:0.1},t4q3:{wn:3,ze:.8,ki:0,d:0,tau:0,m:1.6,zd:-2,z:-1.8,zdot:0.1},
+  t4q4:{wn:3,ze:.8,ki:0,d:.45,tau:0,m:1.6},t4q4i:{wn:3,ze:.8,ki:10,d:.45,tau:0,m:1.6},
+  t4q5a:{wn:10,ze:.15,ki:0,d:0,tau:.02},t4q5c:{wn:10,ze:.15,ki:0,d:0,tau:.05},sl41:{wn:8,ze:.7,ki:0,d:0,tau:.2}};
+document.querySelectorAll("[data-p1]").forEach(b=>b.onclick=()=>{const p=P1[b.dataset.p1];["wn","ze","ki","d","tau"].forEach(k=>S1[k].v=p[k]);
+  ["m","zd","z","zdot"].forEach(k=>{if(p[k]!==undefined)N1[k].v=p[k]});press("[data-p1]",b);run1()});
+function gains1(){const wn=S1.wn.v,ze=S1.ze.v;return{kp:wn*wn,kd:2*ze*wn,ki:S1.ki.v,tau:S1.tau.v,d:S1.d.v}}
+function charPoly1(G){const{kp,kd,ki,tau}=G;return tau>0?(ki>0?[tau,1,kd,kp,ki]:[tau,1,kd,kp]):(ki>0?[1,kd,kp,ki]:[1,kd,kp])}
+function sim1(G,m,dz,sat,aw){const{kp,kd,ki,tau,d}=G,dt=0.0005,tmax=Math.min(20,Math.max(3,0.5+7/(Math.min(S1.ze.v,1)*S1.wn.v))),Tmax=2*m*g0;
+  let z=0,w=0,xi=0,a=0;const t=[],Z=[],ZD=[],TC=[],TA=[];const n=Math.round(tmax/dt),every=Math.max(1,Math.round(n/600));
+  for(let i=0;i<=n;i++){const ti=i*dt,zd=ti>=0.5?dz:0,e=zd-z,ed=-w;let uz=kp*e+kd*ed+ki*xi;let T=m*(g0-uz),satd=false;
+    if(sat){if(T>Tmax){T=Tmax;satd=true}if(T<0){T=0;satd=true}}const ueff=g0-T/m;
+    if(i%every===0){t.push(ti);Z.push(Math.abs(z)>1e3?NaN:z);ZD.push(zd);TC.push(T);TA.push(m*(g0-(tau>0?a:ueff)))}
+    if(!(sat&&aw&&satd))xi+=e*dt;
+    if(tau>0){a+=dt*(ueff-a)/tau}else a=ueff;
+    w+=dt*(a+d);z+=dt*w;if(Math.abs(z)>1e4)break}
+  return{t,Z,ZD,TC,TA,tmax}}
+function run1(){const G=gains1(),m=N1.m.v||1.5,cp=charPoly1(G),rs=roots(cp),stable=rs.every(r=>r[0]<-1e-9);
+  const r=sim1(G,m,S1.dz.v,$("sat1").checked,$("aw1").checked);
+  {const cv=$("c1z"),{g,w,h}=setup(cv);g.clearRect(0,0,w,h);tplot(g,{x:0,y:0,w,h},{t:r.t,tmax:r.tmax,title:"z (m), up = up",invert:true,series:[{y:r.ZD,c:css("--ref"),dash:[4,3],lw:1.2},{y:r.Z,c:css("--plant")}],clamp:[-6,6]})}
+  {const cv=$("c1T"),{g,w,h}=setup(cv);g.clearRect(0,0,w,h);const ser=[{y:r.TC,c:css("--outer")}];if(G.tau>0)ser.push({y:r.TA,c:css("--inner"),dash:[5,3]});
+    tplot(g,{x:0,y:0,w,h},{t:r.t,tmax:r.tmax,title:"thrust (N)",series:ser,hl:[m*g0],clamp:[-5*m*g0,6*m*g0]})}
+  splane($("c1s"),rs,"closed-loop poles");
+  const names=G.tau>0?(G.ki>0?"τ s⁴ + s³ + k_d s² + k_p s + k_i":"τ s³ + s² + k_d s + k_p"):(G.ki>0?"s³ + k_d s² + k_p s + k_i":"s² + k_d s + k_p");
+  let rule="";if(G.tau>0&&G.ki===0)rule=`rule (sl.40): k_d > τ k_p ?  ${fx(G.kd,2)} vs ${fx(G.tau*G.kp,2)} → ${G.kd>G.tau*G.kp?"stable":"UNSTABLE"}`;
+  else if(G.ki>0&&G.tau===0)rule=`rule (sl.29): k_i < k_d k_p ?  ${fx(G.ki,1)} vs ${fx(G.kd*G.kp,1)} → ${G.ki<G.kd*G.kp?"stable":"UNSTABLE"}`;
+  else if(G.ki>0&&G.tau>0)rule="no slide rule for both together: read the roots";
+  $("work1").textContent=`k_p = ωn² = ${fx(G.kp,2)} s⁻²    k_d = 2ζωn = ${fx(G.kd,2)} s⁻¹\nchar. polynomial: ${names}\nroots: ${rstr(rs)}`+(rule?"\n"+rule:"")+
+    (G.tau===0&&G.ki===0?`\n2% settling ≈ 4/(ζωn) = ${fx(4/(S1.ze.v*S1.wn.v),2)} s (sl.24)`:"");
+  let wd=stable?`<span class="good">Stable</span>. `:`<span class="bad">Unstable</span>: a root has Re ≥ 0. `;
+  if(G.tau>0)wd+=`Motor lag adds a pole at about −1/τ = ${fx(-1/G.tau,1)}. `;
+  if(G.d!==0&&G.ki===0){const ess=-G.d/G.kp;wd+=`PD offset e_ss = −d/k_p = ${fx(ess,3)} m → z sits ${fx(Math.abs(ess)*100,1)} cm <b>${ess<0?"below":"above"}</b> the target (z is down).`}
+  else if(G.d!==0&&G.ki>0&&stable)wd+=`Integral action: e → 0, and ξ → −d/k_i = ${fx(-G.d/G.ki,4)} m s supplies the −d.`;
+  if($("sat1").checked)wd+=` With limits on, a large Δz_d saturates T: ${$("aw1").checked?"anti-windup keeps ξ from growing":"<b>no anti-windup</b>, so ξ keeps growing and the overshoot gets worse (needs k_i > 0 to see it)"}.`;
+  $("words1").innerHTML=wd;inst1()}
+function inst1(){const G=gains1(),m=N1.m.v,e=N1.zd.v-N1.z.v,ed=-N1.zdot.v,uz=G.kp*e+G.kd*ed,T=m*(g0-uz);
+  $("inst1").textContent=`e  = z_d − z = ${fx(N1.zd.v,2)} − (${fx(N1.z.v,2)}) = ${fx(e,3)} m\nė  = −ż = ${fx(ed,3)} m/s   (constant target)\nu_z = k_p e + k_d ė = ${fx(G.kp,2)}(${fx(e,3)}) + ${fx(G.kd,2)}(${fx(ed,3)}) = ${fx(uz,3)} m/s²\nT_cmd = m(g − u_z) = ${fx(m,2)}[9.81 − (${fx(uz,3)})] = ${fx(T,3)} N   (mg = ${fx(m*g0,3)} N)\n→ ${uz<0?"accelerating UP":uz>0?"accelerating DOWN":"no acceleration"}; it is moving ${N1.zdot.v>0?"DOWN":N1.zdot.v<0?"UP":"nowhere"} right now`+
+    (uz<0&&N1.zdot.v>0?" → the descent is slowing":"")}
+
+/* ============ PANEL 2 ============ */
+const S2=sliders($("sl2"),[["wp","ωn,pos (rad/s)",0.3,8,0.1,4,v=>v.toFixed(1)],["wa","ωn,att (rad/s)",1,40,0.5,25,v=>v.toFixed(1)],
+  ["z2","ζ (both loops)",0.3,1.5,0.05,0.75,v=>v.toFixed(2)],["dx","Δx_d (m)",0.1,3,0.1,1,v=>v.toFixed(1)]],()=>run2());
+$("tc2").onchange=()=>run2();
+const P2={nom:{wp:4,wa:25,z2:.75},lab:{wp:.7,wa:6,z2:1},slow:{wp:4,wa:4,z2:.75}};
+document.querySelectorAll("[data-p2]").forEach(b=>b.onclick=()=>{const p=P2[b.dataset.p2];S2.wp.v=p.wp;S2.wa.v=p.wa;S2.z2.v=p.z2;press("[data-p2]",b);run2()});
+let R2=null,anim=null;
+function sim2(){const m=1.5,J=0.005,wp=S2.wp.v,wa=S2.wa.v,ze=S2.z2.v,kp=wp*wp,kd=2*ze*wp,kt=wa*wa,kdt=2*ze*wa,xd=S2.dx.v,tilt=20*D2R,tc=$("tc2").checked;
+  const tmax=Math.min(25,Math.max(4,1+9/(Math.min(ze,1)*Math.min(wp,wa/3)))),dt=0.0005,n=Math.round(tmax/dt),every=Math.max(1,Math.round(n/700));
+  const f=s=>{const[x,z,vx,vz,th,q]=s,ux=kp*(xd-x)-kd*vx,thd=Math.max(-tilt,Math.min(tilt,-ux/g0)),uz=kp*(0-z)-kd*vz,T=Math.max(0,m*(g0-uz)/(tc?Math.max(Math.cos(th),0.5):1)),M=J*(kt*(thd-th)-kdt*q);
+    return{d:[vx,vz,-(T/m)*Math.sin(th),g0-(T/m)*Math.cos(th),q,M/J],thd,T,M,ux}};
+  let s=[0,0,0,0,0,0];const out={t:[],x:[],z:[],th:[],thd:[],xd,tmax,maxz:0,blown:false};
+  for(let i=0;i<=n;i++){const k1=f(s);if(i%every===0){out.t.push(i*dt);out.x.push(s[0]);out.z.push(s[1]);out.th.push(s[4]/D2R);out.thd.push(k1.thd/D2R)}
+    const ad=(a,b,h)=>a.map((v,j)=>v+h*b[j]);const k2=f(ad(s,k1.d,dt/2)).d,k3=f(ad(s,k2,dt/2)).d,k4=f(ad(s,k3,dt)).d;
+    s=s.map((v,j)=>v+dt/6*(k1.d[j]+2*k2[j]+2*k3[j]+k4[j]));out.maxz=Math.max(out.maxz,s[1]);if(!s.every(isFinite)||Math.abs(s[4])>3||Math.abs(s[0])>50){out.blown=true;break}}
+  // metrics
+  const xs=out.x,os=Math.max(...xs)-xd;let ts=null;for(let i=xs.length-1;i>=0;i--){if(Math.abs(xs[i]-xd)>0.02*xd){ts=out.t[i];break}}
+  out.os=os;out.ts=ts;out.kp=kp;out.kd=kd;out.kt=kt;out.kdt=kdt;return out}
+function drawView(r,i){const cv=$("c2v"),{g,w,h}=setup(cv);g.clearRect(0,0,w,h);const mut=css("--muted");
+  const x0=-0.4,x1=r.xd+0.5,sc=(w-20)/(x1-x0),X=x=>10+(x-x0)*sc,Y=z=>h*0.55+z*sc;
+  g.strokeStyle=css("--ref");g.setLineDash([4,3]);g.beginPath();g.moveTo(X(r.xd),10);g.lineTo(X(r.xd),h-10);g.moveTo(X(0),10);g.lineTo(X(0),h-10);g.stroke();g.setLineDash([]);
+  g.font="11px "+css("--f-mono");g.fillStyle=mut;g.textAlign="center";g.fillText("x_d",X(r.xd),h-4);g.fillText("start",X(0),h-4);
+  g.strokeStyle=css("--plant");g.globalAlpha=.5;g.beginPath();for(let k=0;k<=i;k++){const px=X(r.x[k]),py=Y(r.z[k]);k?g.lineTo(px,py):g.moveTo(px,py)}g.stroke();g.globalAlpha=1;
+  const x=r.x[i],z=r.z[i],th=r.th[i]*D2R,L=0.18*sc,cx=X(x),cy=Y(z),bx=[Math.cos(th),-Math.sin(th)];// body x on screen (right, up-negative)
+  g.strokeStyle=css("--ink");g.lineWidth=3;g.beginPath();g.moveTo(cx-bx[0]*L,cy-bx[1]*L);g.lineTo(cx+bx[0]*L,cy+bx[1]*L);g.stroke();
+  g.fillStyle=css("--outer");g.beginPath();g.arc(cx+bx[0]*L,cy+bx[1]*L,4,0,7);g.fill();g.fillStyle=mut;g.fillText("nose",cx+bx[0]*(L+16),cy+bx[1]*(L+16)-4);
+  const tz=[-Math.sin(th),-Math.cos(th)];// thrust = −body z; body z screen = (sinθ, cosθ)
+  g.strokeStyle=css("--inner");g.lineWidth=2;arrow(g,cx,cy,cx+tz[0]*L*1.3,cy+tz[1]*L*1.3);
+  g.fillStyle=css("--inner");g.textAlign="left";g.fillText("T",cx+tz[0]*L*1.3+4,cy+tz[1]*L*1.3);
+  g.fillStyle=css("--ink");g.textAlign="left";g.fillText(`θ = ${fx(r.th[i],1)}°  (${r.th[i]<-0.05?"nose down":r.th[i]>0.05?"nose up":"level"})`,8,14)}
+function arrow(g,x1,y1,x2,y2){const a=Math.atan2(y2-y1,x2-x1),s=7;g.beginPath();g.moveTo(x1,y1);g.lineTo(x2,y2);g.stroke();
+  g.beginPath();g.moveTo(x2,y2);g.lineTo(x2-s*Math.cos(a-0.4),y2-s*Math.sin(a-0.4));g.lineTo(x2-s*Math.cos(a+0.4),y2-s*Math.sin(a+0.4));g.closePath();g.fillStyle=g.strokeStyle;g.fill()}
+function drawStrips(r,i){const cv=$("c2p"),{g,w,h}=setup(cv);g.clearRect(0,0,w,h);const H=h/3,cur=r.t[i];
+  tplot(g,{x:0,y:0,w,h:H},{t:r.t,tmax:r.tmax,title:"x (m)",series:[{y:r.x,c:css("--plant")}],hl:[r.xd],cursor:cur});
+  tplot(g,{x:0,y:H,w,h:H},{t:r.t,tmax:r.tmax,title:"θ_d (orange) and θ (purple), °",series:[{y:r.thd,c:css("--outer")},{y:r.th,c:css("--inner"),dash:[5,3]}],hl:[0],cursor:cur,minspan:1});
+  tplot(g,{x:0,y:2*H,w,h:H},{t:r.t,tmax:r.tmax,title:"z (m), up = up",invert:true,series:[{y:r.z,c:css("--plant")}],hl:[0],cursor:cur,minspan:0.01})}
+function run2(){R2=sim2();const r=R2;
+  let wd=`Outer k_p = ${fx(r.kp,2)} s⁻², k_d = ${fx(r.kd,2)} s⁻¹ · inner k_θ = ${fx(r.kt,1)} s⁻², k_dθ = ${fx(r.kdt,2)} s⁻¹ → torque gains K = J k_θ = ${fx(0.005*r.kt,4)} N m/rad, K_d = ${fx(0.005*r.kdt,4)} N m s/rad.<br>`;
+  wd+=`Inner/outer speed ratio = ${fx(S2.wa.v/S2.wp.v,1)}×. `;
+  wd+=r.blown?`<span class="bad">Diverged</span>: the attitude never catches the request.`:`Overshoot ${fx(Math.max(0,r.os)*100,1)} cm, 2 % settling ${r.ts===null?"0 s":r.ts>=r.t[r.t.length-1]-0.05?"<b>not settled</b> in "+fx(r.tmax,0)+" s":fx(r.ts,2)+" s"}. Max sink while tilted ${fx(r.maxz*100,2)} cm.`;
+  $("words2").innerHTML=wd;replay()}
+function replay(){if(anim)cancelAnimationFrame(anim);const r=R2,n=r.t.length,dur=Math.min(6000,r.tmax*1000),t0=performance.now();
+  const step=now=>{const f=Math.min(1,(now-t0)/dur),i=Math.min(n-1,Math.floor(f*(n-1)));drawView(r,i);drawStrips(r,i);$("t2").textContent=`t = ${fx(r.t[i],2)} s`;if(f<1)anim=requestAnimationFrame(step)};anim=requestAnimationFrame(step)}
+$("play2").onclick=replay;
+const N2=numbers($("in2"),[["ex","e_x (m)",0.02],["exd","ė_x (m/s)",0],["xdd","ẍ_d (m/s²)",0],["kp","k_p (s⁻²)",16],["kd","k_d (s⁻¹)",6],
+  ["J","J (kg m²)",0.005],["kt","k_θ (s⁻²)",625],["kdt","k_dθ (s⁻¹)",35],["th","θ (rad)",0],["q","q (rad/s)",0]],()=>inst2());
+const I2={sl18:{ex:.02,exd:0,xdd:0,kp:16,kd:6,J:.005,kt:625,kdt:35,th:0,q:0},t5q2:{ex:.04,exd:-.025,xdd:0,kp:9,kd:4.8,J:.008,kt:144,kdt:19.2,th:0,q:.05}};
+document.querySelectorAll("[data-i2]").forEach(b=>b.onclick=()=>{const p=I2[b.dataset.i2];Object.keys(p).forEach(k=>N2[k].v=p[k]);press("[data-i2]",b);inst2()});
+function inst2(){const v=k=>N2[k].v,ux=v("xdd")+v("kp")*v("ex")+v("kd")*v("exd"),thd=-ux/g0,eth=thd-v("th"),al=v("kt")*eth-v("kdt")*v("q"),M=v("J")*al;
+  $("inst2").textContent=`u_x = ẍ_d + k_p e + k_d ė = ${fx(v("xdd"),3)} + ${fx(v("kp")*v("ex"),4)} + (${fx(v("kd")*v("exd"),4)}) = ${fx(ux,4)} m/s²\nθ_d = −u_x/g = ${fx(thd,4)} rad = ${fx(thd/D2R,2)}°  → ${thd<0?"nose DOWN (thrust tilts to +x, forward)":thd>0?"nose UP (thrust tilts to −x)":"level"}\ne_θ = θ_d − θ = ${fx(eth,4)} rad\nα_cmd = k_θ e_θ − k_dθ q = ${fx(v("kt")*eth,4)} − ${fx(v("kdt")*v("q"),4)} = ${fx(al,3)} rad/s²\nM_y = J α = ${fx(v("J"),4)} × ${fx(al,3)} = ${fx(M,4)} N m  (${M<0?"nose-down moment":M>0?"nose-up moment":"zero"})\ntorque gains: K = J k_θ = ${fx(v("J")*v("kt"),4)} N m/rad,  K_d = J k_dθ = ${fx(v("J")*v("kdt"),4)} N m s/rad`}
+
+/* ============ PANEL 3 ============ */
+let U3="vc";
+document.querySelectorAll("[data-u3]").forEach(b=>b.onclick=()=>{U3=b.dataset.u3;press("[data-u3]",b);run3()});
+$("lag3").onchange=()=>run3();
+const S3=sliders($("sl3"),[["p1","pole p₁ (s⁻¹)",-10,-0.5,0.5,-2,v=>v.toFixed(1)],["p2","pole p₂ (s⁻¹)",-10,-0.5,0.5,-3,v=>v.toFixed(1)]],()=>run3());
+const N3=numbers($("in3"),[["m","m (kg)",1.5],["r","r (m)",0],["dz","δz (m)",0.1],["w","w (m/s)",0.2]],()=>run3());
+const I3={sl39:{p1:-2,p2:-3,m:1.5,r:0,dz:.1,w:.2},sl43:{p1:-3,p2:-4,m:1,r:-.2,dz:0,w:0},t5q4:{p1:-2,p2:-5,m:2,r:-.3,dz:-.1,w:.05}};
+document.querySelectorAll("[data-i3]").forEach(b=>b.onclick=()=>{const p=I3[b.dataset.i3];S3.p1.v=p.p1;S3.p2.v=p.p2;["m","r","dz","w"].forEach(k=>N3[k].v=p[k]);press("[data-i3]",b);run3()});
+const mm=(A,B)=>A.map(r=>B[0].map((_,j)=>r.reduce((s,a,k)=>s+a*B[k][j],0)));
+function rank(M,tol=1e-9){const a=M.map(r=>r.slice());let rk=0;const R=a.length,C=a[0].length;
+  for(let c=0;c<C&&rk<R;c++){let p=rk;for(let r=rk+1;r<R;r++)if(Math.abs(a[r][c])>Math.abs(a[p][c]))p=r;if(Math.abs(a[p][c])<tol)continue;[a[rk],a[p]]=[a[p],a[rk]];
+    for(let r=0;r<R;r++)if(r!==rk){const f=a[r][c]/a[rk][c];for(let k=c;k<C;k++)a[r][k]-=f*a[rk][k]}rk++}return rk}
+const matHTML=(name,M)=>`<span>${name} = </span><span class="mat" style="grid-template-columns:repeat(${M[0].length},auto)">${M.flat().map(v=>`<span>${fx(v,3).replace(/\.?0+$/,"")||"0"}</span>`).join("")}</span>`;
+function run3(){const lag=$("lag3").checked,m=N3.m.v||1,tau=0.05;// τ shown symbolically below
+  let A,B,C,lbl;
+  if(!lag){A=[[0,1],[0,0]];B=U3==="vc"?[[0],[1]]:[[0],[-1/m]];C=[[1,0]];lbl="x = [δz, w]"}
+  else{A=[[0,1,0],[0,0,1],[0,0,-1/tau]];B=[[0],[0],[1/tau]];C=[[1,0,0]];lbl="x = [δz, w, a] (τ = 0.05 s shown, added)"}
+  $("chain3").innerHTML=lag?`<span>v_c</span><i>→</i><span class="i">1/(τs+1)</span><i>→ a →</i><span class="p">1/s</span><i>→ w →</i><span class="p">1/s</span><i>→ δz</i>`:
+    `<span>${U3==="vc"?"v_c":"δT → ×(−1/m)"}</span><i>→</i><span class="p">1/s</span><i>→ w →</i><span class="p">1/s</span><i>→ δz</i>`;
+  $("mats3").innerHTML=matHTML("A",A)+matHTML("B",B)+matHTML("C",C)+`<span>D = 0</span><span class="cap">${lbl}</span>`;
+  const n=A.length,ctr=[B];for(let k=1;k<n;k++)ctr.push(mm(A,ctr[k-1]));const Cm=A.map((_,i)=>ctr.map(c=>c[i][0]));
+  const obs=[C];for(let k=1;k<n;k++)obs.push(mm(obs[k-1],A));const Om=obs.map(o=>o[0]);
+  const fm=M=>"["+M.map(r=>r.map(v=>fx(v,3)).join(" ")).join("; ")+"]";
+  $("rank3").textContent=`controllability [B AB${n>2?" A²B":""}] = ${fm(Cm)}  → rank ${rank(Cm)} of ${n} ${rank(Cm)===n?"(controllable)":""}\nobservability [C; CA${n>2?"; CA²":""}] = ${fm(Om)}  → rank ${rank(Om)} of ${n} ${rank(Om)===n?"(observable from position)":""}`;
+  const p1=S3.p1.v,p2=S3.p2.v,k1=p1*p2,k2=-(p1+p2);
+  if(lag){$("pp3").textContent="Pole placement here needs three poles (3 states): not covered on the slides. Untick lag to place two.";}
+  else $("pp3").textContent=`(s − p₁)(s − p₂) = s² + ${fx(k2,2)} s + ${fx(k1,2)}\nmatch s² + k₂ s + k₁ → K = [k₁ k₂] = [${fx(k1,2)}  ${fx(k2,2)}]   (s⁻², s⁻¹)\nA − BK = [0 1; ${fx(-k1,2)} ${fx(-k2,2)}]` +
+    (U3==="dT"?`\nwith input δT: δT = −m v_c, so K_T = −mK = [${fx(-m*k1,3)}  ${fx(-m*k2,3)}] (N/m, N s/m)`:"")+`\n≡ PD with k_p = ${fx(k1,2)}, k_d = ${fx(k2,2)} (sl.50)`;
+  const vc=k1*(N3.r.v-N3.dz.v)-k2*N3.w.v,dT=-m*vc;
+  $("inst3").textContent=`v_c = k₁(r − δz) − k₂ w = ${fx(k1,2)}(${fx(N3.r.v,3)} − (${fx(N3.dz.v,3)})) − ${fx(k2,2)}(${fx(N3.w.v,3)}) = ${fx(vc,3)} m/s²  (${vc<0?"UP":vc>0?"DOWN":"none"})\nδT = −m v_c = ${fx(dT,3)} N\nT_cmd = mg + δT = ${fx(m*g0,3)} + (${fx(dT,3)}) = ${fx(m*g0+dT,3)} N`;
+  splane($("c3s"),[[p1,0],[p2,0]],"chosen poles");
+  // response of δz with r held, from the instant state
+  const t=[],Z=[],R=[];let z=N3.dz.v,w=N3.w.v;const tmax=Math.min(10,6/Math.min(-p1,-p2)),dt=0.002;
+  for(let i=0;i*dt<=tmax;i++){if(i%5===0){t.push(i*dt);Z.push(z);R.push(N3.r.v)}const v=k1*(N3.r.v-z)-k2*w;w+=dt*v;z+=dt*w}
+  const cv=$("c3r"),{g,w:W,h}=setup(cv);g.clearRect(0,0,W,h);tplot(g,{x:0,y:0,w:W,h},{t,tmax,title:"δz (m), up = up",invert:true,series:[{y:R,c:css("--ref"),dash:[4,3],lw:1.2},{y:Z,c:css("--plant")}],minspan:0.05})}
+
+/* ---------- init ---------- */
+run1();run2();run3();inst2();
+let rz;addEventListener("resize",()=>{clearTimeout(rz);rz=setTimeout(()=>{run1();run3();replay()},150)});
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change",()=>{run1();run3();replay()});
+
+/* ---------- self-test: open with #test ---------- */
+if(location.hash==="#test"){const out={};
+  document.querySelector('[data-p1="sl19"]').click();out.sl20=$("inst1").textContent.match(/= (-?[\d.]+) N/)[1];out.sl19roots=rstr(roots(charPoly1(gains1())));
+  document.querySelector('[data-p1="t4q3"]').click();out.t4q3=$("inst1").textContent.match(/= (-?[\d.]+) N/)[1];out.t4q3k=[fx(gains1().kp,2),fx(gains1().kd,2)];
+  document.querySelector('[data-p1="t4q4"]').click();out.t4q4=$("words1").textContent;
+  document.querySelector('[data-p1="t4q4i"]').click();out.t4q4i=$("work1").textContent.split("\n").pop()+" | "+$("words1").textContent;
+  document.querySelector('[data-p1="t4q5a"]').click();out.t4q5a=$("work1").textContent.split("\n").pop();
+  document.querySelector('[data-p1="t4q5c"]').click();out.t4q5c=$("work1").textContent.split("\n").pop();
+  document.querySelector('[data-p1="sl41"]').click();out.sl41=$("work1").textContent.split("\n").slice(2).join(" | ");
+  document.querySelector('[data-i2="sl18"]').click();out.sl18=$("inst2").textContent;
+  document.querySelector('[data-i2="t5q2"]').click();out.t5q2=$("inst2").textContent;
+  ["sl39","sl43","t5q4"].forEach(k=>{document.querySelector(`[data-i3="${k}"]`).click();out[k]=$("pp3").textContent.split("\n")[1]+" | "+$("inst3").textContent});
+  document.querySelector('[data-u3="dT"]').click();N3.m.v=2;run3();out.t5q3=$("mats3").textContent+" | "+$("rank3").textContent;
+  ["nom","lab","slow"].forEach(k=>{document.querySelector(`[data-p2="${k}"]`).click();out["casc_"+k]=$("words2").textContent});
+  document.querySelector('[data-p2="nom"]').click();$("tc2").checked=false;run2();out.casc_notc=$("words2").textContent;$("tc2").checked=true;run2();
+  const pre=document.createElement("pre");pre.id="testout";pre.textContent=JSON.stringify(out,null,1);document.body.appendChild(pre)}
+</script>
+</body>
+</html>

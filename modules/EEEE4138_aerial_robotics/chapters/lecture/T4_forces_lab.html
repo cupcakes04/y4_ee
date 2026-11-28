@@ -1,0 +1,471 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>T4 Forces Lab</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=Space+Grotesk:wght@500;600&display=swap">
+<style>
+:root{
+  --bg:#f3f6f7; --panel:#ffffff; --ink:#18222b; --muted:#5b6872; --rule:#d9e1e5; --grid:#e8eef1;
+  --bx:#c8372d; --by:#1d8a3a; --bz:#2563eb; --fv:#7b8790;
+  --pos:#d0661b; --spin:#6b4fc8; --sig:#6b4fc8; --ok:#1d8a3a; --warn:#b42318;
+  --f-display:"Space Grotesk",system-ui,sans-serif; --f-body:"IBM Plex Sans",system-ui,sans-serif; --f-mono:"IBM Plex Mono",ui-monospace,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#11171c; --panel:#182027; --ink:#e4ecf0; --muted:#93a3ad; --rule:#2a353e; --grid:#1f2930;
+  --bx:#ff7b6b; --by:#4cc46c; --bz:#6ea8ff; --fv:#93a3ad; --pos:#f39a52; --spin:#a993f5; --sig:#a993f5; --ok:#4cc46c; --warn:#ff7b6b; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#11171c; --panel:#182027; --ink:#e4ecf0; --muted:#93a3ad; --rule:#2a353e; --grid:#1f2930;
+  --bx:#ff7b6b; --by:#4cc46c; --bz:#6ea8ff; --fv:#93a3ad; --pos:#f39a52; --spin:#a993f5; --sig:#a993f5; --ok:#4cc46c; --warn:#ff7b6b; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.5;margin:0;padding:24px 16px 48px}
+.wrap{max-width:1100px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+h1{font-family:var(--f-display);font-weight:600;font-size:1.7rem;margin:0}
+h2{font-family:var(--f-display);font-weight:600;font-size:1.2rem;margin:0 0 4px}
+h3{font-family:var(--f-display);font-weight:600;font-size:.95rem;margin:0 0 6px}
+.lede{color:var(--muted);max-width:80ch;margin:4px 0 0}
+.src{font-family:var(--f-mono);font-size:.75rem;color:var(--muted);margin:4px 0 0}
+.bar,.panel{background:var(--panel);border:1px solid var(--rule);border-radius:8px;padding:16px}
+.panel{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:20px}
+.panel>header,.full{grid-column:1/-1}
+@media (max-width:820px){.panel{grid-template-columns:minmax(0,1fr)}}
+.plot{position:relative;width:100%;aspect-ratio:1}
+.plot.wide{aspect-ratio:1.5}
+canvas{width:100%;height:100%;display:block;border-radius:6px;background:var(--bg);touch-action:none}
+.side{display:flex;flex-direction:column;gap:12px;min-width:0}
+.sliders{display:grid;grid-template-columns:auto minmax(90px,1fr) 9ch;gap:4px 10px;align-items:center;font-family:var(--f-mono);font-size:.85rem}
+.sliders output{text-align:right;font-variant-numeric:tabular-nums}
+input[type=range]{width:100%;accent-color:var(--sig)}
+.row{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+button{font:inherit;font-size:.82rem;padding:5px 10px;border-radius:5px;border:1px solid var(--rule);background:var(--bg);color:var(--ink);cursor:pointer}
+button:hover{border-color:var(--muted)}
+button[aria-pressed="true"]{background:var(--sig);color:#fff;border-color:var(--sig)}
+button:focus-visible,input:focus-visible{outline:2px solid var(--sig);outline-offset:2px}
+.lbl{font-size:.8rem;color:var(--muted);margin-right:4px}
+.note{font-size:.88rem;color:var(--muted);max-width:78ch;margin:0}
+.note b{color:var(--ink);font-weight:600}
+.cap{font-size:.8rem;color:var(--muted);margin:0}
+.tag{font-family:var(--f-mono);font-size:.7rem;color:var(--muted);border:1px dashed var(--rule);padding:1px 6px;border-radius:4px;white-space:nowrap}
+.work{font-family:var(--f-mono);font-size:.8rem;font-variant-numeric:tabular-nums;white-space:pre-wrap;overflow-wrap:anywhere;margin:0;background:var(--bg);padding:8px 10px;border-radius:6px}
+.answer{border-left:3px solid var(--ok);padding:8px 12px;background:var(--bg);border-radius:0 6px 6px 0;font-size:.88rem}
+.answer ol{margin:4px 0 0;padding-left:20px} .answer li{margin:2px 0}
+.predict{border-left:3px solid var(--sig);padding:6px 10px;font-size:.9rem;background:var(--bg);border-radius:0 6px 6px 0}
+.predict summary{cursor:pointer;color:var(--sig);font-size:.85rem;margin-top:4px}
+.words{font-size:.92rem;background:var(--bg);border-radius:6px;padding:8px 10px}
+.words b{font-weight:600}
+table.t{border-collapse:collapse;font-size:.85rem;width:100%}
+table.t th,table.t td{border-top:1px solid var(--rule);padding:4px 8px;text-align:right;font-variant-numeric:tabular-nums}
+table.t td{font-family:var(--f-mono)}
+table.t th{font-weight:500;color:var(--muted);font-size:.8rem}
+table.t th:first-child,table.t td:first-child{text-align:left}
+table.t .hi{background:color-mix(in srgb,var(--sig) 14%,transparent)}
+table.t tr.pos td:first-child{border-left:3px solid var(--pos)}
+table.t tr.spin td:first-child{border-left:3px solid var(--spin)}
+table.t thead th{cursor:pointer}
+table.terms td{font-family:var(--f-body);text-align:left} table.terms td.m{font-family:var(--f-mono)}
+table.terms th,table.terms td{text-align:left}
+.mat{display:inline-grid;gap:2px 12px;font-family:var(--f-mono);font-size:.8rem;border-left:2px solid var(--muted);border-right:2px solid var(--muted);padding:2px 8px;border-radius:4px;text-align:right}
+.matrow{display:flex;gap:14px;flex-wrap:wrap;align-items:center;font-family:var(--f-mono);font-size:.82rem}
+.good{color:var(--ok);font-weight:500} .bad{color:var(--warn);font-weight:500}
+.pipe{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-family:var(--f-mono);font-size:.78rem}
+.pipe span{border:1px solid var(--rule);border-radius:5px;padding:3px 7px;background:var(--bg)}
+.pipe .c{border-color:var(--sig)} .pipe .p{border-color:var(--pos)}
+.pipe i{color:var(--muted);font-style:normal}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media (max-width:620px){.two{grid-template-columns:1fr}}
+.card{border-radius:8px;padding:10px 12px;background:var(--bg);border-left:4px solid}
+.card.pos{border-color:var(--pos)} .card.spin{border-color:var(--spin)}
+.card h3{margin:0 0 2px}
+.card .e{font-family:var(--f-mono);font-size:.85rem}
+.scroll{overflow-x:auto}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>T4 lab: from rotor speeds to forces and moments, and back</h1>
+    <p class="lede">Your Lab 2 <code>RotorLoads</code> block is panel 1 (thrusts → loads, what the <b>plant</b> does). The allocation step in your controller is panel 2 (wanted loads → thrusts, what the <b>controller</b> needs). Panel 3 is the fixed-wing half of T4: exam only, not in the CW.</p>
+    <p class="src">Source: EEEE4138 T4 (printed slide numbers), Tutorial 3 + solutions, CW brief (rotor table). Not from these: <span class="tag">added</span>.</p>
+  </header>
+
+  <section class="bar" aria-label="Two effects">
+    <h3>The one idea: each rotor does two separate things</h3>
+    <div class="two">
+      <div class="card pos"><h3 style="color:var(--pos)">Thrust at its corner → roll, pitch</h3>
+        <div class="e">r × F = [x y 0] × [0 0 −T] = [−yT, xT, 0]</div>
+        <p class="cap">Depends on <b>where</b> the rotor sits. A rotor <b>lifts its own corner</b>: front rotor → nose up (+My), left rotor → left side up (+Mx). Tut 3 Q2, sl.20/24.</p></div>
+      <div class="card spin"><h3 style="color:var(--spin)">Drag torque → yaw only</h3>
+        <div class="e">M_z,i = σᵢ k_MT Tᵢ,  k_MT = k_M / k_T [m]</div>
+        <p class="cap">Depends on <b>which way</b> it spins. The air drags the blades, and the frame twists <b>opposite</b> to the spin: a CCW rotor (σ = +1) → frame turns CW from above → +Mz, nose right. sl.12–15.</p></div>
+    </div>
+  </section>
+
+  <section class="bar" aria-label="Terms">
+    <h3>Terms</h3>
+    <div class="scroll"><table class="t terms">
+      <thead><tr><th>Term</th><th>Symbol</th><th>What it is</th><th>Unit</th></tr></thead>
+      <tr><td>rotor speed</td><td class="m">Ωᵢ</td><td>spin rate of rotor i (what the motor is commanded)</td><td class="m">rad/s</td></tr>
+      <tr><td>thrust</td><td class="m">Tᵢ = k_T Ωᵢ²</td><td>push <b>along</b> body z, upward: Fᵢ = [0, 0, −Tᵢ] (z points down)</td><td class="m">N</td></tr>
+      <tr><td>reaction torque</td><td class="m">Qᵢ = k_M Ωᵢ²</td><td>twist on the frame <b>about</b> body z, from blade drag. Not the gyroscopic moment (that needs the body to be rotating, sl.8–9)</td><td class="m">N m</td></tr>
+      <tr><td>torque/thrust ratio</td><td class="m">k_MT = k_M/k_T</td><td>so that Qᵢ = k_MT Tᵢ (both ∝ Ω²)</td><td class="m">m</td></tr>
+      <tr><td>spin sign</td><td class="m">σᵢ = ±1</td><td>+1 for CCW from above (reaction CW → +Mz). CW brief: [+1, −1, +1, −1]</td><td class="m">—</td></tr>
+      <tr><td>rotor position</td><td class="m">rᵢ = [xᵢ, yᵢ, 0]</td><td>from the CoM. + : (l,0),(0,l),(−l,0),(0,−l). X : (d,−d),(d,d),(−d,d),(−d,−d), d = l/√2</td><td class="m">m</td></tr>
+      <tr><td>body loads (outputs)</td><td class="m">[Fz Mx My Mz]</td><td>what the rotors produce together. <b>Not states</b> (states = the 12 in X)</td><td class="m">N, N m</td></tr>
+      <tr><td>allocation matrix</td><td class="m">A, t = [T₁…Tₙ]</td><td>[Fz Mx My Mz]ᵀ = A t. Rows = outputs, columns = rotors. Column i = [−1, −yᵢ, xᵢ, σᵢk_MT] (sl.27)</td><td class="m">—</td></tr>
+    </table></div>
+    <div class="row" style="margin-top:10px"><span class="lbl">Numbers:</span>
+      <button data-par="tut" aria-pressed="true">Tutorial 3 (l = 0.250, k_T = 2.00e-5, T_max = 8.00)</button>
+      <button data-par="cw">your CW, S19 (l = 0.270, k_T from Ω_max = 800)</button>
+    </div>
+    <p class="cap" id="parcap"></p>
+  </section>
+
+  <!-- ============ PANEL 1 ============ -->
+  <section class="panel" aria-labelledby="h1">
+    <header>
+      <h2 id="h1">1 · Forward: thrusts → loads (the plant, <code>RotorLoads</code>)</h2>
+      <p class="note">Top view, nose up the page, z into the page (as on the slides). Drag the thrust sliders or press a preset. <b>Click a rotor</b> (on the picture or its column) to see its r × F working. The arrows show what the drone <b>tends to do</b>: which side rises and which way the nose turns.</p>
+    </header>
+    <div>
+      <div class="row" style="margin-bottom:8px"><span class="lbl">Layout:</span>
+        <button data-geo="plus">+</button><button data-geo="x" aria-pressed="true">X</button><button data-geo="hex">hexarotor</button></div>
+      <div class="plot"><canvas id="c1" aria-label="top view of the drone with rotor thrusts and resulting moments"></canvas></div>
+      <p class="cap">Filled circle = thrust (darker = more). Curved arrow at each rotor = its spin. <span style="color:var(--bx)">Red bar</span> = side that rises from Mx, <span style="color:var(--by)">green bar</span> = end that rises from My, <span style="color:var(--bz)">blue arc</span> = yaw from Mz.</p>
+    </div>
+    <div class="side">
+      <div class="sliders" id="tsl"></div>
+      <div class="row"><span class="lbl">Presets:</span>
+        <button data-p1="hover">hover (Tut 3 Q2b)</button>
+        <button data-p1="t1">only T₁ +1 (probe Q2)</button>
+        <button data-p1="front">front +1, rear −1 (Tut 3 Q4c)</button>
+        <button data-p1="left">left +1, right −1</button>
+        <button data-p1="ccw">CCW +1, CW −1</button>
+      </div>
+      <div class="words" id="words1"></div>
+      <div class="scroll"><table class="t" id="tab1"></table></div>
+      <p class="cap"><span style="border-left:3px solid var(--pos);padding-left:4px">orange rows</span> come from the rotor's <b>position</b> (r × F). The <span style="border-left:3px solid var(--spin);padding-left:4px">purple row</span> comes from its <b>spin</b> (σ k_MT T). Each column is that rotor's column of A, times Tᵢ.</p>
+      <pre class="work" id="work1"></pre>
+    </div>
+    <div class="full predict"><b>Predict first:</b> in the X layout, press nothing yet. If you raise <b>both left rotors</b> (1 and 4) by 1 N and lower both right ones (2 and 3) by 1 N, which of Fz, Mx, My, Mz change, and which side rises?
+      <details><summary>check</summary>Only Mx changes: Mx = d(+1 −(−1) −(−1) +1) = 4d, and the left side rises (roll right). My: front pair +1 −1 = 0, rear pair 0. Mz: rotor 1 (+) +1, rotor 4 (−) +1 → cancels; 2 and 3 the same. Fz: +2 −2 = 0. Press "left +1, right −1" to see it.</details></div>
+    <div class="full answer"><b>Answer shape: "derive Fz, Mx, My, Mz for this layout" (Tut 3 Q2a, Q4a)</b> <span class="tag">added (layout)</span>
+      <ol>
+        <li>List every rotor's position rᵢ = [xᵢ, yᵢ, 0] and spin sign σᵢ (from the figure).</li>
+        <li>Per rotor: Fᵢ = [0, 0, −Tᵢ] and rᵢ × Fᵢ = [−yᵢTᵢ, xᵢTᵢ, 0]; yaw = σᵢ k_MT Tᵢ.</li>
+        <li>Sum over rotors: Fz = −ΣTᵢ, Mx = −ΣyᵢTᵢ, My = ΣxᵢTᵢ, Mz = k_MT Σσᵢ Tᵢ. Write it as A t.</li>
+        <li><b>Sign check</b> in words: front rotor up → My > 0 (nose up); left rotor up → Mx > 0 (left side up); CCW rotor up → Mz > 0 (nose right).</li>
+        <li>State that these are <b>propulsive only</b>: gravity and drag are added separately (sl.20).</li>
+      </ol></div>
+  </section>
+
+  <!-- ============ PANEL 2 ============ -->
+  <section class="panel" aria-labelledby="h2">
+    <header>
+      <h2 id="h2">2 · Backward: wanted loads → thrusts (allocation, used by the controller)</h2>
+      <p class="note">The controller (T5) decides "I need Fz and these three moments". The motors only take speeds. Allocation inverts A: <b>t = A⁻¹[Fz Mx My Mz]ᵀ</b>, then <b>Ωᵢ = √(Tᵢ/k_T)</b>, then <b>check 0 ≤ Tᵢ ≤ T_max</b> for every rotor (sl.21, 25).</p>
+      <div class="pipe" style="margin-top:8px"><span class="c">controller (T5)</span><i>→ Fz Mx My Mz →</i><span class="c">A⁻¹ (allocation)</span><i>→ Tᵢ →</i><span class="c">Ωᵢ = √(Tᵢ/k_T), clip</span><i>→ Ωᵢ →</i><span class="p">RotorLoads: A t (panel 1)</span><i>→ Fz Mx My Mz →</i><span class="p">StateDerivative (T3)</span></div>
+      <p class="cap" style="margin-top:4px"><span style="color:var(--sig)">purple</span> = inside the controller, <span style="color:var(--pos)">orange</span> = the plant. If nothing hits a limit, the plant's A undoes the controller's A⁻¹ and you get exactly the loads you asked for.</p>
+    </header>
+    <div>
+      <div class="plot"><canvas id="c2" aria-label="top view showing the allocated rotor thrusts"></canvas></div>
+      <p class="cap">Same layout as panel 1. A rotor turns <span class="bad">red</span> when its thrust is outside 0 … T_max.</p>
+    </div>
+    <div class="side">
+      <div class="sliders">
+        <label for="dFz">Fz [N]</label><input id="dFz" type="range" step="0.5"><output id="odFz"></output>
+        <label for="dMx">Mx [N m]</label><input id="dMx" type="range" min="-2.5" max="2.5" step="0.05"><output id="odMx"></output>
+        <label for="dMy">My [N m]</label><input id="dMy" type="range" min="-2.5" max="2.5" step="0.05"><output id="odMy"></output>
+        <label for="dMz">Mz [N m]</label><input id="dMz" type="range" min="-0.4" max="0.4" step="0.01"><output id="odMz"></output>
+      </div>
+      <div class="row"><span class="lbl">Presets:</span>
+        <button data-p2="hover">hover</button>
+        <button data-p2="q3a">Tut 3 Q3a (+)</button>
+        <button data-p2="q3d">Tut 3 Q3d (+)</button>
+        <button data-p2="yaw">yaw only</button>
+        <button data-p2="hex">Tut 3 Q6 (hex)</button>
+      </div>
+      <div class="scroll"><table class="t" id="tab2"></table></div>
+      <p class="cap">Each thrust = lift share + roll share + pitch share + yaw share. These are the columns of A⁻¹ times each request: e.g. for + and Mz = 0, Mx = 0, T₁ = −Fz/4 + My/(2l).</p>
+      <div class="words" id="words2"></div>
+      <div id="mats" style="display:flex;flex-direction:column;gap:8px"></div>
+      <pre class="work" id="work2"></pre>
+    </div>
+    <div class="full predict"><b>Predict first:</b> Tut 3 Q3, + layout, hover at Fz = −24 N. You raise My from 0.5 to 2.0 N m. Which rotor fails first, and in which direction (too high or below zero)?
+      <details><summary>check</summary>Rotor 1 (front) goes too high: T₁ = 6 + My/(2l) = 6 + 2.0/0.5 = 10.0 N > 8.00 N. Rotor 3 drops to 2.00 N, still ≥ 0. "Tut 3 Q3d" shows it.</details></div>
+    <div class="full answer"><b>Answer shape: "solve for the rotor thrusts and speeds, check limits" (Tut 3 Q3)</b> <span class="tag">added (layout)</span>
+      <ol>
+        <li>Write the four equations (panel 1 / sl.20 or 24) with the demanded values plugged in.</li>
+        <li>Solve: either eliminate (Mx = 0 → T₂ = T₄; Mz = 0 → pair sums equal; Fz → each pair = −Fz/2; My/l → T₁ − T₃) or t = A⁻¹u.</li>
+        <li>Speeds: Ωᵢ = √(Tᵢ/k_T), non-negative root.</li>
+        <li><b>Check every rotor</b>: 0 ≤ Tᵢ ≤ T_max. If one fails, say "infeasible" and name the rotor. The maths still gives numbers; the motor can't make them.</li>
+        <li>Hexarotor: A is 4 × 6, so there's no ordinary inverse. Infinitely many t give the same loads. Pick one (min-norm, sl.28), then check limits.</li>
+      </ol></div>
+  </section>
+
+  <!-- ============ PANEL 3 ============ -->
+  <section class="panel" aria-labelledby="h3">
+    <header>
+      <h2 id="h3">3 · Fixed-wing: angles, lift and drag (exam only)</h2>
+      <p class="note">Side view, nose to the right. All three angles are in the <b>vertical plane</b>; none of them is yaw. Lift is <b>perpendicular</b> to the relative wind, drag is <b>along</b> it (sl.32–35).</p>
+    </header>
+    <div>
+      <div class="plot wide"><canvas id="c3" aria-label="side view with flight path, body axis, chord and angle of attack"></canvas></div>
+      <div class="sliders" style="margin-top:8px">
+        <label for="th">θ pitch</label><input id="th" type="range" min="-10" max="25" step="1" value="8"><output id="oth"></output>
+        <label for="iw">i_w incidence</label><input id="iw" type="range" min="0" max="6" step="1" value="2"><output id="oiw"></output>
+        <label for="ga">γ flight path</label><input id="ga" type="range" min="-10" max="20" step="1" value="3"><output id="oga"></output>
+      </div>
+      <pre class="work" id="work3a" style="margin-top:8px"></pre>
+    </div>
+    <div class="side">
+      <div class="scroll"><table class="t terms">
+        <thead><tr><th>Symbol</th><th>Angle between</th><th>Set by</th></tr></thead>
+        <tr><td class="m">θ</td><td>body x axis ↔ horizontal</td><td>attitude (T2)</td></tr>
+        <tr><td class="m">γ</td><td>flight path (where the air-relative velocity points) ↔ horizontal: the climb angle</td><td>the motion</td></tr>
+        <tr><td class="m">i_w</td><td>wing chord ↔ body x axis</td><td>the build (fixed)</td></tr>
+        <tr><td class="m">α</td><td>wing chord ↔ oncoming air</td><td>the flight condition</td></tr>
+      </table></div>
+      <h3 style="margin-top:4px">Tut 3 Q5: lift and drag vs speed</h3>
+      <div class="sliders">
+        <label for="vv">V [m/s]</label><input id="vv" type="range" min="7" max="30" step="0.5" value="10"><output id="ovv"></output>
+      </div>
+      <div class="plot wide"><canvas id="c4" aria-label="parasite, induced and total drag against airspeed"></canvas></div>
+      <pre class="work" id="work3b"></pre>
+      <p class="cap">m = 3.00 kg, ρ = 1.20 kg/m³, S = 0.500 m², L = mg. Drag scaled from Q5's 10 m/s values: parasite ∝ V², induced ∝ 1/V² at fixed lift (sl.46). The minimum-drag speed is <span class="tag">added</span>. NACA 2415 = 2% camber at 40% chord, 15% thick (sl.31).</p>
+    </div>
+    <div class="full answer"><b>Answer shape: fixed-wing questions</b> <span class="tag">added (layout)</span>
+      <ol>
+        <li>Level flight: L = mg and L = ½ρV²S C_L, so C_L = 2mg/(ρV²S). Doubling V → C_L ÷ 4.</li>
+        <li>Drag at fixed lift: parasite × (V₂/V₁)², induced × (V₁/V₂)². Say <b>why</b> induced falls: a faster wing needs a lower C_L (a smaller α) to make the same lift.</li>
+        <li>Angles: draw horizontal, γ, θ and the chord; α = θ + i_w − γ.</li>
+      </ol></div>
+  </section>
+</div>
+
+<script>
+const $=id=>document.getElementById(id),css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const f2=x=>(Math.abs(x)<5e-10?0:x).toFixed(2),f3=x=>(Math.abs(x)<5e-10?0:x).toFixed(3),f4=x=>(Math.abs(x)<5e-12?0:x).toFixed(4);
+const sgn=x=>Math.abs(x)<1e-9?0:Math.sign(x);
+function setup(cv){const r=cv.getBoundingClientRect(),dpr=window.devicePixelRatio||1;cv.width=Math.max(1,Math.round(r.width*dpr));cv.height=Math.max(1,Math.round(r.height*dpr));
+  const g=cv.getContext("2d");g.setTransform(dpr,0,0,dpr,0,0);return{g,w:r.width,h:r.height}}
+
+/* ---------- parameters ---------- */
+const g0=9.81;
+const PAR={
+  tut:{name:"Tutorial 3",l:0.250,kT:2.00e-5,kMT:0.0200,Tmax:8.00,hoverFz:-24.0},
+  cw:(()=>{const mb=2.505,Om=800,kT=2*mb*g0/(4*Om*Om);return{name:"CW S19",l:0.270,kT,kMT:0.020,Tmax:kT*Om*Om,hoverFz:-mb*g0,mb}})()
+};
+let par=PAR.tut, geo="x";
+function rotors(geo,l){
+  if(geo==="plus") return[[l,0,1],[0,l,-1],[-l,0,1],[0,-l,-1]].map(([x,y,s],i)=>({x,y,s,name:["front","right","rear","left"][i]}));
+  if(geo==="x"){const d=l/Math.SQRT2;return[[d,-d,1],[d,d,-1],[-d,d,1],[-d,-d,-1]].map(([x,y,s],i)=>({x,y,s,name:["front-left","front-right","rear-right","rear-left"][i]}))}
+  const B=[-30,30,90,150,210,270];return B.map((b,i)=>({x:l*Math.cos(b*Math.PI/180),y:l*Math.sin(b*Math.PI/180),s:i%2?-1:1,name:"β = "+b+"°"}));
+}
+function Amat(R,kMT){return[R.map(()=>-1),R.map(r=>-r.y),R.map(r=>r.x),R.map(r=>r.s*kMT)]}
+function mul(A,t){return A.map(row=>row.reduce((s,a,j)=>s+a*t[j],0))}
+function solve(M,b){const n=M.length,a=M.map((r,i)=>[...r,b[i]]);
+  for(let c=0;c<n;c++){let p=c;for(let r=c+1;r<n;r++)if(Math.abs(a[r][c])>Math.abs(a[p][c]))p=r;[a[c],a[p]]=[a[p],a[c]];
+    for(let r=0;r<n;r++)if(r!==c){const f=a[r][c]/a[c][c];for(let k=c;k<=n;k++)a[r][k]-=f*a[c][k]}}
+  return a.map((r,i)=>r[n]/r[i])}
+// minimum-norm right inverse A⁺ = Aᵀ(AAᵀ)⁻¹ (equals A⁻¹ when A is square)
+function pinvCols(A){const n=A[0].length,AAt=A.map(r=>A.map(s=>r.reduce((x,a,j)=>x+a*s[j],0)));
+  return[0,1,2,3].map(k=>{const e=[0,0,0,0];e[k]=1;const y=solve(AAt,e);return Array.from({length:n},(_,i)=>A.reduce((s,row,r)=>s+row[i]*y[r],0))})}
+function allocate(A,u){const C=pinvCols(A);const n=A[0].length;const share=C.map((col,k)=>col.map(c=>c*u[k]));
+  const t=Array.from({length:n},(_,i)=>share.reduce((s,sh)=>s+sh[i],0));return{t,share}}
+
+/* ---------- drawing the drone ---------- */
+function drawDrone(cv,R,T,opt){
+  const {g,w,h}=setup(cv),cx=w/2,cy=h/2,sc=Math.min(w,h)*0.34/0.27;
+  const ink=css("--ink"),mut=css("--muted"),rule=css("--rule"),spin=css("--spin"),warn=css("--warn");
+  const P=r=>[cx+r.y*sc,cy-r.x*sc];
+  g.clearRect(0,0,w,h);g.font="12px "+css("--f-mono");g.textAlign="center";g.textBaseline="middle";
+  // axes
+  g.strokeStyle=css("--bx");g.fillStyle=css("--bx");g.lineWidth=1.5;arrow(g,cx,cy,cx,cy-sc*0.12);g.fillText("x (front)",cx+34,cy-sc*0.12);
+  g.strokeStyle=css("--by");g.fillStyle=css("--by");arrow(g,cx,cy,cx+sc*0.12,cy);g.fillText("y",cx+sc*0.12+8,cy+10);
+  // arms + rotors
+  const rr=Math.min(w,h)*0.085;
+  R.forEach((r,i)=>{const[px,py]=P(r);g.strokeStyle=rule;g.lineWidth=5;g.beginPath();g.moveTo(cx,cy);g.lineTo(px,py);g.stroke()});
+  g.fillStyle=mut;g.beginPath();g.arc(cx,cy,5,0,7);g.fill();
+  R.forEach((r,i)=>{const[px,py]=P(r),Ti=T[i],bad=opt.limits&&(Ti<-1e-9||Ti>par.Tmax+1e-9);
+    const a=Math.max(0,Math.min(1,Ti/par.Tmax));
+    g.globalAlpha=0.12+0.55*a;g.fillStyle=bad?warn:spin;g.beginPath();g.arc(px,py,rr,0,7);g.fill();g.globalAlpha=1;
+    g.lineWidth=opt.sel===i?3:1.2;g.strokeStyle=bad?warn:(opt.sel===i?ink:spin);g.beginPath();g.arc(px,py,rr,0,7);g.stroke();
+    // spin arc: CCW from above = CCW on screen (z into page)
+    g.strokeStyle=mut;g.lineWidth=1.4;const ar=rr+6,ccw=r.s>0;g.beginPath();
+    const a0=-2.4,a1=-0.7;if(ccw){g.arc(px,py,ar,a1,a0,true)}else{g.arc(px,py,ar,a0,a1,false)}g.stroke();
+    const ae=ccw?a0:a1,ex=px+ar*Math.cos(ae),ey=py+ar*Math.sin(ae),tg=ccw?ae-Math.PI/2:ae+Math.PI/2;
+    g.fillStyle=mut;g.beginPath();g.moveTo(ex+6*Math.cos(tg),ey+6*Math.sin(tg));g.lineTo(ex+4*Math.cos(tg+2.2),ey+4*Math.sin(tg+2.2));g.lineTo(ex+4*Math.cos(tg-2.2),ey+4*Math.sin(tg-2.2));g.fill();
+    g.fillStyle=bad?warn:ink;g.font="600 12px "+css("--f-mono");g.fillText((i+1)+(ccw?" CCW":" CW"),px,py-7);
+    g.font="12px "+css("--f-mono");g.fillText(f2(Ti)+" N",px,py+9)});
+  // moment indicators
+  const L=Amat(R,par.kMT),u=mul(L,T),ref=par.l*par.Tmax*0.5,zref=par.kMT*par.Tmax*1.2,E=Math.min(w,h)*0.47;
+  const thick=v=>Math.min(10,2+10*Math.abs(v)/ref);
+  if(sgn(u[1])){const side=u[1]>0?-1:1,x=cx+side*E;g.strokeStyle=css("--bx");g.lineWidth=thick(u[1]);g.beginPath();g.moveTo(x,cy-E*0.6);g.lineTo(x,cy+E*0.6);g.stroke();
+    g.fillStyle=css("--bx");g.save();g.translate(x-side*14,cy);g.rotate(-Math.PI/2*side);g.fillText("▲ "+(u[1]>0?"left":"right")+" side rises",0,0);g.restore()}
+  if(sgn(u[2])){const end=u[2]>0?-1:1,y=cy+end*E;g.strokeStyle=css("--by");g.lineWidth=thick(u[2]);g.beginPath();g.moveTo(cx-E*0.6,y);g.lineTo(cx+E*0.6,y);g.stroke();
+    g.fillStyle=css("--by");g.fillText("▲ "+(u[2]>0?"nose":"tail")+" rises",cx,y-end*14)}
+  if(sgn(u[3])){const cwz=u[3]>0,ar=sc*0.07+14;g.strokeStyle=css("--bz");g.lineWidth=Math.min(8,1.5+8*Math.abs(u[3])/zref);g.beginPath();
+    const a0=-Math.PI*0.9,a1=-Math.PI*0.1;if(cwz)g.arc(cx,cy,ar,a0,a1,false);else g.arc(cx,cy,ar,a1,a0,true);g.stroke();
+    const ae=cwz?a1:a0,ex=cx+ar*Math.cos(ae),ey=cy+ar*Math.sin(ae),tg=cwz?ae+Math.PI/2:ae-Math.PI/2;g.fillStyle=css("--bz");
+    g.beginPath();g.moveTo(ex+8*Math.cos(tg),ey+8*Math.sin(tg));g.lineTo(ex+6*Math.cos(tg+2.2),ey+6*Math.sin(tg+2.2));g.lineTo(ex+6*Math.cos(tg-2.2),ey+6*Math.sin(tg-2.2));g.fill();
+    g.fillText("nose "+(cwz?"right":"left"),cx,cy+ar+12)}
+  return u;
+}
+function arrow(g,x0,y0,x1,y1){g.beginPath();g.moveTo(x0,y0);g.lineTo(x1,y1);g.stroke();const a=Math.atan2(y1-y0,x1-x0);
+  g.beginPath();g.moveTo(x1,y1);g.lineTo(x1-7*Math.cos(a-0.4),y1-7*Math.sin(a-0.4));g.lineTo(x1-7*Math.cos(a+0.4),y1-7*Math.sin(a+0.4));g.fill()}
+function describe(u){
+  const roll=sgn(u[1])?(u[1]>0?"<b>left side rises</b> (roll right)":"<b>right side rises</b> (roll left)"):"no roll";
+  const pit=sgn(u[2])?(u[2]>0?"<b>nose rises</b> (pitch up)":"<b>nose drops</b> (pitch down)"):"no pitch";
+  const yaw=sgn(u[3])?(u[3]>0?"<b>nose turns right</b> (CW from above)":"<b>nose turns left</b> (CCW from above)"):"no yaw";
+  return`Total lift ${f2(-u[0])} N up (Fz = ${f2(u[0])} N) · Mx = ${f3(u[1])}: ${roll} · My = ${f3(u[2])}: ${pit} · Mz = ${f4(u[3])}: ${yaw}`}
+
+/* ---------- panel 1 ---------- */
+let T1=[],sel=0;
+function hoverT(n){return -par.hoverFz/n}
+function buildSliders(){const R=rotors(geo,par.l),box=$("tsl");box.innerHTML="";
+  R.forEach((r,i)=>{box.insertAdjacentHTML("beforeend",`<label for="t${i}">T${i+1}</label><input id="t${i}" type="range" min="0" max="${(par.Tmax).toFixed(2)}" step="0.05"><output id="ot${i}"></output>`);
+    const s=$("t"+i);s.value=T1[i];s.oninput=()=>{T1[i]=+s.value;sel=i;draw1()}})}
+function preset1(k){const R=rotors(geo,par.l),h=hoverT(R.length);T1=R.map(()=>h);
+  if(k==="t1")T1[0]+=1;
+  if(k==="front")R.forEach((r,i)=>{if(r.x>1e-6)T1[i]+=1;else if(r.x<-1e-6)T1[i]-=1});
+  if(k==="left")R.forEach((r,i)=>{if(r.y<-1e-6)T1[i]+=1;else if(r.y>1e-6)T1[i]-=1});
+  if(k==="ccw")R.forEach((r,i)=>{T1[i]+=r.s});
+  sel=0;buildSliders();draw1()}
+function draw1(){const R=rotors(geo,par.l);
+  R.forEach((r,i)=>{$("t"+i).value=T1[i];$("ot"+i).textContent=f2(T1[i])+" N"});
+  const u=drawDrone($("c1"),R,T1,{sel});$("words1").innerHTML=describe(u);
+  const A=Amat(R,par.kMT),rows=[["Fz = −T","",0],["Mx = −yT","pos",1],["My = xT","pos",2],["Mz = σk_MT T","spin",3]];
+  let h=`<thead><tr><th></th>${R.map((_,i)=>`<th data-col="${i}" class="${i===sel?"hi":""}">rotor ${i+1}</th>`).join("")}<th>total</th></tr></thead>`;
+  h+=`<tr><td>T [N]</td>${T1.map((t,i)=>`<td class="${i===sel?"hi":""}">${f2(t)}</td>`).join("")}<td></td></tr>`;
+  h+=`<tr><td>Ω [rad/s]</td>${T1.map((t,i)=>`<td class="${i===sel?"hi":""}">${t>=0?Math.sqrt(t/par.kT).toFixed(0):"—"}</td>`).join("")}<td></td></tr>`;
+  rows.forEach(([lab,cl,k])=>{h+=`<tr class="${cl}"><td>${lab}</td>${T1.map((t,i)=>`<td class="${i===sel?"hi":""}">${(k===3?f4:f3)(A[k][i]*t)}</td>`).join("")}<td><b>${(k===3?f4:f3)(u[k])}</b></td></tr>`});
+  $("tab1").innerHTML=h;$("tab1").querySelectorAll("th[data-col]").forEach(th=>th.onclick=()=>{sel=+th.dataset.col;draw1()});
+  const r=R[sel],t=T1[sel];
+  $("work1").textContent=`Rotor ${sel+1} (${r.name}), spins ${r.s>0?"CCW":"CW"} → σ = ${r.s>0?"+1":"−1"}
+r = [x, y, 0] = [${f3(r.x)}, ${f3(r.y)}, 0] m     F = [0, 0, −T] = [0, 0, ${f2(-t)}] N
+r × F = [y·(−T) − 0·0,  0·0 − x·(−T),  x·0 − y·0] = [−yT, xT, 0]
+      = [${f3(-r.y*t)}, ${f3(r.x*t)}, 0] N m      ← position: roll ${sgn(-r.y*t)>0?"+ (left side up)":sgn(-r.y*t)<0?"− (right side up)":"0"}, pitch ${sgn(r.x*t)>0?"+ (nose up)":sgn(r.x*t)<0?"− (nose down)":"0"}
+yaw   = σ k_MT T = ${r.s>0?"+":"−"}${par.kMT}·${f2(t)} = ${f4(r.s*par.kMT*t)} N m   ← spin: nose ${r.s>0?"right":"left"}
+Ω = √(T/k_T) = √(${f2(t)}/${par.kT.toExponential(3)}) = ${t>=0?Math.sqrt(t/par.kT).toFixed(1):"—"} rad/s`}
+$("c1").addEventListener("pointerdown",e=>{const R=rotors(geo,par.l),b=e.target.getBoundingClientRect(),sc=Math.min(b.width,b.height)*0.34/0.27;
+  const x=e.clientX-b.left,y=e.clientY-b.top;let best=0,bd=1e9;R.forEach((r,i)=>{const d=Math.hypot(b.width/2+r.y*sc-x,b.height/2-r.x*sc-y);if(d<bd){bd=d;best=i}});sel=best;draw1()});
+
+/* ---------- panel 2 ---------- */
+let U=[-24,0,0,0];
+const dIds=["dFz","dMx","dMy","dMz"];
+function setRanges(){const n=rotors(geo,par.l).length;$("dFz").min=(-n*par.Tmax).toFixed(1);$("dFz").max=0}
+function draw2(){const R=rotors(geo,par.l),A=Amat(R,par.kMT);
+  dIds.forEach((id,k)=>{$(id).value=U[k];$("o"+id).textContent=(k===0?f2:f2)(U[k])});
+  const{t,share}=allocate(A,U);drawDrone($("c2"),R,t,{limits:true,sel:-1});
+  let bad=[];
+  let h=`<thead><tr><th>rotor</th><th>lift</th><th>roll</th><th>pitch</th><th>yaw</th><th>= T [N]</th><th>Ω [rad/s]</th><th></th></tr></thead>`;
+  t.forEach((Ti,i)=>{const ok=Ti>=-1e-9&&Ti<=par.Tmax+1e-9;if(!ok)bad.push(i+1);
+    h+=`<tr><td>${i+1} ${R[i].name}</td>${share.map(s=>`<td>${f2(s[i])}</td>`).join("")}<td><b>${f2(Ti)}</b></td><td>${Ti>=0?Math.sqrt(Ti/par.kT).toFixed(1):"—"}</td><td class="${ok?"good":"bad"}">${ok?"ok":Ti<0?"< 0":"> T_max"}</td></tr>`});
+  $("tab2").innerHTML=h;
+  const back=mul(A,t);
+  $("words2").innerHTML=(bad.length?`<span class="bad">Infeasible:</span> rotor ${bad.join(", ")} outside 0 … ${f2(par.Tmax)} N. The equations still give numbers, but the motor can't produce them.`
+    :`<span class="good">Feasible:</span> all thrusts within 0 … ${f2(par.Tmax)} N.`)+` Plant check A·t = [${back.map((v,k)=>(k===3?f4:f2)(v)).join(", ")}] = request ✓`;
+  // matrices
+  const sym={plus:[["−1","−1","−1","−1"],["0","−l","0","l"],["l","0","−l","0"],["k","−k","k","−k"]],
+    x:[["−1","−1","−1","−1"],["d","−d","−d","d"],["d","d","−d","−d"],["k","−k","k","−k"]],
+    hex:[["−1","−1","−1","−1","−1","−1"],["a","−a","−l","−a","a","l"],["b","b","0","−b","−b","0"],["k","−k","k","−k","k","−k"]]}[geo];
+  const n=R.length,grid=(M,fmt)=>`<span class="mat" style="grid-template-columns:repeat(${M[0].length},auto)">${M.flat().map(v=>`<span>${fmt(v)}</span>`).join("")}</span>`;
+  const C=pinvCols(A),Ainv=Array.from({length:n},(_,i)=>C.map(col=>col[i]));
+  const key=geo==="plus"?"l = "+par.l:geo==="x"?"d = l/√2 = "+f3(par.l/Math.SQRT2):"a = l/2, b = √3 l/2 (sl.27)";
+  $("mats").innerHTML=`<div class="matrow"><span>A =</span>${grid(sym,v=>v)}<span>${key}, k = k_MT = ${par.kMT}</span></div>`+
+    `<div class="matrow"><span>${geo==="hex"?"A⁺ (min-norm) =":"A⁻¹ ="}</span>${grid(Ainv,v=>f3(v))}</div>`;
+  let w="";
+  if(geo==="plus")w=`Elimination, + layout (Tut 3 Q3 solution):
+Mx = l(T4 − T2) = ${f2(U[1])}  →  T4 − T2 = ${f2(U[1]/par.l)}
+Mz = k_MT(T1 − T2 + T3 − T4) = ${f4(U[3])}  →  (T1+T3) − (T2+T4) = ${f2(U[3]/par.kMT)}
+Fz = −(T1+T2+T3+T4) = ${f2(U[0])}  →  sum = ${f2(-U[0])}
+My = l(T1 − T3) = ${f2(U[2])}  →  T1 − T3 = ${f2(U[2]/par.l)}
+→ T = [${t.map(f2).join(", ")}] N`;
+  if(geo==="hex")w=`4 equations, 6 unknowns: A is 4 × 6, no ordinary inverse (Tut 3 Q6c).
+Shown: the minimum-norm solution t = Aᵀ(AAᵀ)⁻¹u (sl.28), the smallest thrusts that work.
+Tut 3 Q6 alternative [4.2, 3.9, 3.9, 4.2, 3.9, 3.9] gives A·t = [${mul(A,[4.2,3.9,3.9,4.2,3.9,3.9]).map((v,k)=>(k===3?f4:f2)(v)).join(", ")}]
+→ the same outputs as hover, so the answer isn't unique (A2: wide matrix).`;
+  if(geo==="x")w=`t = A⁻¹u (sl.25). Each column of A⁻¹ is "how much each rotor moves for 1 unit of that request":
+lift column = [${C[0].map(f3).join(", ")}] (each rotor −1/4 of Fz)
+roll column = [${C[1].map(f3).join(", ")}]  pitch column = [${C[2].map(f3).join(", ")}]
+yaw column  = [${C[3].map(f3).join(", ")}]`;
+  $("work2").textContent=w}
+function preset2(k){if(k==="q3a"||k==="q3d"){if(geo!=="plus"){geo="plus";syncGeo();}}
+  if(k==="hex"&&geo!=="hex"){geo="hex";syncGeo()}
+  const n=rotors(geo,par.l).length;
+  U=[par.hoverFz,0,0,0];if(k==="q3a")U=[-24,0,0.5,0];if(k==="q3d")U=[-24,0,2.0,0];if(k==="yaw")U[3]=0.1;if(k==="hex")U=[-24,0,0,0];
+  setRanges();draw2()}
+dIds.forEach((id,k)=>$(id).oninput=()=>{U[k]=+$(id).value;draw2()});
+
+/* ---------- panel 3 ---------- */
+function draw3(){const th=+$("th").value,iw=+$("iw").value,ga=+$("ga").value,al=th+iw-ga;
+  $("oth").textContent=th+"°";$("oiw").textContent=iw+"°";$("oga").textContent=ga+"°";
+  const{g,w,h}=setup($("c3")),ox=w*0.1,oy=h*0.66,Lr=w*0.66,K=2.5,rad=d=>K*d*Math.PI/180;
+  g.clearRect(0,0,w,h);g.font="12px "+css("--f-mono");g.textBaseline="middle";g.textAlign="left";
+  const ray=(deg,col,lab,dash,len=Lr)=>{g.setLineDash(dash||[]);g.strokeStyle=col;g.fillStyle=col;g.lineWidth=2;const x=ox+len*Math.cos(rad(deg)),y=oy-len*Math.sin(rad(deg));
+    arrow(g,ox,oy,x,y);g.setLineDash([]);g.fillText(lab,x+6,y)};
+  ray(0,css("--muted"),"horizontal",[4,4]);ray(ga,css("--by"),"flight path γ");ray(th,css("--bz"),"body x θ");ray(th+iw,css("--spin"),"chord θ+i_w",null,Lr*0.85);
+  // airfoil along chord
+  g.save();g.translate(ox+Lr*0.35*Math.cos(rad(th+iw)),oy-Lr*0.35*Math.sin(rad(th+iw)));g.rotate(-rad(th+iw));g.fillStyle=css("--spin");g.globalAlpha=0.25;
+  g.beginPath();g.moveTo(-60,0);g.bezierCurveTo(-50,-16,20,-14,60,0);g.bezierCurveTo(20,4,-50,6,-60,0);g.fill();g.restore();g.globalAlpha=1;
+  // alpha arc
+  g.strokeStyle=css("--warn");g.fillStyle=css("--warn");g.lineWidth=2;const ar=Lr*0.55;g.beginPath();g.arc(ox,oy,ar,-rad(Math.max(ga,th+iw)),-rad(Math.min(ga,th+iw)));g.stroke();
+  const am=(ga+th+iw)/2;g.fillText("α = "+al+"°",ox+(ar+8)*Math.cos(rad(am)),oy-(ar+8)*Math.sin(rad(am)));
+  // lift and drag at the wing
+  const wx=ox+Lr*0.35*Math.cos(rad(th+iw)),wy=oy-Lr*0.35*Math.sin(rad(th+iw)),Ll=h*0.28;
+  g.strokeStyle=css("--ink");g.fillStyle=css("--ink");g.lineWidth=1.5;arrow(g,wx,wy,wx-Ll*Math.sin(rad(ga)),wy-Ll*Math.cos(rad(ga)));g.fillText("L ⟂ wind",wx-Ll*Math.sin(rad(ga))+6,wy-Ll*Math.cos(rad(ga)));
+  arrow(g,wx,wy,wx-Ll*0.5*Math.cos(rad(ga)),wy+Ll*0.5*Math.sin(rad(ga)));g.textAlign="right";g.fillText("D ∥ wind",wx-Ll*0.5*Math.cos(rad(ga))-4,wy+Ll*0.5*Math.sin(rad(ga))+10);
+  g.fillStyle=css("--muted");g.textAlign="left";g.fillText("angles drawn ×2.5 so they're visible",8,h-10);
+  $("work3a").textContent=`α = θ + i_w − γ = ${th} + ${iw} − ${ga} = ${al}°   (sl.35)`;
+  draw4()}
+const m5=3.00,rho=1.20,S5=0.500;
+function q5(V){const L=m5*g0,CL=2*L/(rho*V*V*S5),Dp=2.00*(V/10)**2,Di=8.00*(10/V)**2;return{L,CL,Dp,Di,D:Dp+Di}}
+function draw4(){const V=+$("vv").value;$("ovv").textContent=V.toFixed(1);const r=q5(V);
+  const{g,w,h}=setup($("c4")),pl=36,pr=10,pt=10,pb=26,X=v=>pl+(v-7)/(30-7)*(w-pl-pr),Y=d=>h-pb-(d/30)*(h-pt-pb);
+  g.clearRect(0,0,w,h);g.font="11px "+css("--f-mono");g.strokeStyle=css("--rule");g.fillStyle=css("--muted");g.lineWidth=1;
+  for(let d=0;d<=30;d+=10){g.beginPath();g.moveTo(pl,Y(d));g.lineTo(w-pr,Y(d));g.stroke();g.textAlign="right";g.fillText(d,pl-4,Y(d))}
+  for(let v=10;v<=30;v+=5){g.textAlign="center";g.fillText(v,X(v),h-pb+12)}
+  g.textAlign="left";g.fillText("D [N] vs V [m/s]",pl+4,pt+6);
+  [["Dp",css("--pos"),"parasite"],["Di",css("--spin"),"induced"],["D",css("--ink"),"total"]].forEach(([k,c,lab],j)=>{g.strokeStyle=c;g.lineWidth=k==="D"?2.2:1.6;g.beginPath();
+    for(let v=7;v<=30;v+=0.25){const d=Math.min(30,q5(v)[k]);v===7?g.moveTo(X(v),Y(d)):g.lineTo(X(v),Y(d))}g.stroke();g.fillStyle=c;g.fillText(lab,w-pr-70,pt+20+j*13)});
+  g.strokeStyle=css("--warn");g.setLineDash([3,3]);g.beginPath();g.moveTo(X(V),pt);g.lineTo(X(V),h-pb);g.stroke();g.setLineDash([]);
+  $("work3b").textContent=`L = mg = ${m5.toFixed(2)}(9.81) = ${r.L.toFixed(2)} N
+C_L = 2mg/(ρV²S) = ${(2*r.L).toFixed(2)}/(${rho}·${V.toFixed(1)}²·${S5}) = ${r.CL.toFixed(3)}
+parasite = 2.00(V/10)² = ${r.Dp.toFixed(2)} N   induced = 8.00(10/V)² = ${r.Di.toFixed(2)} N   total = ${r.D.toFixed(2)} N
+min total at V = 10√2 = 14.1 m/s (8.00 N) [added]`}
+["th","iw","ga"].forEach(id=>$(id).oninput=draw3);$("vv").oninput=draw4;
+
+/* ---------- wiring ---------- */
+function syncGeo(){document.querySelectorAll("[data-geo]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.geo===geo))}
+function setGeo(k){geo=k;syncGeo();preset1("hover");U=[par.hoverFz,0,0,0];setRanges();draw2()}
+document.querySelectorAll("[data-geo]").forEach(b=>b.onclick=()=>setGeo(b.dataset.geo));
+document.querySelectorAll("[data-p1]").forEach(b=>b.onclick=()=>preset1(b.dataset.p1));
+document.querySelectorAll("[data-p2]").forEach(b=>b.onclick=()=>preset2(b.dataset.p2));
+function setPar(k){par=PAR[k];document.querySelectorAll("[data-par]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.par===k));
+  $("parcap").textContent=k==="tut"?"Tutorial 3: l = 0.250 m, k_T = 2.00e-5 N/(rad/s)², k_MT = 0.0200 m (k_M = 4.00e-7), T_max = 8.00 N per rotor. Hover preset = 24.0 N total.":
+    `CW brief, S19: m_b = 1.50·1.67 = 2.505 kg, l = 0.270 m, d = l/√2 = ${f3(par.l/Math.SQRT2)} m, k_T = 2m_b g/(4·800²) = ${par.kT.toExponential(4)}, k_MT = 0.020 m, T_max = k_T·800² = ${f2(par.Tmax)} N (from Ω_max). Hover = m_b g = ${f2(-par.hoverFz)} N.`;
+  setGeo(geo)}
+document.querySelectorAll("[data-par]").forEach(b=>b.onclick=()=>setPar(b.dataset.par));
+let rz;window.addEventListener("resize",()=>{clearTimeout(rz);rz=setTimeout(()=>{draw1();draw2();draw3()},80)});
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change",()=>{draw1();draw2();draw3()});
+setPar("tut");draw3();
+
+/* ---------- self-test: open with #test ---------- */
+if(location.hash==="#test"){const out={},tp=PAR.tut;
+  out.q1={T:tp.kT*500**2,Q:tp.kT*tp.kMT*500**2,kMT:tp.kMT};
+  const Rp=rotors("plus",tp.l),Ap=Amat(Rp,tp.kMT),Rx=rotors("x",tp.l),Ax=Amat(Rx,tp.kMT),Rh=rotors("hex",tp.l),Ah=Amat(Rh,tp.kMT);
+  out.q2b=mul(Ap,[6,6,6,6]);
+  out.probeQ2_x_T1plus1=mul(Ax,[7,6,6,6]).map((v,k)=>v-mul(Ax,[6,6,6,6])[k]);
+  out.q4c_front_rear=mul(Ax,[1,1,-1,-1]);out.fourD=4*tp.l/Math.SQRT2;
+  out.q4_left_right=mul(Ax,[1,-1,-1,1]);
+  const a=allocate(Ap,[-24,0,0.5,0]).t,dd=allocate(Ap,[-24,0,2,0]).t;
+  out.q3a={T:a,Om:a.map(t=>Math.sqrt(t/tp.kT))};out.q3d={T:dd,infeasible:dd.some(t=>t>tp.Tmax)};
+  const hx=allocate(Ah,[-24,0,0,0]).t;out.q6={T:hx,Om:hx.map(t=>Math.sqrt(t/tp.kT)),alt:mul(Ah,[4.2,3.9,3.9,4.2,3.9,3.9])};
+  out.xInvCheck=mul(Ax,allocate(Ax,[-20,0.3,-0.2,0.05]).t);
+  out.q5={CL10:q5(10).CL,CL20:q5(20).CL,D10:q5(10).D,D20:q5(20).D};out.alpha=8+2-3;
+  out.cw={kT:PAR.cw.kT,Tmax:PAR.cw.Tmax,hover:-PAR.cw.hoverFz/4,d:PAR.cw.l/Math.SQRT2};
+  const pre=document.createElement("pre");pre.id="testout";pre.textContent=JSON.stringify(out);document.body.appendChild(pre)}
+</script>
+</body>
+</html>

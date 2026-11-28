@@ -7,9 +7,9 @@ CW1 is due **2026-12-20 23:59** (40%). The exam is 60%, 2 h, all topics (T1 P1 s
 |---|---|---|---|
 | T1 intro | `T2_frames.md` Part 1 | ✓ (2026-11-25) | ☐ |
 | T2 frames | `T2_frames_lab.html` (v2, equation-first) + `T2_frames.md` | ✓ (2026-11-25): chain order, gimbal nesting clicked | ☐ |
-| T3 kinematics/dynamics | `T3_dynamics_lab.html` + `T3_dynamics.md` | probe: terms gaps (along vs about, kinematics vs dynamics, h = Jω) | ☐ |
-| T4 forces/moments | — | — | — |
-| T5 flight control I/II | — | — | — |
+| T3 kinematics/dynamics | `T3_dynamics_lab.html` + `T3_dynamics.md` | ✓ enough (2026-11-28): panel 2 landed; panel 3 tumble skipped (student's call). Keep: ω̇ line, Tut 2 Q3 plug-in, coupling dropped near hover (T5-II sl.8) | ☐ |
+| T4 forces/moments | `T4_forces_lab.html` + `T4_forces.md` | probe done (2026-11-28): gap = thrust-position → roll/pitch vs spin → yaw; why invert A. Lab built; predicts ✓ → **understood enough** | ☐ |
+| T5 flight control I/II | `T5_control_lab.html` + `T5_control.md` | built (2026-11-28). Read and ask. Started before CW Task 1, which is still open | ☐ |
 | T6 trajectories | — | later | — |
 
 ## What to watch in T2
